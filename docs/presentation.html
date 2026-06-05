@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quant Strategy Lab — v0.2 Alpha 功能展示</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', 'Noto Sans TC', sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    scroll-behavior: smooth;
+  }
+
+  .slide {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(38, 166, 154, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(15, 108, 191, 0.06) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .content {
+    max-width: 1000px;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+  }
+
+  h1 {
+    font-size: 3.2rem;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #26a69a, #4fc3f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  h2 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 28px;
+    color: #26a69a;
+  }
+
+  h3 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #4fc3f7;
+  }
+
+  .subtitle {
+    font-size: 1.2rem;
+    color: #8b949e;
+    font-weight: 300;
+    margin-bottom: 40px;
+  }
+
+  .grid {
+    display: grid;
+    gap: 16px;
+  }
+
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  .card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 24px 20px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .card:hover {
+    border-color: #26a69a;
+    transform: translateY(-2px);
+  }
+
+  .card .icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+  }
+
+  .card h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e6edf3;
+    margin-bottom: 6px;
+  }
+
+  .card p {
+    font-size: 0.85rem;
+    color: #8b949e;
+    line-height: 1.6;
+  }
+
+  .pipeline {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 30px 0;
+  }
+
+  .pipeline-step {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 12px 18px;
+    font-size: 0.85rem;
+    color: #e6edf3;
+    white-space: nowrap;
+  }
+
+  .pipeline-arrow {
+    display: flex;
+    align-items: center;
+    color: #26a69a;
+    font-size: 1.2rem;
+  }
+
+  .stats {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 30px 0;
+  }
+
+  .stat {
+    text-align: center;
+    padding: 20px 32px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    min-width: 140px;
+  }
+
+  .stat-value {
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: #26a69a;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: #8b949e;
+    margin-top: 4px;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin: 2px;
+  }
+
+  .badge-green { background: rgba(38, 166, 154, 0.2); color: #26a69a; border: 1px solid rgba(38, 166, 154, 0.3); }
+  .badge-blue { background: rgba(79, 195, 247, 0.2); color: #4fc3f7; border: 1px solid rgba(79, 195, 247, 0.3); }
+  .badge-purple { background: rgba(156, 39, 176, 0.2); color: #ce93d8; border: 1px solid rgba(156, 39, 176, 0.3); }
+  .badge-orange { background: rgba(255, 167, 38, 0.2); color: #ffa726; border: 1px solid rgba(255, 167, 38, 0.3); }
+
+  .milestone {
+    display: flex;
+    gap: 12px;
+    margin: 16px 0;
+    padding: 16px;
+    background: #161b22;
+    border-radius: 12px;
+    border-left: 4px solid #26a69a;
+  }
+
+  .milestone.v0-1 { border-left-color: #4fc3f7; }
+  .milestone.v0-2 { border-left-color: #26a69a; }
+
+  .milestone h4 { font-size: 1rem; color: #e6edf3; }
+  .milestone p { font-size: 0.85rem; color: #8b949e; margin-top: 4px; }
+
+  .nav-bar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    padding: 14px 30px;
+    background: rgba(13, 17, 23, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid #30363d;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+  }
+
+  .nav-bar .logo {
+    font-weight: 700;
+    color: #26a69a;
+    font-size: 1.1rem;
+  }
+
+  .nav-bar .version {
+    color: #8b949e;
+    font-size: 0.8rem;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 16px;
+  }
+
+  .nav-links a {
+    color: #8b949e;
+    text-decoration: none;
+    font-size: 0.85rem;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: background 0.2s;
+  }
+
+  .nav-links a:hover {
+    background: #21262d;
+    color: #e6edf3;
+  }
+
+  .footer {
+    text-align: center;
+    padding: 20px;
+    color: #484f58;
+    font-size: 0.8rem;
+    border-top: 1px solid #21262d;
+  }
+
+  hr { border: none; border-top: 1px solid #21262d; margin: 24px 0; }
+
+  @media (max-width: 768px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    h1 { font-size: 2.2rem; }
+    h2 { font-size: 1.6rem; }
+    .slide { padding: 40px 20px; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ Navigation ============ -->
+<nav class="nav-bar">
+  <div>
+    <span class="logo">Quant Strategy Lab</span>
+    <span class="version">v0.2 Alpha</span>
+  </div>
+  <div class="nav-links">
+    <a href="#slide-0">首頁</a>
+    <a href="#slide-1">核心管線</a>
+    <a href="#slide-2">資料引擎</a>
+    <a href="#slide-3">策略引擎</a>
+    <a href="#slide-4">回測引擎</a>
+    <a href="#slide-5">驗證防火牆</a>
+    <a href="#slide-6">GA & GP 演化</a>
+    <a href="#slide-7">視覺化</a>
+    <a href="#slide-8">進度</a>
+    <a href="#slide-9">路線圖</a>
+  </div>
+</nav>
+
+<!-- ============ Slide 0 — Title ============ -->
+<section class="slide" id="slide-0">
+  <div class="content" style="text-align:center">
+    <p style="color:#4fc3f7;font-weight:600;letter-spacing:3px;font-size:0.9rem;margin-bottom:20px">多模型協作開發 · 三大 AI 引擎驅動</p>
+    <h1 style="font-size:4rem">Quant Strategy Lab</h1>
+    <p style="font-size:1.5rem;color:#8b949e;margin-bottom:12px">量化策略研究實驗室</p>
+    <p class="subtitle" style="font-size:1rem;max-width:700px;margin:0 auto 40px">
+      本地端桌面型策略生成、回測、防過度擬合驗證、篩選與報告平台<br>
+      由 Codex · DeepSeek V4 Pro · Anti-Gravity 三模型協作開發
+    </p>
+
+    <div class="stats" style="margin-bottom:40px">
+      <div class="stat">
+        <div class="stat-value">395+</div>
+        <div class="stat-label">自動化測試</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">87</div>
+        <div class="stat-label">已完成任務</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">2</div>
+        <div class="stat-label">主要版本</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">0</div>
+        <div class="stat-label">測試失敗</div>
+      </div>
+    </div>
+
+    <p style="color:#484f58;font-size:0.9rem">
+      v0.1 ✅ Accepted · v0.2 Alpha 🚧 In Progress · 查看 <a href="#slide-9" style="color:#26a69a">路線圖</a>
+    </p>
+  </div>
+</section>
+
+<!-- ============ Slide 1 — Core Pipeline ============ -->
+<section class="slide" id="slide-1">
+  <div class="content">
+    <h2>🔬 核心研究流水線</h2>
+    <p class="subtitle">端到端的量化策略研究流程，從原始資料到可信候選策略</p>
+
+    <div class="pipeline">
+      <span class="pipeline-step">📥 資料匯入</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">🔧 標準化</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">📊 週期轉換</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">⚙️ 商品設定</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">🎯 策略生成</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">📈 回測</span>
+    </div>
+    <div class="pipeline" style="margin-top:4px">
+      <span class="pipeline-step">🛡️ IS/Val/OOS 切分</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">💥 壓力測試</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">🎲 Monte Carlo</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">🚶 Walk-forward</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">🏆 策略排名</span>
+      <span class="pipeline-arrow">→</span>
+      <span class="pipeline-step">📄 報告匯出</span>
+    </div>
+
+    <div style="margin-top:40px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center">
+      <span class="badge badge-green">✅ 資料品質檢查</span>
+      <span class="badge badge-blue">✅ Session 過濾</span>
+      <span class="badge badge-purple">✅ SMA/RSI/MACD/ATR</span>
+      <span class="badge badge-orange">✅ 四區塊策略模板</span>
+      <span class="badge badge-green">✅ 事件驅動回測</span>
+      <span class="badge badge-blue">✅ 停損停利</span>
+      <span class="badge badge-purple">✅ 淘汰規則引擎</span>
+      <span class="badge badge-orange">✅ Walk-forward Matrix</span>
+      <span class="badge badge-green">✅ GA 演化</span>
+      <span class="badge badge-blue">✅ GP 樹狀條件</span>
+      <span class="badge badge-purple">✅ 公式條件編輯器</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Slide 2 — Data Engine ============ -->
+<section class="slide" id="slide-2">
+  <div class="content">
+    <h2>🗄️ 資料引擎</h2>
+    <p class="subtitle">支援 MultiCharts / TradeStation 格式的靈活資料處理管線</p>
+
+    <div class="grid grid-4">
+      <div class="card">
+        <div class="icon">📥</div>
+        <h4>CSV/TXT 匯入</h4>
+        <p>支援標準 OHLCV 格式、MultiCharts/TradeStation 匯出、TXF 台指期實盤資料</p>
+      </div>
+      <div class="card">
+        <div class="icon">🔧</div>
+        <h4>Schema Normalizer</h4>
+        <p>自動欄位映射與標準化，支援多來源欄位名稱容錯</p>
+      </div>
+      <div class="card">
+        <div class="icon">🔄</div>
+        <h4>週期轉換</h4>
+        <p>1分→5分/15分/60分，支援自訂週期 OHLCV 完美還原</p>
+      </div>
+      <div class="card">
+        <div class="icon">✅</div>
+        <h4>品質檢查</h4>
+        <p>缺值、重複時間、OHLC 矛盾、跳價偵測、Session 過濾</p>
+      </div>
+    </div>
+
+    <div style="margin-top:30px;display:flex;gap:20px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px">
+        <h3 style="font-size:1rem">Instrument Profile</h3>
+        <p style="color:#8b949e;font-size:0.9rem">
+          tick_size · point_value · commission · slippage · session_template · currency
+        </p>
+        <div style="margin-top:8px">
+          <span class="badge badge-blue">TXF 台指期</span>
+          <span class="badge badge-blue">ES 標普</span>
+          <span class="badge badge-blue">NQ 那斯達克</span>
+          <span class="badge badge-blue">GC 黃金</span>
+        </div>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <h3 style="font-size:1rem">SQLite 持久化</h3>
+        <p style="color:#8b949e;font-size:0.9rem">
+          資料集 metadata 自動寫入 project.sqlite<br>
+          OHLCV 原始資料保留於檔案系統，不進資料庫
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Slide 3 — Strategy Engine ============ -->
+<section class="slide" id="slide-3">
+  <div class="content">
+    <h2>🧠 策略引擎</h2>
+    <p class="subtitle">固定四區塊策略模板 + 8 種指標類型 + 公式條件</p>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h4>📐 四區塊模板</h4>
+        <p style="margin-top:6px;font-size:0.9rem;">
+          <code style="color:#4fc3f7">Long Entry</code> → <code style="color:#26a69a">Long Exit</code><br>
+          <code style="color:#ce93d8">Short Entry</code> → <code style="color:#ffa726">Short Exit</code>
+        </p>
+        <p style="margin-top:8px;color:#8b949e">支援多空鏡像 / 多空不對稱模式</p>
+      </div>
+      <div class="card">
+        <h4>📊 指標庫</h4>
+        <p style="margin-top:6px">
+          <span class="badge badge-green">SMA</span>
+          <span class="badge badge-blue">RSI</span>
+          <span class="badge badge-purple">MACD</span>
+          <span class="badge badge-orange">ATR</span>
+        </p>
+        <p style="margin-top:4px">
+          <span class="badge badge-green">Volume SMA</span>
+          <span class="badge badge-blue">Volume 突破</span>
+        </p>
+        <p style="margin-top:8px;color:#8b949e">AND / OR 條件組合，公式條件編輯器支援</p>
+      </div>
+      <div class="card">
+        <h4>🎲 隨機生成器</h4>
+        <p style="color:#8b949e;margin-top:6px">
+          種子確定性生成 · 權重可配置指標選擇<br>
+          隨機參數範圍 · 儲存完整 Provenance
+        </p>
+        <p style="margin-top:6px;font-size:0.85rem;color:#4fc3f7">Generator v0.2.0</p>
+      </div>
+      <div class="card">
+        <h4>📝 公式條件</h4>
+        <p style="color:#8b949e;margin-top:6px">
+          <code>close > sma(20) AND rsi(14) < 30</code><br>
+          支援括號、數學運算、安全沙箱執行
+        </p>
+        <p style="margin-top:6px">
+          <span class="badge badge-purple">✅ 公式編輯器 UI</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Slide 4 — Backtest Engine ============ -->
+<section class="slide" id="slide-4">
+  <div class="content">
+    <h2>⚡ 回測引擎</h2>
+    <p class="subtitle">事件驅動 · 逐根 K 棒 · 單商品單部位 — 保守誠實為核心價值</p>
+
+    <div class="grid grid-3">
+      <div class="card">
+        <div class="icon">📋</div>
+        <h4>執行模型</h4>
+        <p>訊號確認於收盤 → 下一根 Open 成交</p>
+        <p style="margin-top:4px;color:#8b949e">支援 Open/Close/Next Open 成交假設</p>
+      </div>
+      <div class="card">
+        <div class="icon">🛡️</div>
+        <h4>停損停利同根規則</h4>
+        <p>預設保守法：同根同時觸發 → 先算停損</p>
+        <p style="margin-top:4px;color:#8b949e">可選 Optimistic / Bar Direction Guess</p>
+      </div>
+      <div class="card">
+        <div class="icon">💰</div>
+        <h4>交易成本</h4>
+        <p>固定手續費 · 百分比成本 · 滑價 ticks</p>
+        <p style="margin-top:4px;color:#8b949e">Instrument Profile 整合</p>
+      </div>
+    </div>
+
+    <div style="margin-top:24px">
+      <h3 style="font-size:1rem">📊 回測產出</h3>
+      <div class="grid grid-4" style="margin-top:8px">
+        <div class="card" style="padding:12px 16px"><h4 style="font-size:0.9rem">📈 Equity Curve</h4><p style="font-size:0.8rem">逐筆 equity + drawdown</p></div>
+        <div class="card" style="padding:12px 16px"><h4 style="font-size:0.9rem">📋 Trade List</h4><p style="font-size:0.8rem">進出場明細</p></div>
+        <div class="card" style="padding:12px 16px"><h4 style="font-size:0.9rem">📐 Metrics</h4><p style="font-size:0.8rem">PnL · PF · DD · Sharpe · Sortino</p></div>
+        <div class="card" style="padding:12px 16px"><h4 style="font-size:0.9rem">⚠️ Assumptions</h4><p style="font-size:0.8rem">所有回測假設記錄</p></div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <h3 style="font-size:1rem">🔄 多商品回測</h3>
+      <p style="color:#8b949e;font-size:0.9rem">
+        單一策略同時回測 ES · NQ · GC 等多商品 · 匯出多商品報告
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Slide 5 — Validation Firewall ============ -->
+<section class="slide" id="slide-5">
+  <div class="content">
+    <h2>🛡️ 防過度擬合驗證防火牆</h2>
+    <p class="subtitle">「Truth over curves. Robustness over profit screenshots.」— SOUL.md</p>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="icon">🔪</div>
+        <h4>IS / Validation / OOS 切分</h4>
+        <p>比例切分或日期切分 · 三區段嚴格不重疊 · Training 以外永遠是 OOS</p>
+        <p style="margin-top:6px"><span class="badge badge-orange">不得在 OOS 上優化</span></p>
+      </div>
+      <div class="card">
+        <div class="icon">💥</div>
+        <h4>壓力測試組</h4>
+        <p>✅ 手續費×2 · ✅ 滑價×2 · ✅ 參數擾動 ±10%<br>✅ 隨機漏單 · ✅ 交易延遲一根 K</p>
+      </div>
+      <div class="card">
+        <div class="icon">🎲</div>
+        <h4>Monte Carlo</h4>
+        <p>✅ 隨機漏單模擬 · ✅ 滑價擾動模擬<br>✅ 合併模擬（漏單 + 擾動）<br>✅ 自訂百分位：p05 / p50 / p95<br>✅ 穩定度評分</p>
+      </div>
+      <div class="card">
+        <div class="icon">🚶</div>
+        <h4>Walk-forward</h4>
+        <p>✅ 固定視窗滑動 · ✅ Walk-forward Matrix<br>✅ 自訂通過標準 · ✅ 穩定度評分<br>✅ Walk-Forward Efficiency (WFE)<br>✅ 矩陣魯棒性評分</p>
+      </div>
+    </div>
+
+    <div style="margin-top:24px">
+      <h3 style="font-size:1rem">🗑️ 淘汰規則引擎</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <span class="badge badge-green">最少交易次數</span>
+        <span class="badge badge-green">最小 Profit Factor</span>
+        <span class="badge badge-blue">最大 Max Drawdown</span>
+        <span class="badge badge-blue">最小 Avg Trade</span>
+        <span class="badge badge-purple">OOS 必須為正</span>
+        <span class="badge badge-purple">IS/OOS 穩定性</span>
+        <span class="badge badge-orange">壓力測試通過率</span>
+        <span class="badge badge-orange">MC 最差情況</span>
+        <span class="badge badge-green">WF 通過率</span>
+        <span class="badge badge-blue">自訂規則 UI</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Slide 6 — GA & GP ============ -->
+<section class="slide" id="slide-6">
+  <div class="content">
+    <h2>🧬 演化式策略搜尋</h2>
+    <p class="subtitle">Genetic Algorithm + Genetic Programming — 從隨機到智慧</p>
+
+    <div class="grid grid-2">
+      <div class="card" style="border-left:4px solid #26a69a">
+        <h4>🧬 Genetic Algorithm</h4>
+        <div style="margin-top:10px">
+          <p><span class="badge badge-green">✅</span> <strong>初始族群</strong> — 使用現有隨機生成器</p>
+          <p><span class="badge badge-green">✅</span> <strong>錦標賽選擇</strong> — 種子確定性</p>
+          <p><span class="badge badge-green">✅</span> <strong>區塊交換交配</strong> — 4 個 block 隨機選自父母</p>
+          <p><span class="badge badge-green">✅</span> <strong>參數突變</strong> — SMA/RSI/MACD/ATR 參數擾動 + 範圍 clamp</p>
+          <p><span class="badge badge-green">✅</span> <strong>菁英保留</strong> — 每代保留 top N</p>
+          <p><span class="badge badge-green">✅</span> <strong>適配度轉接器</strong> — 回測 + 淘汰懲罰 + WF 獎勵</p>
+          <p><span class="badge badge-blue">✅</span> <strong>異步 worker</strong> — UI 不阻塞</p>
+          <p><span class="badge badge-blue">✅</span> <strong>GA Build 頁面</strong> — 參數設定 + 執行 + 結果</p>
+        </div>
+      </div>
+      <div class="card" style="border-left:4px solid #ce93d8">
+        <h4>🌳 Genetic Programming</h4>
+        <div style="margin-top:10px">
+          <p><span class="badge badge-green">✅</span> <strong>樹狀條件結構</strong> — 巢狀 AND/OR 條件樹</p>
+          <p><span class="badge badge-green">✅</span> <strong>GP 交配</strong> — 子樹交換</p>
+          <p><span class="badge badge-green">✅</span> <strong>GP 突變</strong> — 子樹取代</p>
+          <p><span class="badge badge-green">✅</span> <strong>演化迴圈</strong> — 完整世代管理</p>
+          <p><span class="badge badge-blue">✅</span> <strong>GP Build 頁面</strong></p>
+          <p><span class="badge badge-blue">✅</span> <strong>GP 結果排名</strong></p>
+        </div>
+        <p style="margin-top:12px;color:#8b949e;font-size:0.85rem">
+          GA 擅長參數最佳化 · GP 擅長結構探索 — 兩者互補
+        </p>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;text-align:center">
+      <p style="color:#4fc3f7;font-weight:600">GA / GP 詳細演化</p>
+      <p style="color:#8b949e;font-size:0.85rem">
+        初始族群 → 適配度評估 → 選擇 → 交配 → 突變 → 下一代 → 重複直至收斂
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Slide 7 — Visualization & Reports ============ -->
+<section class="slide" id="slide-7">
+  <div class="content">
+    <h2>📊 視覺化與報告</h2>
+    <p class="subtitle">「I need visualization to feel the software is real and useful.」— 使用者</p>
+
+    <div class="grid grid-3">
+      <div class="card">
+        <div class="icon">🕯️</div>
+        <h4>K 線圖表</h4>
+        <p>PyQtGraph 即時繪製 · OHLCV 標準 K 線</p>
+      </div>
+      <div class="card">
+        <div class="icon">📈</div>
+        <h4>權益曲線</h4>
+        <p>Equity + Drawdown 雙軸同步 · IS/OOS 分色</p>
+      </div>
+      <div class="card">
+        <div class="icon">🏆</div>
+        <h4>策略排名表</h4>
+        <p>多維度排序 · 淘汰狀態標記 · 詳細檢視</p>
+      </div>
+      <div class="card">
+        <div class="icon">🛡️</div>
+        <h4>驗證儀表板</h4>
+        <p>壓力測試 · MC · WF · 淘汰 — 完整摘要卡片</p>
+      </div>
+      <div class="card">
+        <div class="icon">🔥</div>
+        <h4>參數熱力圖</h4>
+        <p>視覺化參數敏感度分析</p>
+      </div>
+      <div class="card">
+        <div class="icon">📄</div>
+        <h4>多元報告匯出</h4>
+        <p><span class="badge badge-green">Markdown</span>
+        <span class="badge badge-blue">HTML</span>
+        <span class="badge badge-purple">Excel</span>
+        <span class="badge badge-orange">PDF</span></p>
+        <p style="margin-top:4px;color:#8b949e">含完整驗證證據</p>
+      </div>
+    </div>
+
+    <div style="margin-top:20px">
+      <h3 style="font-size:1rem">📤 策略匯出</h3>
+      <p>
+        <span class="badge badge-green">Strategy JSON</span>
+        <span class="badge badge-blue">Python 研究碼</span>
+        <span class="badge badge-purple">NinjaTrader 策略碼</span>
+        <span class="badge badge-orange">Pseudo Code</span>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Slide 8 — Progress ============ -->
+<section class="slide" id="slide-8">
+  <div class="content">
+    <h2>📊 專案進度</h2>
+    <p class="subtitle">從骨架到 v0.2 Alpha — 87 項任務的累積</p>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value">395+</div>
+        <div class="stat-label">測試案例</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">87</div>
+        <div class="stat-label">已完成任務</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">21</div>
+        <div class="stat-label">測試檔案</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">0</div>
+        <div class="stat-label">測試失敗</div>
+      </div>
+    </div>
+
+    <div class="milestone v0-1">
+      <div>
+        <h4>v0.1 「驗證防火牆基礎」 ✅ 已接受 (2026-06-01)</h4>
+        <p>資料管線 · 策略引擎 · 事件驅動回測 · IS/Val/OOS · 壓力測試 · Monte Carlo · Walk-forward · 淘汰規則 · 排名 · 報告匯出</p>
+      </div>
+    </div>
+
+    <div class="milestone v0-2">
+      <div>
+        <h4>v0.2 「Alpha 驗證擴展」 🚧 開發中</h4>
+        <p>Walk-forward Matrix · GA/GP 演化 · 公式條件 · 多商品回測 · 成交量條件 · Walk-Forward Efficiency · 策略 JSON 匯入/匯出 · 持久化 · 效能調校 · PDF 匯出 · Python/NinjaTrader 匯出 · 結果頁面強化</p>
+      </div>
+    </div>
+
+    <div style="margin-top:30px">
+      <h3 style="font-size:1rem">🔧 技術棧</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <span class="badge badge-blue">Python 3.11+</span>
+        <span class="badge badge-blue">PySide6</span>
+        <span class="badge badge-green">pandas</span>
+        <span class="badge badge-green">numpy</span>
+        <span class="badge badge-purple">SQLite</span>
+        <span class="badge badge-purple">matplotlib</span>
+        <span class="badge badge-orange">pyqtgraph</span>
+        <span class="badge badge-orange">plotly</span>
+        <span class="badge badge-blue">pytest</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Slide 9 — Roadmap ============ -->
+<section class="slide" id="slide-9">
+  <div class="content">
+    <h2>🗺️ 路線圖</h2>
+    <p class="subtitle">三大模型持續協作 · 小步驗證迭代</p>
+
+    <div class="grid grid-2">
+      <div class="card" style="border-left:4px solid #26a69a">
+        <h4>v0.1 ✅ 完成</h4>
+        <p style="margin-top:8px;font-size:0.85rem;color:#8b949e">
+          資料匯入與標準化 · 品質檢查 · 週期轉換<br>
+          商品設定 · 策略生成 (SMA/RSI/MACD/ATR)<br>
+          事件驅動回測 · 停損停利 · 交易成本<br>
+          IS/Val/OOS 切分 · 壓力測試 · Monte Carlo<br>
+          Walk-forward · 淘汰規則 · 排名 · 視覺化 · 報告
+        </p>
+      </div>
+      <div class="card" style="border-left:4px solid #4fc3f7">
+        <h4>v0.2 🚧 進行中</h4>
+        <p style="margin-top:8px;font-size:0.85rem;color:#8b949e">
+          Walk-forward Matrix + WFE · GA 演化<br>
+          GP 樹狀條件 · 公式條件編輯器<br>
+          多商品回測 · 成交量條件<br>
+          策略 JSON 匯入/匯出 · SQLite 持久化<br>
+          PDF 匯出 · Python/NinjaTrader 匯出<br>
+          參數熱力圖 · 結果頁面 UX 強化<br>
+          效能調校 · Alpha Release
+        </p>
+      </div>
+      <div class="card" style="border-left:4px solid #ce93d8">
+        <h4>v0.3 📋 規劃中</h4>
+        <p style="margin-top:8px;font-size:0.85rem;color:#8b949e">
+          Walk-forward Matrix 完整版<br>
+          多時間框架條件<br>
+          策略碼完整匯出 (Python/NinjaTrade/EasyLanguage)<br>
+          投組級回測<br>
+          參數最佳化視覺化
+        </p>
+      </div>
+      <div class="card" style="border-left:4px solid #ffa726">
+        <h4>v0.4+ 🔮 未來</h4>
+        <p style="margin-top:8px;font-size:0.85rem;color:#8b949e">
+          進階 walk-forward 分析<br>
+          策略可比性評分<br>
+          報告自訂模板<br>
+          即時市場資料串接（研究用）
+        </p>
+      </div>
+    </div>
+
+    <hr>
+
+    <div style="text-align:center">
+      <p style="color:#8b949e;font-size:0.9rem">
+        「Truth over curves. Robustness over profit screenshots. Reproducibility over speed.」
+      </p>
+      <p style="color:#484f58;font-size:0.8rem;margin-top:8px">
+        Quant Strategy Lab — 由 Codex · DeepSeek V4 Pro · Anti-Gravity 三模型協作開發
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  Quant Strategy Lab v0.2 Alpha · 395+ tests · 0 failures · 87 completed tasks · 2026-06-04
+</footer>
+
+</body>
+</html>

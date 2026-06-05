@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.pytest_cache/
+uv.lock
+
+# IDEs
+.idea/
+.vscode/
+
+# Build & Dependencies
+build/
+dist/
+*.egg-info/
+
+# Data & Large Files
+*.csv
+*.parquet
+*.txt
+!requirements.txt
+!sample_data/sample_ohlcv.csv
+!sample_data/sample_txf.csv
+# Explicitly ignore the massive local tick file.
+TXF.txt
+Other SW manual/
+sample_data/123/
+
+# Local QSL Project Storage
+project.sqlite*
+data/
+strategies/
+exports/
+logs/
+project_reports/
+config/
+
+# Ephemeral & Scratch
+scratch*.py
+pytest*.txt
+test.pdf
+1/
+2/
+virtual/
+app/test1/
+
+# Binaries
+*.exe

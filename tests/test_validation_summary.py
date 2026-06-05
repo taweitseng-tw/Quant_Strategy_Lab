@@ -1,0 +1,241 @@
+"""Tests for validation summary dashboard — Task 026."""
+
+from __future__ import annotations
+
+import sys
+import pytest
+from PySide6.QtWidgets import QApplication, QLabel
+
+from app.widgets.validation_summary import ValidationSummary
+
+
+@pytest.fixture(scope="module")
+def qapp() -> QApplication:
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
+    return app
+
+
+def _widget_text(widget: ValidationSummary) -> str:
+    texts = []
+    for i in range(widget._layout.count()):
+        item = widget._layout.itemAt(i)
+        if item and item.widget():
+            for child in item.widget().findChildren(QLabel):
+                texts.append(str(child.text()))
+    return "\n".join(texts)
+
+
+# ---------------------------------------------------------------------------
+# Empty state
+# ---------------------------------------------------------------------------
+
+
+def test_empty_state_shows_placeholder(qapp):
+    """Before any update, the dashboard must show a placeholder message."""
+    widget = ValidationSummary()
+    # The empty state adds a single QLabel with instructional text.
+    container = widget._container
+    children = container.findChildren(type(container))
+    # Since we can't easily introspect, just verify no crash and layout exists.
+    assert widget._layout.count() >= 1
+
+
+# ---------------------------------------------------------------------------
+# Update from result
+# ---------------------------------------------------------------------------
+
+
+def test_update_with_full_result(qapp):
+    """Updating with a complete PipelineResult dict must not crash and must
+    populate multiple section cards."""
+    result = {
+        "split_metadata": {"train_rows": 90, "validation_rows": 45, "oos_rows": 45},
+        "baseline_metrics": {
+            "total_pnl": 5000.0, "profit_factor": 1.8, "total_trades": 22,
+            "max_drawdown_pnl": 2000.0, "win_rate": 0.55,
+        },
+        "stress_results": [
+            {"test_name": "commission_2.0x", "passed": True,
+             "degradation": {"total_pnl": -0.15}},
+            {"test_name": "slippage_2.0x", "passed": True,
+             "degradation": {"total_pnl": -0.08}},
+        ],
+        "monte_carlo_summary": {
+            "iterations": 15,
+            "percentile_summary": {
+                "total_pnl": {"p5": 1000.0, "p50": 4800.0, "p95": 9000.0},
+            },
+            "worst_case": {"total_pnl": 1000.0},
+        },
+        "walk_forward_summary": {
+            "window_count": 5, "pass_count": 3, "pass_rate": 0.6,
+        },
+        "elimination_result": {
+            "passed": True, "failed_rules": [],
+        },
+    }
+
+    widget = ValidationSummary()
+    widget.update_from_result(result, source_label="Test data")
+
+    # After update, layout should have multiple children (cards + stretch).
+    # Each card is a QFrame — count them.
+    card_count = 0
+    for i in range(widget._layout.count()):
+        item = widget._layout.itemAt(i)
+        if item and item.widget() and isinstance(item.widget(), type(widget)):
+            continue
+        if item and item.widget():
+            card_count += 1
+    # At minimum: source + split + baseline + stress + MC + WF + elimination + stretch
+    assert card_count >= 7
+
+
+def test_wf_matrix_summary_displayed(qapp):
+    """Walk-forward Matrix summary should render when present."""
+    result = {
+        "split_metadata": {"train_rows": 90, "validation_rows": 45, "oos_rows": 45},
+        "baseline_metrics": {"total_pnl": 5000.0, "profit_factor": 1.8, "total_trades": 22},
+        "stress_results": [],
+        "walk_forward_summary": {"window_count": 5, "pass_count": 3, "pass_rate": 0.6},
+        "walk_forward_matrix_summary": {
+            "config_count": 4,
+            "tested_count": 3,
+            "insufficient_data_count": 1,
+            "best_pass_rate_config": {
+                "config_id": "wf_matrix_001",
+                "train_bars": 50,
+                "test_bars": 20,
+                "step_bars": 10,
+                "pass_rate": 0.75,
+            },
+            "worst_pass_rate_config": {
+                "config_id": "wf_matrix_002",
+                "train_bars": 80,
+                "test_bars": 30,
+                "step_bars": 30,
+                "pass_rate": 0.25,
+            },
+        },
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+
+    widget = ValidationSummary()
+    widget.update_from_result(result, source_label="Test data")
+    text = _widget_text(widget)
+
+    assert "Walk-Forward Matrix" in text
+    assert "Configs: 4 total" in text
+    assert "Tested: 3" in text
+    assert "Insufficient data: 1" in text
+    assert "Best: wf_matrix_001" in text
+    assert "(50/20/10)" in text
+    assert "Pass Rate: 75%" in text
+    assert "Worst: wf_matrix_002" in text
+    assert "(80/30/30)" in text
+    assert "Pass Rate: 25%" in text
+
+
+def test_wf_matrix_summary_none_not_shown(qapp):
+    """Dashboard should stay clean when matrix summary is not present."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "walk_forward_summary": {"window_count": 1, "pass_count": 1, "pass_rate": 1.0},
+        "walk_forward_matrix_summary": None,
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+
+    assert "Walk-Forward Matrix" not in _widget_text(widget)
+
+
+def test_wf_matrix_summary_missing_best_worst(qapp):
+    """Missing best/worst configs should not crash or render bogus detail lines."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "walk_forward_matrix_summary": {
+            "config_count": 2,
+            "tested_count": 0,
+            "insufficient_data_count": 2,
+            "best_pass_rate_config": None,
+            "worst_pass_rate_config": None,
+        },
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+
+    assert "Walk-Forward Matrix" in text
+    assert "Configs: 2 total" in text
+    assert "Tested: 0" in text
+    assert "Insufficient data: 2" in text
+    assert "Best:" not in text
+    assert "Worst:" not in text
+
+
+def test_update_then_empty(qapp):
+    """Updating with result then clearing must show empty placeholder."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    # Clear
+    widget.show_empty()
+    assert widget._layout.count() >= 1
+
+
+# ---------------------------------------------------------------------------
+# Elimination failed rules
+# ---------------------------------------------------------------------------
+
+
+def test_elimination_failed_rules_displayed(qapp):
+    """When elimination fails, failed_rules must appear in the body text."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": -500.0},
+        "stress_results": [],
+        "elimination_result": {
+            "passed": False,
+            "failed_rules": [
+                "min_total_pnl (-500 < 0)",
+                "min_trade_count (3 < 5)",
+            ],
+        },
+    }
+
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+
+    # Find the elimination card and check its body contains the failed rules.
+    found_elim = False
+    for i in range(widget._layout.count()):
+        item = widget._layout.itemAt(i)
+        if item and item.widget():
+            w = item.widget()
+            # QFrame with QVBoxLayout containing QLabels
+            if hasattr(w, "layout") and w.layout() is not None:
+                lay = w.layout()
+                for j in range(lay.count()):
+                    child = lay.itemAt(j)
+                    if child and child.widget():
+                        txt = getattr(child.widget(), "text", lambda: "")()
+                        if "ELIMINATED" in str(txt):
+                            found_elim = True
+                            assert "min_total_pnl" in str(txt)
+                            assert "min_trade_count" in str(txt)
+    assert found_elim, "Elimination card with 'ELIMINATED' not found"

@@ -1,0 +1,23 @@
+[project]
+name = "quant-strategy-lab"
+version = "0.0.1"
+description = "Local-first desktop quant strategy generation, backtesting, validation, filtering, and reporting platform."
+requires-python = ">=3.11"
+
+dependencies = [
+    "PySide6",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "pyqtgraph",
+    "plotly",
+    "openpyxl",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
