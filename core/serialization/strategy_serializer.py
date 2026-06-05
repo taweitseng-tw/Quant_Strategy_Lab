@@ -37,7 +37,27 @@ def risk_management_from_dict(payload: Any, *, strict: bool) -> RiskManagement:
                     raise SerializationError(f"RiskManagement field '{f}' cannot be negative.")
                 continue
             rm_kwargs[f] = float(val)
+
+    close_val = payload.get("close_end_of_session")
+    if close_val is not None:
+        if not isinstance(close_val, bool):
+            if strict:
+                raise SerializationError("RiskManagement field 'close_end_of_session' must be a boolean.")
+        else:
+            rm_kwargs["close_end_of_session"] = close_val
             
+    time_val = payload.get("session_end_time")
+    if time_val is not None:
+        if not isinstance(time_val, str):
+            if strict:
+                raise SerializationError("RiskManagement field 'session_end_time' must be a string or null.")
+        else:
+            if strict:
+                import re
+                if not re.match(r"^(?:[01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$", time_val):
+                    raise SerializationError(f"RiskManagement field 'session_end_time' must be HH:MM or HH:MM:SS format, got {time_val}")
+            rm_kwargs["session_end_time"] = time_val
+
     return RiskManagement(**rm_kwargs)
 
 
@@ -137,7 +157,8 @@ def strategy_to_dict(strategy: Strategy) -> dict:
         rm.stop_loss_ticks is not None or 
         rm.take_profit_ticks is not None or 
         rm.stop_loss_pct is not None or 
-        rm.take_profit_pct is not None
+        rm.take_profit_pct is not None or
+        rm.close_end_of_session
     )
     if has_rm:
         rm_dict = {}
@@ -145,6 +166,10 @@ def strategy_to_dict(strategy: Strategy) -> dict:
         if rm.take_profit_ticks is not None: rm_dict["take_profit_ticks"] = rm.take_profit_ticks
         if rm.stop_loss_pct is not None: rm_dict["stop_loss_pct"] = rm.stop_loss_pct
         if rm.take_profit_pct is not None: rm_dict["take_profit_pct"] = rm.take_profit_pct
+        if rm.close_end_of_session:
+            rm_dict["close_end_of_session"] = rm.close_end_of_session
+            if rm.session_end_time is not None:
+                rm_dict["session_end_time"] = rm.session_end_time
     
     d["risk_management"] = rm_dict
     return d

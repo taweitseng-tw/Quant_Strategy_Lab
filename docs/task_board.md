@@ -8,10 +8,13 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 053E - Session-End Exit Engine Implementation
+- [ ] Task 053F - One-Bar Execution Delay Stress Test Design Only
 
 ## Done
 
+- [x] Task 053E-Fix2 - Strict Session-End Time Serializer Range Validation
+- [x] Task 053E-Fix - Session-End Exit Validation and Pending Entry Hardening
+- [x] Task 053E - Session-End Exit Engine Implementation
 - [x] Task 053D-Fix - Session-End Exit Triage Hardening
 - [x] Task 053D - Backtest Execution Enhancements Triage (Design Only)
 - [x] Task 055G - Git-aware Agent Status Script

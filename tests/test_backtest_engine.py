@@ -808,3 +808,159 @@ def test_backtest_assumptions_record_sl_tp_state():
     assert res_enabled.assumptions["take_profit_pct"] == 0.05
     assert "stop_loss_pct" not in res_enabled.assumptions
     assert "take_profit_ticks" not in res_enabled.assumptions
+
+
+# ---------------------------------------------------------------------------
+# Task 053E: Session-End Exit Tests
+# ---------------------------------------------------------------------------
+
+def _make_session_end_df() -> pd.DataFrame:
+    times = pd.date_range("2024-01-01 15:45", periods=5, freq="5min")
+    return pd.DataFrame({
+        "datetime": times,
+        "open":  [100.0, 100.0, 100.0, 100.0, 100.0],
+        "high":  [100.0, 100.0, 100.0, 100.0, 100.0],
+        "low":   [100.0, 100.0, 100.0, 100.0, 100.0],
+        "close": [100.0, 100.0, 100.0, 100.0, 100.0],
+        "volume": [1000] * 5,
+    })
+
+def test_session_end_long_exit():
+    from core.models.strategy import RiskManagement
+    df = _make_session_end_df()
+    strat = Strategy(
+        name="test_session_end_long",
+        long_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        risk_management=RiskManagement(close_end_of_session=True, session_end_time="16:00")
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=1.0)
+    assert len(res.trades) == 1
+    t = res.trades[0]
+    assert t.direction == "long"
+    assert t.exit_reason == "session_end"
+    assert t.exit_time == pd.Timestamp("2024-01-01 16:00")
+
+def test_session_end_short_exit():
+    from core.models.strategy import RiskManagement
+    df = _make_session_end_df()
+    strat = Strategy(
+        name="test_session_end_short",
+        short_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        risk_management=RiskManagement(close_end_of_session=True, session_end_time="16:00")
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=1.0)
+    assert len(res.trades) == 1
+    t = res.trades[0]
+    assert t.direction == "short"
+    assert t.exit_reason == "session_end"
+    assert t.exit_time == pd.Timestamp("2024-01-01 16:00")
+
+def test_session_end_with_costs():
+    from core.models.strategy import RiskManagement
+    df = _make_session_end_df()
+    strat = Strategy(
+        name="test_session_end_costs",
+        long_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        risk_management=RiskManagement(close_end_of_session=True, session_end_time="16:00")
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=1.0, commission=2.0, slippage_ticks=1.0)
+    t = res.trades[0]
+    assert t.entry_price == 101.0
+    assert t.exit_price == 99.0
+    assert t.pnl == -6.0
+
+def test_session_end_missing_final_bar():
+    from core.models.strategy import RiskManagement
+    times = pd.to_datetime(["2024-01-01 15:50", "2024-01-01 15:55", "2024-01-01 16:05", "2024-01-01 16:10"])
+    df = pd.DataFrame({
+        "datetime": times,
+        "open":  [100.0]*4, "high":  [100.0]*4, "low":   [100.0]*4, "close": [100.0]*4,
+        "volume": [1000]*4,
+    })
+    strat = Strategy(
+        name="test_session_end_missing_bar",
+        long_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        risk_management=RiskManagement(close_end_of_session=True, session_end_time="16:00")
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=1.0)
+    t = res.trades[0]
+    assert t.exit_reason == "session_end"
+    assert t.exit_time == pd.Timestamp("2024-01-01 16:05")
+
+def test_session_end_preempted_by_sl():
+    from core.models.strategy import RiskManagement
+    df = _make_session_end_df()
+    df.loc[3, "low"] = 90.0
+    strat = Strategy(
+        name="test_session_end_sl_wins",
+        long_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        risk_management=RiskManagement(close_end_of_session=True, session_end_time="16:00", stop_loss_ticks=5.0)
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=1.0)
+    t = res.trades[0]
+    assert t.exit_reason == "stop_loss"
+    assert t.exit_time == pd.Timestamp("2024-01-01 16:00")
+
+def test_session_end_prevents_new_entry():
+    from core.models.strategy import RiskManagement
+    df = _make_session_end_df()
+    strat = Strategy(
+        name="test_session_end_no_new_entry",
+        long_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        risk_management=RiskManagement(close_end_of_session=True, session_end_time="16:00")
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=1.0)
+    assert len(res.trades) == 1
+    t = res.trades[0]
+    assert t.exit_time == pd.Timestamp("2024-01-01 16:00")
+
+def test_session_end_assumptions():
+    from core.models.strategy import RiskManagement
+    df = _make_session_end_df()
+    strat = Strategy(
+        name="test_session_end_assumptions",
+        long_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        risk_management=RiskManagement(close_end_of_session=True, session_end_time="16:00")
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=1.0)
+    assert res.assumptions.get("close_end_of_session") is True
+    assert res.assumptions.get("session_end_time") == "16:00"
+
+def test_session_end_invalid_time_raises():
+    from core.models.strategy import RiskManagement
+    df = _make_session_end_df()
+    strat = Strategy(
+        name="test_invalid",
+        risk_management=RiskManagement(close_end_of_session=True, session_end_time="invalid")
+    )
+    with pytest.raises(ValueError, match="Invalid session_end_time format"):
+        run_backtest(strat, df)
+
+def test_session_end_assumptions_disabled_if_invalid_time():
+    from core.models.strategy import RiskManagement
+    df = _make_session_end_df()
+    strat = Strategy(
+        name="test_missing_time",
+        risk_management=RiskManagement(close_end_of_session=True, session_end_time=None)
+    )
+    res = run_backtest(strat, df)
+    assert "close_end_of_session" not in res.assumptions
+    assert "session_end_time" not in res.assumptions
+
+def test_session_end_cancels_prior_bar_pending_entry():
+    from core.models.strategy import RiskManagement
+    times = pd.date_range("2024-01-01 15:55", periods=3, freq="5min")
+    df = pd.DataFrame({
+        "datetime": times,
+        "open":  [100.0]*3, "high":  [100.0]*3, "low":   [100.0]*3, "close": [100.0]*3,
+        "volume": [1000]*3,
+    })
+    strat = Strategy(
+        name="test_cancel_entry",
+        long_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        risk_management=RiskManagement(close_end_of_session=True, session_end_time="16:00")
+    )
+    res = run_backtest(strat, df)
+    assert len(res.trades) == 0
+    warnings = [w for w in res.warnings if "Canceled pending long entry" in w]
+    assert len(warnings) == 1

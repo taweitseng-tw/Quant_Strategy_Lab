@@ -86,3 +86,50 @@ def test_strategy_to_dict_roundtrip():
     assert reloaded.risk_management.stop_loss_ticks == 10.0
     assert reloaded.risk_management.take_profit_pct == 0.05
     assert reloaded.risk_management.take_profit_ticks is None
+
+
+def test_risk_management_from_dict_session_end():
+    """Test parsing of session end fields."""
+    payload = {"close_end_of_session": True, "session_end_time": "15:45:00"}
+    rm = risk_management_from_dict(payload, strict=True)
+    assert rm.close_end_of_session is True
+    assert rm.session_end_time == "15:45:00"
+
+
+def test_strategy_to_dict_roundtrip_session_end():
+    """Ensure session end fields roundtrip correctly."""
+    original = Strategy(name="Session End Strat")
+    original.risk_management = RiskManagement(close_end_of_session=True, session_end_time="16:00")
+
+    payload = strategy_to_dict(original)
+    assert payload["risk_management"]["close_end_of_session"] is True
+    assert payload["risk_management"]["session_end_time"] == "16:00"
+
+
+    reloaded = strategy_from_dict(payload, strict=True)
+    assert reloaded.risk_management.close_end_of_session is True
+    assert reloaded.risk_management.session_end_time == "16:00"
+
+def test_risk_management_from_dict_session_end_strict_format():
+    """Ensure strict validation rejects malformed session_end_time."""
+    payload = {"close_end_of_session": True, "session_end_time": "invalid_time"}
+    with pytest.raises(SerializationError, match="must be HH:MM or HH:MM:SS format"):
+        risk_management_from_dict(payload, strict=True)
+
+    payload_num = {"close_end_of_session": True, "session_end_time": 1600}
+    with pytest.raises(SerializationError, match="must be a string or null"):
+        risk_management_from_dict(payload_num, strict=True)
+
+def test_risk_management_from_dict_session_end_strict_range():
+    """Ensure strict validation rejects invalid clock ranges but accepts valid ones."""
+    invalid_times = ["24:00", "99:99", "12:60", "09:30:60"]
+    for inv in invalid_times:
+        payload = {"close_end_of_session": True, "session_end_time": inv}
+        with pytest.raises(SerializationError, match="must be HH:MM or HH:MM:SS format"):
+            risk_management_from_dict(payload, strict=True)
+
+    valid_times = ["00:00", "09:30", "16:00:00", "23:59:59"]
+    for val in valid_times:
+        payload = {"close_end_of_session": True, "session_end_time": val}
+        rm = risk_management_from_dict(payload, strict=True)
+        assert rm.session_end_time == val

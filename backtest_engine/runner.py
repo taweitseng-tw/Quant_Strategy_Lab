@@ -160,6 +160,17 @@ def run_backtest(
     long_exit_acc = compile_block(strategy.long_exit, data)
     short_exit_acc = compile_block(strategy.short_exit, data)
 
+    from core.models.strategy import RiskManagement
+    rm = strategy.risk_management or RiskManagement()
+    has_session_end = rm.close_end_of_session and rm.session_end_time is not None
+    parsed_session_time = None
+    if has_session_end:
+        from datetime import datetime
+        try:
+            parsed_session_time = datetime.strptime(rm.session_end_time[:5], "%H:%M").time()
+        except Exception as e:
+            raise ValueError(f"Invalid session_end_time format: {rm.session_end_time}. Expected 'HH:MM' or 'HH:MM:SS'.") from e
+
     # Queued action for the NEXT bar open.  ("enter", direction) or ("exit",).
     pending: tuple[str, str] | None = None
 
@@ -176,6 +187,12 @@ def run_backtest(
         # --- 1. Execute queued actions at bar open ---
         if pending is not None:
             action, direction = pending
+            if action == "enter" and has_session_end and bar_datetime.time() >= parsed_session_time:
+                warnings.append(f"Canceled pending {direction} entry at index {i} due to session end ({rm.session_end_time}).")
+                pending = None
+
+        if pending is not None:
+            action, direction = pending
             if action == "enter":
                 # Apply slippage: for longs, we pay slightly more; for shorts, slightly less.
                 slip = slippage_ticks * tick_size
@@ -184,8 +201,6 @@ def run_backtest(
                 entry_price = fill_price
                 entry_bar = i
                 # Calculate SL/TP
-                from core.models.strategy import RiskManagement
-                rm = strategy.risk_management or RiskManagement()
                 sl_price = None
                 tp_price = None
                 if position == "long":
@@ -310,6 +325,35 @@ def run_backtest(
                 position = None
                 entry_price = 0.0
 
+        # --- 1.8 Session-End Exit ---
+        session_ended = False
+        if has_session_end and bar_datetime.time() >= parsed_session_time:
+            session_ended = True
+
+        if session_ended and position is not None:
+            slip = slippage_ticks * tick_size
+            fill_price = bar_close - slip if position == "long" else bar_close + slip
+
+            gross_pnl = _compute_pnl(position, entry_price, fill_price)
+            gross_dollars = gross_pnl * point_value
+            round_trip_pnl = gross_dollars - 2 * commission
+            cash += gross_dollars - commission
+
+            trades.append(Trade(
+                entry_time=datetime_arr[entry_bar],
+                exit_time=bar_datetime,
+                direction=position,
+                entry_price=entry_price,
+                exit_price=fill_price,
+                quantity=1,
+                pnl=round_trip_pnl,
+                exit_reason="session_end",
+            ))
+
+            position = None
+            entry_price = 0.0
+            pending = None
+
         # --- 2. Mark-to-market equity at bar close ---
         if position is not None:
             mtm = _compute_pnl(position, entry_price, bar_close)
@@ -331,10 +375,11 @@ def run_backtest(
         else:
             # No position - check both entry blocks.
             # Long takes priority over short for MVP simplicity.
-            if long_entry_acc(i):
-                pending = ("enter", "long")
-            elif short_entry_acc(i):
-                pending = ("enter", "short")
+            if not session_ended:
+                if long_entry_acc(i):
+                    pending = ("enter", "long")
+                elif short_entry_acc(i):
+                    pending = ("enter", "short")
 
     # -- warn about unexecuted last-bar signal -------------------------------
     if pending is not None:
@@ -416,6 +461,10 @@ def run_backtest(
             assumptions["take_profit_ticks"] = rm.take_profit_ticks
         if rm.take_profit_pct is not None:
             assumptions["take_profit_pct"] = rm.take_profit_pct
+
+    if has_session_end:
+        assumptions["close_end_of_session"] = True
+        assumptions["session_end_time"] = rm.session_end_time
 
     result = BacktestResult(
         trades=trades,

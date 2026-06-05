@@ -46,6 +46,8 @@ class RiskManagement:
     take_profit_ticks: float | None = None
     stop_loss_pct: float | None = None
     take_profit_pct: float | None = None
+    close_end_of_session: bool = False
+    session_end_time: str | None = None
 
 
 @dataclass

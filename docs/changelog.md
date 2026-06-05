@@ -1,5 +1,71 @@
 # Changelog
 
+## 2026-06-05 - Task 053E-Fix2-Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-05_task-053e-fix2_session-end-time-serializer-range-validation_codex-review.md` accepting strict session-end time serializer range validation.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 053F for one-bar execution delay stress test design.
+- Updated `docs/task_board.md` to move Task 053F into progress.
+
+### Verification
+- Ran focused serializer and JSON import tests.
+- Ran broader backtest, serializer, repository, and JSON import regression tests.
+- Ran manual strict serializer probes for invalid and valid session-end clock values.
+
+## 2026-06-05 - Task 053E-Fix2: Strict Session-End Time Serializer Range Validation
+
+### Changed
+- Enhanced strict strategy serializer logic for `session_end_time` by replacing the permissive string matcher with a strict range-bounded regex (`^(?:[01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$`). This explicitly rejects invalid clock times like `24:00`, `99:99`, or `12:60` during import.
+- Added explicit unit tests to ensure strict rejection of invalid clock ranges while preserving acceptance of valid `HH:MM` and `HH:MM:SS` times.
+
+## 2026-06-05 - Task 053E-Fix-Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-05_task-053e-fix_session-end-validation-pending-entry_codex-review.md` marking the session-end validation fix as needing one serializer range-validation hardening pass.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 053E-Fix2.
+- Updated `docs/task_board.md` to queue strict session-end serializer range validation.
+
+### Verification
+- Ran focused pytest command for backtest, serializer, repository, and JSON import tests.
+- Ran manual edge-case checks for malformed engine time handling, pending-entry cancellation, and strict serializer acceptance of invalid clock ranges.
+
+## 2026-06-05 - Task 053E-Fix: Session-End Exit Validation and Pending Entry Hardening
+
+### Changed
+- Refined `session_end_time` configuration in `run_backtest` to strictly throw a `ValueError` for invalid formats, preventing silent failures.
+- Updated assumptions generation to correctly only report session-end fields when explicitly valid and enabled.
+- Hardened `run_backtest` event loop to immediately cancel any pending entries that would execute at or after the configured `session_end_time` and log a specific warning.
+- Enhanced strict strategy serialization to correctly reject malformed `session_end_time` formats.
+- Expanded automated test coverage specifically for session-end format validation, assumptions rendering, and pending entry cancellation edge cases.
+
+## 2026-06-05 - Task 053E-Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-05_task-053e_session-end-exit-engine_codex-review.md` marking the session-end exit implementation as needing focused fixes.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 053E-Fix.
+- Updated `docs/task_board.md` to queue the session-end validation and pending-entry hardening task.
+
+### Verification
+- Ran focused pytest command for backtest, serializer, repository, and JSON import tests.
+- Ran manual edge-case checks for invalid `session_end_time` and pending entry at session boundary.
+
+## 2026-06-05 - Task 053E: Session-End Exit Engine Implementation
+
+### Added
+- Added optional `close_end_of_session` and `session_end_time` parameters to `RiskManagement` to forcibly close positions intraday.
+- Added session-end exit execution logic in `backtest_engine/runner.py` that checks the current bar's time against the configured boundary.
+- Added comprehensive tests for session-end logic, including long/short exits, costs, missing final bars, and strict no future-row dependency.
+
+### Changed
+- Strategy serializer gracefully tolerates new session-end fields and safely defaults them to `False`/`None` for legacy strategies.
+- Backtest metrics report session-end assumptions correctly.
+
 ## 2026-06-05 - Task 053D-Fix-Codex Review
 
 ### Added
