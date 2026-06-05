@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-06-05 - Task 055G-Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-05_task-055g_git-aware-agent-status_codex-review.md` accepting the Git-aware status script update.
+- Assigned Task 053D for design-only backtest execution enhancement triage.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` and `docs/task_board.md` to move the workflow loop back toward product/engine planning.
+
+### Verification
+- Ran `powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1`.
+
+## 2026-06-05 - Task 055G: Git-aware Agent Status Script
+
+### Changed
+- Updated `scripts/agent_status.ps1` to display current branch, latest commit hash/subject, short dirty status, and ignored file count when `.git` exists.
+- Retained fallback behavior for workspaces without `.git`.
+
+## 2026-06-05 - Task 055G Assignment
+
+### Added
+- Assigned Task 055G to update the agent status workflow for the newly initialized Git repository.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with a narrow Anti-Gravity task for Git-aware status reporting.
+- Updated `docs/task_board.md` to mark Task 055G in progress.
+
 ## 2026-06-05 - Task 055F: Git Init and Initial Baseline Commit
 
 ### Added

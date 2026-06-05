@@ -44,7 +44,20 @@ if (Test-Path "docs/agent_reports") {
 
 Write-Section "Version Control"
 if (Test-Path ".git") {
-    git status --short
+    $branch = git branch --show-current
+    Write-Host "Branch: $branch"
+    $commit = git log -1 --oneline
+    Write-Host "Latest Commit: $commit"
+    Write-Host ""
+    $status = git status --short
+    if ([string]::IsNullOrWhiteSpace($status)) {
+        Write-Host "Working tree clean."
+    } else {
+        Write-Host "Status:"
+        $status | Out-String | Write-Host
+    }
+    $ignoredCount = (git ls-files --others --ignored --exclude-standard | Measure-Object).Count
+    Write-Host "Ignored untracked files count: $ignoredCount"
 } else {
     Write-Host "No .git directory found. Showing recently modified files instead."
     Get-ChildItem -Recurse -File |
