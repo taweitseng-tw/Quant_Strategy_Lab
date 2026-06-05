@@ -8,12 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 053D - Backtest Execution Enhancements Triage (Design Only)
-
-
+- [ ] Task 053E - Session-End Exit Engine Implementation
 
 ## Done
 
+- [x] Task 053D-Fix - Session-End Exit Triage Hardening
+- [x] Task 053D - Backtest Execution Enhancements Triage (Design Only)
 - [x] Task 055G - Git-aware Agent Status Script
 - [x] Task 055F - Git Init and Initial Baseline Commit
 - [x] Task 055E - Safe `.gitignore` Creation Only
