@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Task 056K - IS Baseline Precheck Visibility Surface Design Only.
+Task 056K-Impl - IS Baseline Precheck Visibility Surfaces.
 
 ## Required Reading
 
@@ -24,90 +24,92 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-06_task-056j-impl-fix_nonpositive-pnl-precheck-test-hardening_codex-review.md`
-8. `app/services/validation_pipeline_service.py`
+7. `docs/is_baseline_precheck_visibility_design_056K.md`
+8. `docs/review_notes/2026-06-06_task-056k_is-baseline-precheck-visibility-surface-design_codex-review.md`
 9. `app/widgets/validation_summary.py`
 10. `reports/generator.py`
-11. Existing validation summary/report tests
-12. This task file
+11. `tests/test_validation_summary.py`
+12. `tests/test_report_export.py`
+13. This task file
 
 ## Context
 
-Task 056J-Impl added an opt-in IS baseline quality precheck. Early-return results now carry `precheck_failed=True`, explicit warnings, empty stress results, and skipped MC/WF summaries. The next safe step is design-only: decide whether ValidationSummary and reports need a clearer user-facing precheck/skipped-validation surface before any UI/report implementation.
+Task 056K confirmed that `precheck_failed=True` is currently not obvious enough in ValidationSummary or reports. Users see empty/skipped validation sections and an elimination reason, but not a direct precheck failure indicator. Add the smallest display-only visibility improvement.
 
 ## Scope
 
 ### Do
 
-- Inspect current display behavior for a representative `PipelineResult(precheck_failed=True)`:
-  - `app/widgets/validation_summary.py`
-  - `reports/generator.py`
-  - related tests
-- Write a design note:
-  - `docs/is_baseline_precheck_visibility_design_056K.md`
-- The design must answer:
-  - What currently appears in ValidationSummary when precheck fails.
-  - What currently appears in Markdown and HTML reports when precheck fails.
-  - Whether the existing warnings/empty sections are sufficient.
-  - If not sufficient, propose the smallest display/report change.
-  - Exact text/fields recommended for user-visible output.
-  - Tests required for a later implementation task.
-  - Explicit non-goals.
+- In `app/widgets/validation_summary.py`:
+  - When `precheck_failed` is true, add one existing-style section/card near the top, after Data Source and before Split.
+  - Title should be concise, e.g. `Precheck`.
+  - Body should include `FAILED` and the reason from `elimination_result.failed_rules[0]` when present.
+  - Fall back safely to a generic reason when missing.
+  - Do not change non-precheck rendering.
+- In `reports/generator.py`:
+  - In `_format_markdown_validation()`, add one precheck line before the Split line when `precheck_failed` is true.
+  - In `_format_html_validation()`, add one precheck paragraph before the Split paragraph when `precheck_failed` is true.
+  - Escape dynamic HTML reason text.
+  - Do not change non-precheck rendering.
+- In tests:
+  - `tests/test_validation_summary.py`: assert precheck section appears when true and is absent when false.
+  - `tests/test_report_export.py`: assert Markdown and HTML precheck lines appear when true; assert HTML escapes malicious reason text; assert absent when false.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-056k_is-baseline-precheck-visibility-surface-design_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-056k-impl_is-baseline-precheck-visibility-surfaces_deepseek.md`
 
 ### Do Not
 
-- Do not change production code.
-- Do not add tests.
-- Do not modify report/widget behavior.
-- Do not modify pipeline behavior.
+- Do not change pipeline behavior.
+- Do not change `PipelineConfig` or `PipelineResult`.
 - Do not add UI controls.
+- Do not redesign validation summary layout.
+- Do not add a broad warnings display system.
 - Do not add dependencies.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `docs/is_baseline_precheck_visibility_design_056K.md`
-- `docs/changelog.md`
-- `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-056k_is-baseline-precheck-visibility-surface-design_deepseek.md`
-
-Read-only references:
-
-- `app/services/validation_pipeline_service.py`
 - `app/widgets/validation_summary.py`
 - `reports/generator.py`
 - `tests/test_validation_summary.py`
 - `tests/test_report_export.py`
+- `docs/changelog.md`
+- `docs/task_board.md`
+- `docs/agent_reports/2026-06-06_task-056k-impl_is-baseline-precheck-visibility-surfaces_deepseek.md`
 
 ## Acceptance Criteria
 
-1. Design note accurately describes current precheck failure display behavior.
-2. Design note decides whether a display/report implementation is needed.
-3. If implementation is recommended, scope is minimal and file/test list is clear.
-4. No production code or tests are changed.
-5. Changelog and task board are updated.
-6. Completion report is created.
-7. `git diff --check` passes.
+1. Widget shows precheck failure section when `precheck_failed=True`.
+2. Widget section includes the precheck failure reason when available.
+3. Widget does not show precheck section when `precheck_failed=False` or absent.
+4. Markdown report includes one precheck line when `precheck_failed=True`.
+5. HTML report includes one precheck line when `precheck_failed=True`.
+6. HTML precheck reason text is escaped.
+7. Non-precheck report/widget output remains unchanged.
+8. Focused widget/report tests pass.
+9. Full suite passes.
+10. `git diff --check` passes.
 
 ## Verification
 
 Run exactly:
 
 ```powershell
+.venv\Scripts\python.exe -m pytest tests/test_validation_summary.py tests/test_report_export.py -v
+.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
 
 Expected:
 
+- Focused widget/report tests pass.
+- Full suite passes without ignored tests.
 - `git diff --check` passes.
-- Agent status shows Task 056K completion report as the latest report.
-- No tests are required because this is design-only.
+- Agent status shows Task 056K-Impl completion report as the latest report.
 
 ## After Completion
 

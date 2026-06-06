@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-06-06 - Task 056K Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056k_is-baseline-precheck-visibility-surface-design_codex-review.md` accepting the precheck visibility surface design with score 8.9 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056K-Impl.
+- Updated `docs/task_board.md` to queue IS baseline precheck visibility surfaces.
+
+### Verification
+- Reviewed `docs/is_baseline_precheck_visibility_design_056K.md`.
+- Manually probed current ValidationSummary output for `precheck_failed=True`.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Task 056K: IS Baseline Precheck Visibility Surface Design Only
+
+### Added
+- Created `docs/is_baseline_precheck_visibility_design_056K.md` — analysis of current widget/report behavior when `precheck_failed=True`, and recommendation for a minimal precheck indicator.
+- Recommendation: add a single "Precheck Failed" banner/card/line in widget, markdown, and HTML reports. No new sections, no layout changes.
+- Implementation surface: 3 files (widget + generator + tests), no engine changes.
+
+### Changed
+- Updated `docs/task_board.md` (Task 056K -> Done).
+
+### Verification
+- No production code changed (design-only).
+- `git diff --check` passes.
+
 ## 2026-06-06 - Task 056J-Impl/Fix Codex Acceptance
 
 ### Added
