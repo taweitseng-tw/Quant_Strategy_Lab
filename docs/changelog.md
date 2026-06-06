@@ -1,5 +1,63 @@
 # Changelog
 
+## 2026-06-06 - Task 056J/Fix Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056j-fix_validation-followup-triage-precision-correction_codex-review.md` accepting the validation follow-up triage correction with score 8.8 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056J-Impl.
+- Updated `docs/task_board.md` to queue opt-in IS baseline quality precheck implementation.
+
+### Verification
+- Reviewed corrected `docs/validation_expansion_followup_triage_056J.md`.
+- Confirmed the triage lists exactly 3 candidates and exactly one recommendation.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Task 056J-Fix: Validation Follow-up Triage Precision Correction
+
+### Fixed
+- `docs/validation_expansion_followup_triage_056J.md`:
+  - Reduced candidates from 4 to exactly 3 (dropped price-noise stress test).
+  - Removed inaccurate PRD Section 12.2 reference and replaced with operational rationale.
+  - Added "Short-Circuit Visibility" section explaining how early-return is surfaced to users via `precheck_failed` field, widget placeholders, log messages, and report placeholders.
+  - Verified all PRD/AGENTS references are accurate; no mojibake remains.
+
+### Changed
+- Updated `docs/task_board.md` (Task 056J-Fix -> Done).
+
+### Verification
+- No production code changed (design-only correction).
+- `git diff --check` passes.
+
+## 2026-06-06 - Task 056J Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056j_validation-expansion-followup-triage-design_codex-review.md` marking Task 056J as needing precision correction before acceptance.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056J-Fix.
+- Updated `docs/task_board.md` to queue validation follow-up triage precision correction.
+
+### Verification
+- Reviewed `docs/validation_expansion_followup_triage_056J.md`.
+- Confirmed no production code changed.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Task 056J: Validation Expansion Follow-up Triage Design Only
+
+### Added
+- Created `docs/validation_expansion_followup_triage_056J.md` — summary of current validation coverage, 4 remaining gaps, and recommended next task.
+- Candidate comparison: A (IS Baseline Quality Gate), B (MC Bootstrap + CI), C (Price Noise Stress), D (WF Per-Window Equity).
+- **Recommended**: Task 056J-Impl — IS Baseline Quality Gate. Smallest scope (2 files), highest ROI (eliminates wasted compute on dead strategies).
+
+### Changed
+- Updated `docs/task_board.md` (Task 056J -> Done).
+
+### Verification
+- No production code changed (design-only).
+- `git diff --check` passes.
+
 ## 2026-06-06 - Task 056I Codex Acceptance
 
 ### Added

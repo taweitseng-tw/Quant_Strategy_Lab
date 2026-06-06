@@ -8,10 +8,13 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056J - Validation Expansion Follow-up Triage Design Only
+- [ ] Task 056J-Impl - Opt-in IS Baseline Quality Precheck
 
 ## Done
 
+- [x] Task 056J-Fix-Codex Review - Validation Follow-up Triage Precision Acceptance
+- [x] Task 056J-Fix - Validation Follow-up Triage Precision Correction
+- [x] Task 056J - Validation Expansion Follow-up Triage Design Only
 - [x] Task 056I-Codex Review - Remove Best N Trades Feature Acceptance Smoke
 - [x] Task 056I - Remove Best N Trades Feature Acceptance Smoke
 - [x] Task 056H-Impl-Codex Review - Remove Best N Trades Stress Config Controls Acceptance

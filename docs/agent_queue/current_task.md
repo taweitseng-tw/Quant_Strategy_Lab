@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Task 056J - Validation Expansion Follow-up Triage Design Only.
+Task 056J-Impl - Opt-in IS Baseline Quality Precheck.
 
 ## Required Reading
 
@@ -24,83 +24,101 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-06_task-056i_remove-best-n-trades-feature-acceptance-smoke_codex-review.md`
-8. Validation-related docs and tests from the 056 series
-9. This task file
+7. `docs/validation_expansion_followup_triage_056J.md`
+8. `docs/review_notes/2026-06-06_task-056j-fix_validation-followup-triage-precision-correction_codex-review.md`
+9. `app/services/validation_pipeline_service.py`
+10. `tests/test_validation_pipeline_service.py`
+11. This task file
 
 ## Context
 
-The 056 series expanded validation with OOS stability, remove-best-N-trades stress, reporting/display, UI config, and acceptance smoke coverage. Before implementing another validation feature, do a design-only triage to choose the next smallest high-value validation gap.
+Task 056J/Fix recommended the smallest next validation expansion: an opt-in IS baseline quality precheck. The goal is to skip expensive stress/MC/WF work only when the baseline IS result is clearly unusable, while making the skip explicit through structured result metadata and warnings.
 
-This is not an implementation task.
+Keep this narrow and pipeline-only.
 
 ## Scope
 
 ### Do
 
-- Inspect current validation coverage and docs:
-  - `docs/PRD.md`
-  - `docs/architecture.md`
-  - `docs/task_board.md`
-  - `docs/changelog.md`
-  - `app/services/validation_pipeline_service.py`
-  - `validation_engine/`
-  - validation/report/UI tests related to 056
-- Write a design/triage note:
-  - `docs/validation_expansion_followup_triage_056J.md`
-- The triage must identify:
-  - What validation checks are currently implemented and user-facing.
-  - What validation checks from PRD/AGENTS remain partial, hidden, or not implemented.
-  - Top 3 candidate next tasks, each with risk, expected files, and verification.
-  - One recommended next task with the smallest safe scope.
-  - Explicit non-goals to avoid scope creep.
+- In `app/services/validation_pipeline_service.py`:
+  - Add `PipelineConfig.run_is_baseline_quality_precheck: bool = False`.
+  - Add `PipelineConfig.fail_is_baseline_on_nonpositive_pnl: bool = False`.
+  - Add `PipelineResult.precheck_failed: bool = False`.
+  - After the baseline IS backtest is computed, if `run_is_baseline_quality_precheck` is enabled:
+    - If `baseline.metrics["total_trades"] == 0`, return a structured early result with `precheck_failed=True`.
+    - If `fail_is_baseline_on_nonpositive_pnl` is enabled and `baseline.metrics["total_pnl"] <= 0`, return a structured early result with `precheck_failed=True`.
+  - Early result must preserve:
+    - `split_metadata`
+    - `baseline_metrics`
+    - `oos_metrics` if already computed or a clear note if not computed
+    - `config_snapshot`
+    - a warning that explicitly states stress/MC/WF were skipped because the precheck failed
+    - `stress_results=[]`
+    - `monte_carlo_summary={}` or existing local empty convention
+    - `walk_forward_summary=None`
+    - `walk_forward_matrix_summary=None`
+    - `elimination_result` that clearly fails or records the precheck reason
+  - Default behavior must remain unchanged when the new precheck flag is false.
+- In `tests/test_validation_pipeline_service.py`:
+  - Add focused tests for:
+    - default config does not precheck or short-circuit
+    - enabled precheck with zero baseline trades returns `precheck_failed=True`, warnings, empty stress, empty/none MC/WF summaries
+    - enabled nonpositive-PnL check triggers only when `fail_is_baseline_on_nonpositive_pnl=True`
+    - config snapshot includes both new fields
+  - Use deterministic synthetic data/strategy or mocking if needed to avoid fragile generated-trade assumptions.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-056j_validation-expansion-followup-triage-design_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-056j-impl_opt-in-is-baseline-quality-precheck_deepseek.md`
 
 ### Do Not
 
-- Do not change production code.
-- Do not add tests.
-- Do not implement new validation logic.
-- Do not modify UI/report behavior.
+- Do not enable the precheck by default.
+- Do not change stress engine behavior.
+- Do not change Monte Carlo or walk-forward engines.
+- Do not add UI controls.
+- Do not change report or widget rendering unless a focused test reveals a crash.
 - Do not add dependencies.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `docs/validation_expansion_followup_triage_056J.md`
+- `app/services/validation_pipeline_service.py`
+- `tests/test_validation_pipeline_service.py`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-056j_validation-expansion-followup-triage-design_deepseek.md`
+- `docs/agent_reports/2026-06-06_task-056j-impl_opt-in-is-baseline-quality-precheck_deepseek.md`
 
 ## Acceptance Criteria
 
-1. Triage note accurately summarizes current validation capabilities.
-2. Triage note identifies remaining gaps against PRD/AGENTS validation goals.
-3. Triage note proposes 3 concrete candidate tasks.
-4. Triage note recommends exactly one next task.
-5. No production code or tests are changed.
-6. Changelog and task board are updated.
-7. Completion report is created.
-8. `git diff --check` passes.
+1. New precheck config fields default to false.
+2. Default pipeline behavior and test counts are unchanged except for config snapshot including new false fields.
+3. Enabled zero-trade precheck returns `precheck_failed=True`.
+4. Enabled zero-trade precheck skips stress/MC/WF and exposes an explicit warning.
+5. Nonpositive-PnL precheck is separately opt-in and does not trigger unless its flag is true.
+6. Early result preserves baseline metrics, split metadata, config snapshot, and a clear failed/blocked elimination result.
+7. Focused pipeline tests pass.
+8. Full suite passes.
+9. `git diff --check` passes.
 
 ## Verification
 
 Run exactly:
 
 ```powershell
+.venv\Scripts\python.exe -m pytest tests/test_validation_pipeline_service.py -v
+.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
 
 Expected:
 
+- Focused pipeline tests pass.
+- Full suite passes without ignored tests.
 - `git diff --check` passes.
-- Agent status shows Task 056J completion report as the latest report.
-- No tests are required because this is design-only.
+- Agent status shows Task 056J-Impl completion report as the latest report.
 
 ## After Completion
 
