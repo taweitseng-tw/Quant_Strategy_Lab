@@ -131,6 +131,19 @@ class ValidationSummary(QWidget):
                 )
             self._add_section("Walk-Forward Matrix", "\n".join(lines))
 
+        # --- OOS Metrics ---
+        oos = self._get(result, "oos_metrics", {}) or {}
+        if oos and oos.get("total_trades", 0) is not None:
+            self._add_section("OOS Metrics", (
+                f"PnL: {oos.get('total_pnl', 0):,.0f}  |  "
+                f"PF: {oos.get('profit_factor', 0):.2f}  |  "
+                f"Trades: {oos.get('total_trades', 0)}  |  "
+                f"Max DD: {oos.get('max_drawdown_pnl', 0):,.0f}  |  "
+                f"Win Rate: {(oos.get('win_rate', 0) or 0) * 100:.0f}%"
+            ))
+        else:
+            self._add_section("OOS Metrics", "No OOS data.")
+
         # --- Elimination ---
         elim = self._get(result, "elimination_result", {}) or {}
         passed = elim.get("passed", False)

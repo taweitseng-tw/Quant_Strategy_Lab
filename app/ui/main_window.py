@@ -1126,6 +1126,12 @@ class MainWindow(QMainWindow):
                 self.log_panel.add_message("INFO",
                     f"Elimination: {'PASSED' if elim['passed'] else 'FAILED — ' + ', '.join(elim['failed_rules'])}")
 
+            if result.oos_metrics:
+                oos = result.oos_metrics
+                self.log_panel.add_message("INFO",
+                    f"OOS: PnL={oos.get('total_pnl', 0):,.0f}, PF={oos.get('profit_factor', 0):.2f}, "
+                    f"Trades={oos.get('total_trades', 0)}")
+
             self.log_panel.add_message("INFO",
                 f"Validation pipeline completed successfully"
                 f"{' (mock data)' if is_mock else ' (loaded data)'}.")

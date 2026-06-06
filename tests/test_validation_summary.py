@@ -203,12 +203,54 @@ def test_update_then_empty(qapp):
 # ---------------------------------------------------------------------------
 
 
+def test_oos_metrics_card_displayed(qapp):
+    """OOS Metrics card must appear between WF Matrix and Elimination."""
+    result = {
+        "split_metadata": {"train_rows": 90, "validation_rows": 45, "oos_rows": 45},
+        "baseline_metrics": {"total_pnl": 5000.0, "profit_factor": 1.8, "total_trades": 22},
+        "stress_results": [],
+        "walk_forward_summary": {"window_count": 5, "pass_count": 3, "pass_rate": 0.6},
+        "oos_metrics": {
+            "total_trades": 8, "total_pnl": 1200.0, "profit_factor": 1.25,
+            "max_drawdown_pnl": 3000.0, "win_rate": 0.50,
+        },
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+
+    assert "OOS Metrics" in text
+    assert "1,200" in text
+    assert "1.25" in text
+    assert "8" in text
+    assert "3,000" in text
+    assert "50%" in text
+
+
+def test_oos_metrics_missing_shows_placeholder(qapp):
+    """When oos_metrics is missing, OOS card shows 'No OOS data.'."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+
+    assert "OOS Metrics" in text
+    assert "No OOS data." in text
+
+
 def test_elimination_failed_rules_displayed(qapp):
     """When elimination fails, failed_rules must appear in the body text."""
     result = {
         "split_metadata": {"train_rows": 10},
         "baseline_metrics": {"total_pnl": -500.0},
         "stress_results": [],
+        "oos_metrics": None,
         "elimination_result": {
             "passed": False,
             "failed_rules": [

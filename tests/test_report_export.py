@@ -504,6 +504,51 @@ def test_report_export_walk_forward_summary_compatible_with_stability_score(mock
 # Task 044D: WFE Reporting Tests
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# OOS Metrics in reports (Task 056D)
+# ---------------------------------------------------------------------------
+
+
+def test_markdown_includes_oos_line_when_present(mock_strategy, mock_backtest_result):
+    """Markdown validation section must include OOS line when oos_metrics exists."""
+    vr = _make_validation_dict(oos_metrics={
+        "total_trades": 8, "total_pnl": 1200.0, "profit_factor": 1.25,
+        "max_drawdown_pnl": 3000.0, "win_rate": 0.50, "avg_trade": 150.0,
+    })
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "**OOS**:" in md
+    assert "1,200" in md
+    assert "1.25" in md
+    assert "3,000" in md
+
+
+def test_markdown_omits_oos_when_absent(mock_strategy, mock_backtest_result):
+    """Markdown validation section must NOT include OOS line when oos_metrics is missing."""
+    vr = _make_validation_dict()  # no oos_metrics key
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "**OOS**:" not in md
+
+
+def test_html_includes_oos_line_when_present(mock_strategy, mock_backtest_result):
+    """HTML validation section must include OOS line when oos_metrics exists."""
+    vr = _make_validation_dict(oos_metrics={
+        "total_trades": 8, "total_pnl": 1200.0, "profit_factor": 1.25,
+        "max_drawdown_pnl": 3000.0,
+    })
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "<b>OOS:</b>" in html_out
+    assert "1,200" in html_out
+    assert "1.25" in html_out
+    assert "3,000" in html_out
+
+
+def test_html_omits_oos_when_absent(mock_strategy, mock_backtest_result):
+    """HTML validation section must NOT include OOS line when oos_metrics is missing."""
+    vr = _make_validation_dict()  # no oos_metrics key
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "<b>OOS:</b>" not in html_out
+
+
 def test_report_export_wfe_rendering_with_wfe(mock_strategy, mock_backtest_result):
     """Reports must render WFE fields when provided in the summary."""
     vr = _make_validation_dict()

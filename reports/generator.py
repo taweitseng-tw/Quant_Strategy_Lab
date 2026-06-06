@@ -764,6 +764,11 @@ def _format_markdown_validation(vr: dict) -> str:
     bm = vr.get("baseline_metrics", {})
     lines.append(f"- **Baseline**: PnL={bm.get('total_pnl',0):,.0f}, "
                  f"PF={bm.get('profit_factor',0):.2f}, Trades={bm.get('total_trades',0)}")
+    oos = vr.get("oos_metrics", {}) or {}
+    if oos and oos.get("total_trades", 0) is not None:
+        lines.append(f"- **OOS**: PnL={oos.get('total_pnl',0):,.0f}, "
+                     f"PF={oos.get('profit_factor',0):.2f}, Trades={oos.get('total_trades',0)}, "
+                     f"Max DD={oos.get('max_drawdown_pnl',0):,.0f}")
     for s in vr.get("stress_results", []):
         deg = s.get("degradation", {}).get("total_pnl", 0)
         passed = "OK" if s.get("passed") else "FAIL"
@@ -820,6 +825,11 @@ def _format_html_validation(vr: dict) -> str:
     bm = vr.get("baseline_metrics", {})
     parts.append(f'<p><b>Baseline:</b> PnL={bm.get("total_pnl",0):,.0f}, '
                  f'PF={bm.get("profit_factor",0):.2f}, Trades={bm.get("total_trades",0)}</p>')
+    oos = vr.get("oos_metrics", {}) or {}
+    if oos and oos.get("total_trades", 0) is not None:
+        parts.append(f'<p><b>OOS:</b> PnL={oos.get("total_pnl",0):,.0f}, '
+                     f'PF={oos.get("profit_factor",0):.2f}, Trades={oos.get("total_trades",0)}, '
+                     f'Max DD={oos.get("max_drawdown_pnl",0):,.0f}</p>')
     for s in vr.get("stress_results", []):
         deg = s.get("degradation", {}).get("total_pnl", 0)
         name = html.escape(str(s.get("test_name", "?")))

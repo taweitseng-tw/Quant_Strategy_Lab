@@ -8,10 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056D - OOS Metrics Display Surface Implementation
+- [ ] Task 056E - Remove Best N Trades Stress Test Design Only
 
 ## Done
 
+- [x] Task 056D-Codex Review - OOS Metrics Display Surface Acceptance
+- [x] Task 056D - OOS Metrics Display Surface Implementation
 - [x] Task 056C-Fix-Codex Review - OOS Stability Reporting Surface Design Correction Acceptance
 - [x] Task 056C-Fix - OOS Stability Reporting Surface Design Correction
 - [x] Task 056C - OOS Stability Reporting Surface Design Only

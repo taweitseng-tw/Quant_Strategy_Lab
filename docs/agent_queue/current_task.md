@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Task 056D - OOS Metrics Display Surface Implementation.
+Task 056E - Remove Best N Trades Stress Test Design Only.
 
 ## Required Reading
 
@@ -24,100 +24,91 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/oos_stability_reporting_surface_design_056C.md`
-8. `docs/review_notes/2026-06-06_task-056c-fix_oos-stability-reporting-surface-design-correction_codex-review.md`
-9. `app/services/validation_pipeline_service.py`
-10. `app/widgets/validation_summary.py`
-11. `reports/generator.py`
-12. `app/ui/main_window.py`
-13. Relevant existing tests:
-    - `tests/test_validation_summary.py`
-    - `tests/test_report_export.py`
-    - `tests/test_active_dataset.py`
-14. This task file
+7. `validation_engine/stress_test.py`
+8. `app/services/validation_pipeline_service.py`
+9. `validation_engine/elimination.py`
+10. Relevant stress/validation tests found by search
+11. This task file
 
 ## Context
 
-Task 056B added `PipelineResult.oos_metrics`. Task 056C-Fix corrected the reporting design so UI/report/log surfaces must display only existing structured OOS metrics, without recomputing IS/OOS stability ratios in presentation code.
+The validation pipeline now has OOS stability gates and OOS display surfaces. The next validation expansion candidate is a "remove best N trades" stress test: a robustness check that asks whether a strategy survives after its best trades are removed from the trade list. This is useful for detecting strategies whose entire edge depends on one or two outlier trades.
 
-This task is a narrow display implementation.
+This task is design only. Do not implement engine or pipeline changes yet.
 
 ## Scope
 
 ### Do
 
-- In `app/widgets/validation_summary.py`:
-  - Add an "OOS Metrics" card after Walk-Forward Matrix and before Elimination.
-  - Read only `result.oos_metrics`.
-  - If `oos_metrics` is `None` or empty, show `No OOS data.`
-  - If present, show PnL, PF, Trades, Max DD, and Win Rate.
-- In `reports/generator.py`:
-  - Add one OOS metrics line after the Baseline line in `_format_markdown_validation()`.
-  - Add one OOS metrics line after the Baseline paragraph in `_format_html_validation()`.
-  - Read only `vr.get("oos_metrics", {})`.
-  - If missing or empty, skip the OOS line.
-- In `app/ui/main_window.py`:
-  - Add one log line after the elimination log line when `result.oos_metrics` is present.
-  - Example content: `OOS: PnL=..., PF=..., Trades=...`.
-- Add or update focused tests:
-  - `tests/test_validation_summary.py`: OOS card appears with metrics and handles missing OOS data.
-  - `tests/test_report_export.py` or another existing report test file: Markdown and HTML validation evidence include the OOS line when `oos_metrics` is present and omit it when absent.
+- Inspect current stress-test patterns in `validation_engine/stress_test.py`.
+- Inspect how `app/services/validation_pipeline_service.py` collects stress results.
+- Inspect current stress/elimination tests to understand result schemas and naming conventions.
+- Design a minimal "Remove Best N Trades" stress test:
+  - Function name.
+  - Input shape.
+  - Output shape.
+  - How trades are sorted and removed.
+  - Metrics to recompute or compare.
+  - Deterministic behavior.
+  - Empty/low-trade-count behavior.
+  - How it should be integrated into the validation pipeline later.
+- Decide whether the first implementation should be engine-only or pipeline-integrated.
+- Write a design note:
+  - `docs/remove_best_n_trades_stress_design_056E.md`
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-056d_oos-metrics-display-surface-implementation_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-056e_remove-best-n-trades-stress-design_deepseek.md`
 
 ### Do Not
 
-- Do not change engine logic.
-- Do not change `validation_engine/elimination.py`.
-- Do not change `PipelineResult` schema.
-- Do not compute PF degradation, drawdown ratio, or average-trade degradation in UI/report/log code.
-- Do not add new stability ratio display.
+- Do not change production code.
+- Do not change tests.
+- Do not add the stress test yet.
+- Do not modify pipeline behavior.
+- Do not modify elimination thresholds.
 - Do not add dependencies.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `app/widgets/validation_summary.py`
-- `reports/generator.py`
-- `app/ui/main_window.py`
-- `tests/test_validation_summary.py`
-- `tests/test_report_export.py`
+- `docs/remove_best_n_trades_stress_design_056E.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-056d_oos-metrics-display-surface-implementation_deepseek.md`
+- `docs/agent_reports/2026-06-06_task-056e_remove-best-n-trades-stress-design_deepseek.md`
+
+Read-only inspection likely includes:
+
+- `validation_engine/stress_test.py`
+- `app/services/validation_pipeline_service.py`
+- `tests/test_stress_test.py` or related stress tests found by `rg`
+- `tests/test_validation_pipeline_service.py`
 
 ## Acceptance Criteria
 
-1. ValidationSummary displays OOS metrics when `oos_metrics` exists.
-2. ValidationSummary displays `No OOS data.` when OOS metrics are absent.
-3. Markdown reports include exactly one OOS metrics line when `oos_metrics` exists.
-4. HTML reports include exactly one OOS metrics paragraph when `oos_metrics` exists.
-5. Markdown/HTML reports omit the OOS line when `oos_metrics` is absent.
-6. Main-window validation log prints an OOS summary only when `result.oos_metrics` exists.
-7. UI/report/log code does not compute OOS/IS stability ratios.
-8. Focused tests and full suite pass.
-9. `git diff --check` passes.
+1. The design follows existing stress-test result schemas and naming style.
+2. The design defines conservative behavior for fewer trades than `n`.
+3. The design avoids future leak and does not mutate original trade data.
+4. The design proposes one small follow-up implementation task with exact files and tests.
+5. No production code or tests are changed.
+6. `docs/changelog.md` and `docs/task_board.md` are updated.
+7. `git diff --check` passes.
 
 ## Verification
 
 Run exactly:
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests/test_validation_summary.py tests/test_report_export.py tests/test_active_dataset.py -v
-.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
 
 Expected:
 
-- Focused tests pass.
-- Full suite passes without ignored tests.
 - `git diff --check` passes.
-- Agent status shows Task 056D completion report as the latest report.
+- Agent status shows Task 056E completion report as the latest report.
+- No production code or tests changed.
 
 ## After Completion
 

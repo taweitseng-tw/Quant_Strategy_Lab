@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-06-06 - Task 056D Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056d_oos-metrics-display-surface-implementation_codex-review.md` accepting the OOS metrics display implementation with score 8.8 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056E.
+- Updated `docs/task_board.md` to queue the remove-best-N-trades stress-test design task.
+
+### Verification
+- Ran focused validation summary, report export, and active dataset tests: 46 passed.
+- Ran the full test suite: 992 passed, 1 pre-existing warning.
+- Ran `git diff --check`.
+- Reviewed that UI/report/log code does not compute OOS/IS stability ratios.
+
+## 2026-06-06 - Task 056D: OOS Metrics Display Surface Implementation
+
+### Added
+- `app/widgets/validation_summary.py`: Added "OOS Metrics" card between Walk-Forward Matrix and Elimination. Reads `oos_metrics` dict only. Shows "No OOS data." when absent.
+- `reports/generator.py`: Added OOS metrics line after Baseline in both `_format_markdown_validation()` and `_format_html_validation()`. Reads `vr.get("oos_metrics", {})` only. Silently skips when absent.
+- `app/ui/main_window.py`: Added one-line OOS summary after elimination log line. Reads `result.oos_metrics` only.
+- `tests/test_validation_summary.py`: Added 2 OOS card tests (displayed + missing placeholder).
+- `tests/test_report_export.py`: Added 4 OOS report tests (markdown present/absent, HTML present/absent).
+
+### Verification
+- Focused tests: 46 passed (validation_summary + report_export + active_dataset).
+- Full suite: 992 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+- No ratio computation in UI/report/log code.
+
 ## 2026-06-06 - Task 056C-Fix Codex Acceptance
 
 ### Added
