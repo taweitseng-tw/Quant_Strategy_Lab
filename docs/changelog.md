@@ -1,5 +1,40 @@
 # Changelog
 
+## 2026-06-06 - Task 056I Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056i_remove-best-n-trades-feature-acceptance-smoke_codex-review.md` accepting the remove-best-N-trades acceptance smoke with score 9.3 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056J.
+- Updated `docs/task_board.md` to queue validation expansion follow-up triage.
+
+### Verification
+- Ran remove-best-N acceptance tests: 8 passed.
+- Ran related regression tests: 69 passed.
+- Ran the full test suite: 1024 passed, 1 pre-existing warning.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Task 056I: Remove Best N Trades Feature Acceptance Smoke
+
+### Added
+- `tests/test_remove_best_n_trades_acceptance.py`: 8 acceptance smoke tests covering the full feature chain:
+  - Pipeline enabled produces `remove_best_n_trades` + assumptions.
+  - Pipeline default omits the test.
+  - ValidationSummary widget renders detail sub-lines.
+  - Markdown report includes detail lines.
+  - HTML report includes detail lines.
+  - HTML report escapes malicious detail values.
+  - UI controls pass enabled/custom values into `PipelineConfig`.
+  - UI controls pass disabled default into `PipelineConfig`.
+
+### Verification
+- Acceptance tests: 8 passed.
+- Regression: 69 passed (pipeline + widget + report + UI wiring).
+- Full suite: 1024 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+- No production code changed.
+
 ## 2026-06-06 - Task 056H-Impl Codex Acceptance
 
 ### Added

@@ -8,10 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056I - Remove Best N Trades Feature Acceptance Smoke
+- [ ] Task 056J - Validation Expansion Follow-up Triage Design Only
 
 ## Done
 
+- [x] Task 056I-Codex Review - Remove Best N Trades Feature Acceptance Smoke
+- [x] Task 056I - Remove Best N Trades Feature Acceptance Smoke
 - [x] Task 056H-Impl-Codex Review - Remove Best N Trades Stress Config Controls Acceptance
 - [x] Task 056H-Impl - Remove Best N Trades Stress Config Controls
 - [x] Task 056H-Codex Review - Remove Best N Trades Stress Config Surface Design Acceptance
