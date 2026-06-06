@@ -38,6 +38,7 @@ class MonteCarloResult:
     warnings: list[str] = field(default_factory=list)
     percentiles_used: tuple[float, ...] = field(default_factory=lambda: (5.0, 25.0, 50.0, 75.0, 95.0))
     stability_score: float | None = None
+    confidence_intervals: dict[str, dict[str, float]] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -232,6 +233,115 @@ def run_combined_monte_carlo(
         percentiles=percentiles,
     )
 
+
+
+def run_bootstrap_monte_carlo(
+    baseline: BacktestResult,
+    *,
+    iterations: int = 200,
+    base_seed: int = 42,
+    confidence_level: float = 0.95,
+    percentiles: tuple[float, ...] = (5.0, 25.0, 50.0, 75.0, 95.0),
+) -> MonteCarloResult:
+    """Run bootstrap resampling Monte Carlo with confidence intervals.
+
+    Each iteration draws ``len(trades)`` samples **with replacement** from
+    ``baseline.trades``, recomputes metrics via ``compute_metrics()``,
+    and collects raw metric dicts.  Confidence intervals are computed
+    from the resampled distribution.
+
+    Parameters
+    ----------
+    baseline : BacktestResult
+        Source trade list.
+    iterations : int
+        Number of bootstrap iterations.  Must be > 0.
+    base_seed : int
+        Seed for local RNG per iteration (``random.Random(base_seed + i)``).
+        Results are deterministic for a given baseline + seed.
+    confidence_level : float
+        For CI computation.  Must be in (0, 1).  Default 0.95.
+    percentiles : tuple[float, ...]
+        Percentile summary keys.
+
+    Returns
+    -------
+    MonteCarloResult
+        Includes ``confidence_intervals`` when trade count > 0.
+
+    Raises
+    ------
+    ValueError
+        If *iterations* <= 0.
+    ValueError
+        If *confidence_level* is not in (0, 1).
+    """
+    # -- input validation ----------------------------------------------------
+    if iterations <= 0:
+        raise ValueError(f"iterations must be > 0, got {iterations}.")
+    if not (0.0 < confidence_level < 1.0):
+        raise ValueError(
+            f"confidence_level must be in (0, 1), got {confidence_level}."
+        )
+
+    trades = baseline.trades
+
+    # -- zero trades ---------------------------------------------------------
+    if not trades:
+        return MonteCarloResult(
+            test_name="bootstrap",
+            iterations=iterations,
+            baseline_metrics=baseline.metrics,
+            warnings=["Baseline has zero trades — bootstrap Monte Carlo is vacuously empty."],
+        )
+
+    # -- bootstrap resampling -------------------------------------------------
+    from backtest_engine.metrics import compute_metrics
+
+    all_metrics: list[dict] = []
+    trade_list = list(trades)  # materialise once
+
+    for i in range(iterations):
+        rng = random.Random(base_seed + i)
+        # Draw len(trades) samples WITH replacement.
+        resampled = [rng.choice(trade_list) for _ in range(len(trade_list))]
+        metrics = compute_metrics(resampled)
+        all_metrics.append(dict(metrics))
+
+    # -- build result via shared helper --------------------------------------
+    result = _build_mc_result(
+        test_name="bootstrap",
+        iterations=iterations,
+        baseline_metrics=baseline.metrics,
+        all_metrics=all_metrics,
+        assumptions={
+            "base_seed": base_seed,
+            "method": "bootstrap_resampling",
+            "confidence_level": confidence_level,
+        },
+        percentiles=percentiles,
+    )
+
+    # -- compute confidence intervals -----------------------------------------
+    ci: dict[str, dict[str, float]] = {}
+    alpha = 1.0 - confidence_level
+    lower_percentile = (alpha / 2.0) * 100.0
+    upper_percentile = (1.0 - alpha / 2.0) * 100.0
+
+    for key in _METRIC_KEYS:
+        values = sorted(float(m.get(key, 0.0)) for m in all_metrics)
+        ci_lower = float(np.percentile(values, lower_percentile))
+        ci_upper = float(np.percentile(values, upper_percentile))
+        ci_mean = float(np.mean(values))
+        ci[key] = {
+            "ci_lower": ci_lower,
+            "ci_upper": ci_upper,
+            "ci_mean": ci_mean,
+            "ci_level": confidence_level,
+        }
+
+    result.confidence_intervals = ci
+    return result
 
 
 # ---------------------------------------------------------------------------

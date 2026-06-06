@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 057A-Impl + 057C-Design - Monte Carlo Bootstrap Engine and Surface Design.
+Batch 057C-Fix + 057D-Impl - Bootstrap Surface Design Hardening and Pipeline Wiring.
 
 ## Required Reading
 
@@ -24,71 +24,77 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-06_task-057a-fix_057b-impl_validation-gap-hardening-batch_codex-review.md`
-8. `docs/monte_carlo_bootstrap_ci_design_057A.md`
-9. `docs/walk_forward_equity_persistence_design_057B.md`
+7. `docs/review_notes/2026-06-06_task-057a-impl_057c-design_bootstrap-engine-and-surface-design_codex-review.md`
+8. `docs/bootstrap_pipeline_report_surface_design_057C.md`
+9. `docs/monte_carlo_bootstrap_ci_design_057A.md`
 10. `docs/milestone_direction_056N.md`
 11. `docs/v0.2_validation_expansion_readiness.md`
 12. This task file
 
 ## Context
 
-Batch 057A-Fix + 057B-Impl was accepted. Walk-forward equity persistence is now implemented. The Monte Carlo bootstrap design is hardened enough for an engine-only implementation. This batch pairs one engine-only implementation task with one design-only surface planning task.
+Batch 057A-Impl + 057C-Design was accepted. The bootstrap engine exists but is not wired into the validation pipeline. The 057C design is sufficient for pipeline wiring, but display/report wording needs hardening before any UI/report implementation.
 
 ## Scope
 
 ### Do
 
 - Complete two sequential tasks:
-  - Task 057A-Impl - Monte Carlo Bootstrap + Confidence Interval Engine Implementation
-  - Task 057C-Design - Bootstrap Pipeline and Report Surface Design
-- For Task 057A-Impl:
-  - Implement `run_bootstrap_monte_carlo()` in `validation_engine/monte_carlo.py`.
-  - Add additive `confidence_intervals: dict[str, dict[str, float]] | None = None` to `MonteCarloResult`.
-  - Do not add `worst_case_equity`.
-  - Use local deterministic RNG only (`random.Random(base_seed + i)` or equivalent); do not mutate global random state.
-  - Resample trades with replacement and recompute metrics in the smallest reasonable way consistent with existing `BacktestResult`/metrics conventions.
-  - Preserve existing MC function behavior and schema.
-  - Add focused deterministic tests in `tests/test_monte_carlo.py`.
-  - Tests must avoid unsafe assumptions that bootstrap always worsens metrics. If checking changed distribution, use deliberately heterogeneous synthetic trades and deterministic seed/iteration expectations.
-- For Task 057C-Design:
-  - Write `docs/bootstrap_pipeline_report_surface_design_057C.md`.
-  - Design only; do not implement pipeline/report/UI changes.
-  - Cover `PipelineConfig` flags, `PipelineResult` field shape, `_mc_to_dict()`/serialization strategy, validation summary/report display wording, default-off behavior, acceptance tests, and non-goals.
+  - Task 057C-Fix - Bootstrap Display Surface Design Hardening
+  - Task 057D-Impl - Bootstrap Pipeline Wiring Only
+- For Task 057C-Fix:
+  - Update only `docs/bootstrap_pipeline_report_surface_design_057C.md`.
+  - Add concrete proposed wording/field layout for:
+    - validation summary widget,
+    - markdown report,
+    - HTML report.
+  - Keep display/report implementation deferred.
+  - Preserve default-off behavior and non-goals.
+- For Task 057D-Impl:
+  - Wire bootstrap into `run_validation_pipeline()` only.
+  - Add to `PipelineConfig`:
+    - `run_bootstrap_monte_carlo: bool = False`
+    - `bootstrap_iterations: int = 200`
+    - `bootstrap_confidence_level: float = 0.95`
+  - Add to `PipelineResult`:
+    - `bootstrap_monte_carlo_result: dict | None = None`
+  - Add serialization helper for bootstrap result including confidence intervals, assumptions, percentile summary, worst case, and stability score.
+  - When disabled, existing `monte_carlo_summary` and existing pipeline outputs must remain unchanged.
+  - Add focused tests in `tests/test_validation_pipeline_service.py`.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-057a-impl_057c-design_bootstrap-engine-and-surface-design_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-057c-fix_057d-impl_bootstrap-surface-design-and-pipeline-wiring_deepseek.md`
 
 ### Do Not
 
-- Do not wire bootstrap into `run_validation_pipeline()` in this batch.
 - Do not modify UI widgets or reports.
 - Do not add report display code.
 - Do not add UI controls.
 - Do not add `worst_case_equity`.
-- Do not change walk-forward production code in this batch.
+- Do not change Monte Carlo engine code except imports needed by pipeline wiring.
+- Do not change walk-forward production code.
 - Do not add dependencies.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `validation_engine/monte_carlo.py`
-- `tests/test_monte_carlo.py`
 - `docs/bootstrap_pipeline_report_surface_design_057C.md`
+- `app/services/validation_pipeline_service.py`
+- `tests/test_validation_pipeline_service.py`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-057a-impl_057c-design_bootstrap-engine-and-surface-design_deepseek.md`
+- `docs/agent_reports/2026-06-06_task-057c-fix_057d-impl_bootstrap-surface-design-and-pipeline-wiring_deepseek.md`
 
 ## Acceptance Criteria
 
-1. Existing missed-trade/slippage/combined MC tests still pass unchanged.
-2. `run_bootstrap_monte_carlo()` returns deterministic structured `MonteCarloResult`.
-3. `confidence_intervals` are present for bootstrap and absent/None for existing MC functions.
-4. Bootstrap implementation does not mutate baseline trades or global random state.
-5. Zero-trade, single-trade, invalid-iteration, and invalid-confidence-level cases are tested.
-6. 057C design covers pipeline/report surfaces without implementation.
+1. 057C design has concrete widget, markdown, and HTML wording proposals.
+2. Bootstrap remains default-off in `PipelineConfig`.
+3. When disabled, `bootstrap_monte_carlo_result` is `None`.
+4. When enabled, `bootstrap_monte_carlo_result` includes `confidence_intervals`.
+5. Existing `monte_carlo_summary` remains present and unchanged when bootstrap is disabled.
+6. Focused pipeline tests cover enabled/disabled behavior and config snapshot.
 7. Changelog and task board are updated.
 8. Completion report is created.
 9. Focused tests and `git diff --check` pass.
@@ -98,7 +104,7 @@ Batch 057A-Fix + 057B-Impl was accepted. Walk-forward equity persistence is now 
 Run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/test_monte_carlo.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_validation_pipeline_service.py -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
@@ -107,8 +113,8 @@ Expected:
 
 - Focused tests pass.
 - `git diff --check` passes.
-- Agent status shows Batch 057A-Impl + 057C-Design completion report as the latest report.
-- Bootstrap is not wired into pipeline/UI/reports yet.
+- Agent status shows Batch 057C-Fix + 057D-Impl completion report as the latest report.
+- Bootstrap is wired only into pipeline, not UI/reports.
 
 ## After Completion
 

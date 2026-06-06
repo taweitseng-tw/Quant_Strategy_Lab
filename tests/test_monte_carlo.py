@@ -13,6 +13,7 @@ from validation_engine.monte_carlo import (
     run_missed_trade_monte_carlo,
     run_slippage_monte_carlo,
     run_combined_monte_carlo,
+    run_bootstrap_monte_carlo,
 )
 
 
@@ -533,4 +534,138 @@ def test_combined_monte_carlo_run_backtest_receives_perturbed_slippage():
             kwargs = call.kwargs
             assert "slippage_ticks" in kwargs
             assert 5.0 <= kwargs["slippage_ticks"] <= 15.0
+
+
+# ---------------------------------------------------------------------------
+# Bootstrap Monte Carlo (Task 057A-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_bootstrap_mc_deterministic():
+    """Same baseline + seed must produce identical bootstrap results."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy(10)
+    baseline = run_backtest(strat, df, commission=2.0)
+
+    r1 = run_bootstrap_monte_carlo(baseline, iterations=20, base_seed=42)
+    r2 = run_bootstrap_monte_carlo(baseline, iterations=20, base_seed=42)
+    assert r1.percentile_summary == r2.percentile_summary
+    assert r1.confidence_intervals == r2.confidence_intervals
+
+
+def test_bootstrap_mc_structured_output():
+    """Result must have all MonteCarloResult fields + confidence_intervals."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy(10)
+    baseline = run_backtest(strat, df, commission=2.0)
+
+    result = run_bootstrap_monte_carlo(baseline, iterations=10, base_seed=1)
+    assert isinstance(result, MonteCarloResult)
+    assert result.test_name == "bootstrap"
+    assert result.iterations == 10
+    assert isinstance(result.percentile_summary, dict)
+    assert isinstance(result.confidence_intervals, dict)
+    for key in ("total_pnl", "profit_factor", "max_drawdown_pnl"):
+        assert key in result.confidence_intervals
+        assert "ci_lower" in result.confidence_intervals[key]
+        assert "ci_upper" in result.confidence_intervals[key]
+        assert "ci_mean" in result.confidence_intervals[key]
+        assert result.confidence_intervals[key]["ci_lower"] <= result.confidence_intervals[key]["ci_upper"]
+
+
+def test_bootstrap_mc_zero_trades():
+    """Zero baseline trades must produce vacuous result with warning."""
+    df = _make_test_df(10)
+    strat = Strategy(name="empty")
+    baseline = run_backtest(strat, df)
+
+    result = run_bootstrap_monte_carlo(baseline, iterations=10)
+    assert len(result.warnings) >= 1
+    assert "zero trades" in result.warnings[0].lower()
+    assert result.confidence_intervals is None
+
+
+def test_bootstrap_mc_single_trade():
+    """Single trade must still bootstrap (all resamples have 1 element)."""
+    from core.models.backtest_result import BacktestResult, Trade
+    from backtest_engine.metrics import compute_metrics
+
+    t = Trade(pd.Timestamp("2024-01-01 09:30"), pd.Timestamp("2024-01-01 10:00"),
+              "long", 100.0, 105.0, 1, 5.0, "signal")
+    baseline = BacktestResult(trades=[t], metrics=compute_metrics([t]),
+                              assumptions={}, warnings=[])
+    result = run_bootstrap_monte_carlo(baseline, iterations=100, base_seed=1)
+    assert result.iterations == 100
+    assert result.confidence_intervals is not None
+
+
+def test_bootstrap_mc_does_not_mutate():
+    """Baseline trades must be unchanged."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy(10)
+    baseline = run_backtest(strat, df, commission=2.0)
+    trades_before = [t.pnl for t in baseline.trades]
+    metrics_before = dict(baseline.metrics)
+
+    run_bootstrap_monte_carlo(baseline, iterations=10, base_seed=1)
+    assert [t.pnl for t in baseline.trades] == trades_before
+    assert baseline.metrics == metrics_before
+
+
+def test_bootstrap_mc_no_global_rng_mutation():
+    """Bootstrap must not mutate global random state."""
+    import random
+    state_before = random.getstate()
+    df = _make_test_df(200)
+    strat = _make_sma_strategy(10)
+    baseline = run_backtest(strat, df, commission=2.0)
+
+    run_bootstrap_monte_carlo(baseline, iterations=10, base_seed=1)
+    state_after = random.getstate()
+    assert state_before == state_after
+
+
+def test_bootstrap_mc_invalid_iterations():
+    """iterations <= 0 must raise ValueError."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy(10)
+    baseline = run_backtest(strat, df, commission=2.0)
+    with pytest.raises(ValueError, match="iterations"):
+        run_bootstrap_monte_carlo(baseline, iterations=0)
+    with pytest.raises(ValueError, match="iterations"):
+        run_bootstrap_monte_carlo(baseline, iterations=-5)
+
+
+def test_bootstrap_mc_invalid_confidence_level():
+    """confidence_level outside (0, 1) must raise ValueError."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy(10)
+    baseline = run_backtest(strat, df, commission=2.0)
+    with pytest.raises(ValueError, match="confidence_level"):
+        run_bootstrap_monte_carlo(baseline, iterations=10, confidence_level=0.0)
+    with pytest.raises(ValueError, match="confidence_level"):
+        run_bootstrap_monte_carlo(baseline, iterations=10, confidence_level=1.0)
+    with pytest.raises(ValueError, match="confidence_level"):
+        run_bootstrap_monte_carlo(baseline, iterations=10, confidence_level=1.5)
+
+
+def test_bootstrap_mc_ci_lower_le_upper():
+    """CI lower must be <= CI upper for each metric."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy(10)
+    baseline = run_backtest(strat, df, commission=2.0)
+    result = run_bootstrap_monte_carlo(baseline, iterations=50, base_seed=1)
+    for key, ci in result.confidence_intervals.items():
+        assert ci["ci_lower"] <= ci["ci_upper"], f"{key}: lower={ci['ci_lower']} > upper={ci['ci_upper']}"
+
+
+def test_bootstrap_mc_existing_mc_unchanged():
+    """Existing MC functions must still pass and produce valid output."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy(10)
+    baseline = run_backtest(strat, df, commission=2.0)
+
+    r = run_missed_trade_monte_carlo(baseline, iterations=10)
+    assert isinstance(r, MonteCarloResult)
+    assert r.confidence_intervals is None  # not set by non-bootstrap MC
 

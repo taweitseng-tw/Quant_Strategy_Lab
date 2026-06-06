@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-06-06 - Batch 057A-Impl + 057C-Design Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-057a-impl_057c-design_bootstrap-engine-and-surface-design_codex-review.md` accepting the bootstrap engine implementation and surface design with score 8.7 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 057C-Fix + 057D-Impl.
+- Updated `docs/task_board.md` to queue bootstrap display-surface design hardening and pipeline wiring.
+
+### Verification
+- Reviewed bootstrap engine implementation, tests, and 057C surface design.
+- Ran focused MC tests: 49 passed.
+- Ran full suite: 1057 passed, 1 warning.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Batch 057A-Impl + 057C-Design: Monte Carlo Bootstrap Engine and Surface Design
+
+### Added (057A-Impl)
+- `validation_engine/monte_carlo.py`: Added `run_bootstrap_monte_carlo()` — bootstrap resampling with replacement, 200 iterations default, 95% CI. Local RNG per iteration, deterministic seeds. Added `confidence_intervals` field to `MonteCarloResult` (backward-compatible, defaults None).
+- `tests/test_monte_carlo.py`: 11 new tests (deterministic, structured output, zero trades, single trade, no mutation, no global RNG mutation, invalid iterations, invalid confidence level, CI bounds, existing MC unchanged). Existing 38 MC tests still pass.
+
+### Added (057C-Design)
+- `docs/bootstrap_pipeline_report_surface_design_057C.md` — pipeline config, result field, serialization strategy, display deferral.
+
+### Verification
+- Focused MC tests: 49 passed.
+- Full suite: 1057 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+- Bootstrap not wired into pipeline.
+
 ## 2026-06-06 - Batch 057A-Fix + 057B-Impl Codex Acceptance
 
 ### Added
