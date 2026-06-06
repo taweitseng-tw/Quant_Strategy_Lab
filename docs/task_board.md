@@ -8,10 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056L - Validation Expansion Series Acceptance and Next-Scope Triage
+- [ ] Task 056M - v0.2 Validation Expansion Release Readiness Audit
 
 ## Done
 
+- [x] Task 056L - Validation Expansion Series Acceptance and Next-Scope Triage
+- [x] Task 056L-Codex Review - Validation Expansion Series Acceptance
 - [x] Task 056K-Impl-Codex Review - IS Baseline Precheck Visibility Surfaces Acceptance
 - [x] Task 056K-Impl - IS Baseline Precheck Visibility Surfaces
 - [x] Task 056K-Codex Review - IS Baseline Precheck Visibility Surface Design Acceptance
