@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-06-06 - Task 056G Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056g_stress-result-details-reporting-surface-design_codex-review.md` accepting the stress result details reporting surface design with score 9.0 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056G-Impl.
+- Updated `docs/task_board.md` to queue stress result details display implementation.
+
+### Verification
+- Reviewed `docs/stress_result_details_surface_design_056G.md`.
+- Confirmed current widget, Markdown, and HTML report stress rendering only shows stress name, pass/fail, and PnL degradation.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Task 056G: Stress Result Details Reporting Surface Design Only
+
+### Added
+- Created `docs/stress_result_details_surface_design_056G.md` — design for surfacing optional stress `assumptions`, `warnings`, and `threshold` in UI and reports.
+- Decision: show sub-lines only for stress tests with user-configured parameters (currently only `remove_best_n_trades`).
+- Proposed widget display: inline sub-lines after each stress test showing `n`, `removed_count`, `pnl_loss_ratio`, and `warnings`.
+- Proposed markdown/HTML: matching sub-lines in validation evidence section.
+- Implementation surface: 3 files (widget + generator + tests), no engine changes.
+
+### Changed
+- Updated `docs/task_board.md` (Task 056G -> Done).
+
+### Verification
+- No production code changed (design-only).
+- `git diff --check` passes.
+
 ## 2026-06-06 - Task 056F-Fix Codex Acceptance
 
 ### Added

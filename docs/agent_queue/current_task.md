@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Task 056G - Stress Result Details Reporting Surface Design Only.
+Task 056G-Impl - Stress Result Details Display Implementation.
 
 ## Required Reading
 
@@ -24,92 +24,96 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-06_task-056f-fix_remove-best-n-trades-pipeline-assumptions-serialization_codex-review.md`
-8. `app/services/validation_pipeline_service.py`
-9. `validation_engine/stress_test.py`
-10. `app/widgets/validation_summary.py`
-11. `reports/generator.py`
-12. This task file
+7. `docs/stress_result_details_surface_design_056G.md`
+8. `docs/review_notes/2026-06-06_task-056g_stress-result-details-reporting-surface-design_codex-review.md`
+9. `app/widgets/validation_summary.py`
+10. `reports/generator.py`
+11. `tests/test_validation_summary.py`
+12. `tests/test_report_export.py`
+13. This task file
 
 ## Context
 
-Task 056F and 056F-Fix wired remove-best-N-trades stress into the validation pipeline and preserved serialized `assumptions`, `warnings`, and `threshold` fields. The next safe step is not production UI/report implementation yet; first decide how these optional stress details should surface without cluttering the validation summary or exported reports.
+Task 056G designed a minimal way to surface optional stress result details now that pipeline stress dictionaries preserve `assumptions`, `warnings`, and `threshold`. The implementation should be narrow: display details for `remove_best_n_trades` only, and keep existing stress display behavior unchanged for commission, slippage, one-bar delay, and parameter perturbation.
 
 ## Scope
 
 ### Do
 
-- Inspect current validation display/reporting surfaces:
-  - `app/widgets/validation_summary.py`
-  - `reports/generator.py`
-  - any service/report helper directly involved in rendering validation stress results
-- Write a design note:
-  - `docs/stress_result_details_surface_design_056G.md`
-- The design must answer:
-  - Which stress result fields are already displayed today.
-  - Whether optional `assumptions`, `warnings`, and `threshold` should be shown in the UI, Markdown/HTML reports, or both.
-  - Minimal display format for remove-best-N-trades details:
+- In `app/widgets/validation_summary.py`:
+  - Extend the existing stress result rendering to append compact sub-lines for `test_name == "remove_best_n_trades"` when `assumptions` exist.
+  - Include:
     - `n`
     - `removed_count`
     - `surviving_count`
     - `pnl_loss_ratio`
-    - `threshold["max_pnl_loss"]`
-    - `warnings`
-  - How to keep existing stress tests backward compatible.
-  - Proposed acceptance criteria for a later implementation task.
+    - `threshold["max_pnl_loss"]` when present
+    - `warnings` when non-empty
+  - Do not create a new section, card, widget, or layout pattern.
+- In `reports/generator.py`:
+  - Add matching detail sub-lines to markdown validation output.
+  - Add matching detail sub-lines to HTML validation output.
+  - Ensure HTML output escapes dynamic warning/detail values.
+- In tests:
+  - Add focused coverage in `tests/test_validation_summary.py`.
+  - Add focused coverage in `tests/test_report_export.py` for both markdown and HTML output, or the closest existing report export tests if naming differs locally.
+  - Assert details appear for `remove_best_n_trades`.
+  - Assert details do not appear for existing basic stress tests without rich display behavior.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-056g_stress-result-details-reporting-surface-design_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-056g-impl_stress-result-details-display-implementation_deepseek.md`
 
 ### Do Not
 
-- Do not change production UI code.
-- Do not change report generation code.
 - Do not change validation pipeline behavior.
 - Do not change stress engine behavior.
+- Do not change report export file formats beyond the validation stress detail text.
+- Do not add a broad generic assumptions dumper for every stress test.
 - Do not add dependencies.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `docs/stress_result_details_surface_design_056G.md`
-- `docs/changelog.md`
-- `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-056g_stress-result-details-reporting-surface-design_deepseek.md`
-
-Read-only references:
-
 - `app/widgets/validation_summary.py`
 - `reports/generator.py`
-- `app/services/validation_pipeline_service.py`
-- `validation_engine/stress_test.py`
+- `tests/test_validation_summary.py`
+- `tests/test_report_export.py`
+- `docs/changelog.md`
+- `docs/task_board.md`
+- `docs/agent_reports/2026-06-06_task-056g-impl_stress-result-details-display-implementation_deepseek.md`
 
 ## Acceptance Criteria
 
-1. Design note clearly describes current stress result display behavior.
-2. Design note recommends a minimal implementation plan for surfacing optional stress details.
-3. Design explicitly covers remove-best-N-trades assumptions, threshold, and warnings.
-4. No production code is changed.
-5. Changelog and task board are updated.
-6. Completion report is created.
-7. `git diff --check` passes.
+1. ValidationSummary shows compact remove-best-N detail sub-lines when serialized assumptions exist.
+2. Markdown report shows matching remove-best-N detail sub-lines.
+3. HTML report shows matching remove-best-N detail sub-lines and escapes dynamic text.
+4. `n`, `removed_count`, `surviving_count`, `pnl_loss_ratio`, and `max_pnl_loss` threshold are visible when present.
+5. Warnings are visible when present and omitted cleanly when empty.
+6. Existing commission/slippage/one-bar-delay/parameter-perturbation stress lines remain compact.
+7. Missing `assumptions`, `warnings`, or `threshold` does not crash any surface.
+8. Focused tests pass.
+9. Full suite passes.
+10. `git diff --check` passes.
 
 ## Verification
 
 Run exactly:
 
 ```powershell
+.venv\Scripts\python.exe -m pytest tests/test_validation_summary.py tests/test_report_export.py -v
+.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
 
 Expected:
 
+- Focused tests pass.
+- Full suite passes without ignored tests.
 - `git diff --check` passes.
-- Agent status shows Task 056G completion report as the latest report.
-- No tests are required because this is design-only.
+- Agent status shows Task 056G-Impl completion report as the latest report.
 
 ## After Completion
 
