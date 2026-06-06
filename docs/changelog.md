@@ -1,5 +1,88 @@
 # Changelog
 
+## 2026-06-06 - Task 056G-Impl/Fix/Fix2 Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056g-impl-fix2_escape-html-stress-detail-pnl-loss-value_codex-review.md` accepting the stress result details display implementation series with score 9.2 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056H.
+- Updated `docs/task_board.md` to queue remove-best-N-trades stress config surface design.
+
+### Verification
+- Ran report tests: 30 passed.
+- Ran combined validation summary and report tests: 41 passed.
+- Ran the full test suite: 1012 passed, 1 pre-existing warning.
+- Ran `git diff --check`.
+- Manually confirmed HTML stress-detail output escapes malicious `<script>`, `<b>`, and `<img>` payloads.
+
+## 2026-06-06 - Task 056G-Impl-Fix2: Escape HTML Stress Detail PnL Loss Value
+
+### Fixed
+- `reports/generator.py`: Escaped `pnl_loss` value in HTML stress-detail div — previously only escaped `removed`, `total`, `n_val`, `threshold` but not the non-float fallback of `pnl_loss_ratio`.
+- `tests/test_report_export.py`: Strengthened `test_html_stress_detail_values_escaped` with `<img src=x>` payload as `pnl_loss_ratio`, asserting raw tag does not appear and escaped equivalent does.
+
+### Verification
+- Focused report tests: 30 passed.
+- Combined widget + report: 41 passed.
+- Full suite: 1012 passed, 1 warning.
+- `git diff --check` passes.
+
+## 2026-06-06 - Task 056G-Impl-Fix Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056g-impl-fix_html-stress-detail-value-escaping_codex-review.md` marking Task 056G-Impl-Fix as needing one more HTML escaping fix before acceptance.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056G-Impl-Fix2.
+- Updated `docs/task_board.md` to queue the `pnl_loss` HTML escaping fix.
+
+### Verification
+- Ran focused report tests: 30 passed.
+- Ran `git diff --check`.
+- Manual HTML probe confirmed `n_val` and `threshold` are escaped, but non-float `pnl_loss_ratio` can still render raw `<img>` input.
+
+## 2026-06-06 - Task 056G-Impl-Fix: HTML Stress Detail Value Escaping
+
+### Fixed
+- `reports/generator.py`: HTML-escaped all dynamic values (`removed`, `total`, `n_val`, `threshold`) in the `stress-detail` div for `remove_best_n_trades`. Previously bare values could render raw HTML from malformed validation dicts.
+- `tests/test_report_export.py`: Added `test_html_stress_detail_values_escaped` asserting `<script>` and `<b>` payloads are escaped to `&lt;script&gt;` and `&lt;b&gt;`.
+
+### Verification
+- Focused report tests: 30 passed.
+- Combined widget + report tests: 41 passed.
+- Full suite: 1012 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+
+## 2026-06-06 - Task 056G-Impl Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056g-impl_stress-result-details-display-implementation_codex-review.md` marking Task 056G-Impl as needing an HTML detail escaping fix before acceptance.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056G-Impl-Fix.
+- Updated `docs/task_board.md` to queue the HTML stress detail value escaping fix.
+
+### Verification
+- Ran focused validation summary and report tests: 40 passed.
+- Ran `git diff --check`.
+- Manual HTML probe confirmed warning text is escaped but stress-detail values can still render raw `<script>` and `<b>` input.
+
+## 2026-06-06 - Task 056G-Impl: Stress Result Details Display Implementation
+
+### Added
+- `app/widgets/validation_summary.py`: Extended stress rendering to show inline sub-lines for `remove_best_n_trades` — display `n`, `removed_count`, `surviving_count`, `pnl_loss_ratio`, `threshold["max_pnl_loss"]`, and `warnings` when present.
+- `reports/generator.py`: Extended both `_format_markdown_validation()` and `_format_html_validation()` stress loops with matching sub-lines. HTML warnings are escaped.
+- `tests/test_validation_summary.py`: 2 new tests (detail sub-lines present for remove_best_n, absent for basic tests).
+- `tests/test_report_export.py`: 3 new tests (markdown detail lines, HTML detail + escaping, basic tests no detail).
+- Existing stress tests (commission, slippage, delay, perturbation) display behavior unchanged.
+
+### Verification
+- Focused tests: 40 passed (validation_summary + report_export).
+- Full suite: 1011 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+- No engine, pipeline, or layout changes.
+
 ## 2026-06-06 - Task 056G Codex Acceptance
 
 ### Added

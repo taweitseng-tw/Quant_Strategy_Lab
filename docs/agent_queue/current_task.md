@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Task 056G-Impl - Stress Result Details Display Implementation.
+Task 056H - Remove Best N Trades Stress Config Surface Design Only.
 
 ## Required Reading
 
@@ -25,95 +25,99 @@ Before doing anything, read:
 5. `docs/task_board.md`
 6. `docs/changelog.md`
 7. `docs/stress_result_details_surface_design_056G.md`
-8. `docs/review_notes/2026-06-06_task-056g_stress-result-details-reporting-surface-design_codex-review.md`
-9. `app/widgets/validation_summary.py`
-10. `reports/generator.py`
-11. `tests/test_validation_summary.py`
-12. `tests/test_report_export.py`
-13. This task file
+8. `docs/review_notes/2026-06-06_task-056g-impl-fix2_escape-html-stress-detail-pnl-loss-value_codex-review.md`
+9. `app/services/validation_pipeline_service.py`
+10. `app/widgets/validation_summary.py`
+11. `reports/generator.py`
+12. This task file
 
 ## Context
 
-Task 056G designed a minimal way to surface optional stress result details now that pipeline stress dictionaries preserve `assumptions`, `warnings`, and `threshold`. The implementation should be narrow: display details for `remove_best_n_trades` only, and keep existing stress display behavior unchanged for commission, slippage, one-bar delay, and parameter perturbation.
+Remove-best-N-trades stress now exists in the engine, can be enabled through `PipelineConfig`, is serialized with assumptions, and is displayed in the validation widget and reports. The remaining product gap is discoverability/configuration: the default pipeline keeps it off, and we need a careful design for where users should enable and configure it without overloading the UI.
+
+This is design-only. Do not implement UI or service changes in this task.
 
 ## Scope
 
 ### Do
 
-- In `app/widgets/validation_summary.py`:
-  - Extend the existing stress result rendering to append compact sub-lines for `test_name == "remove_best_n_trades"` when `assumptions` exist.
-  - Include:
-    - `n`
-    - `removed_count`
-    - `surviving_count`
-    - `pnl_loss_ratio`
-    - `threshold["max_pnl_loss"]` when present
-    - `warnings` when non-empty
-  - Do not create a new section, card, widget, or layout pattern.
-- In `reports/generator.py`:
-  - Add matching detail sub-lines to markdown validation output.
-  - Add matching detail sub-lines to HTML validation output.
-  - Ensure HTML output escapes dynamic warning/detail values.
-- In tests:
-  - Add focused coverage in `tests/test_validation_summary.py`.
-  - Add focused coverage in `tests/test_report_export.py` for both markdown and HTML output, or the closest existing report export tests if naming differs locally.
-  - Assert details appear for `remove_best_n_trades`.
-  - Assert details do not appear for existing basic stress tests without rich display behavior.
+- Inspect the current validation/run configuration flow:
+  - Where `PipelineConfig` is constructed.
+  - Which validation options are already user-facing.
+  - Which widgets/services would be touched by a future implementation.
+- Write a design note:
+  - `docs/remove_best_n_trades_config_surface_design_056H.md`
+- The design must answer:
+  - Whether remove-best-N should be exposed on the Validate page, Run/build configuration, report settings, or another existing surface.
+  - Recommended control shape:
+    - enable/disable checkbox or toggle
+    - `n` numeric input
+    - max PnL loss threshold input
+  - Recommended defaults:
+    - disabled by default
+    - `n = 3`
+    - `max_pnl_loss = 0.30`
+  - How the UI should pass settings into `PipelineConfig` without engine/UI coupling.
+  - How the selected settings should appear in reports or validation summary.
+  - Minimal tests required for a later implementation task.
+  - Risks and non-goals.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-056g-impl_stress-result-details-display-implementation_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-056h_remove-best-n-trades-stress-config-surface-design_deepseek.md`
 
 ### Do Not
 
-- Do not change validation pipeline behavior.
+- Do not change production code.
+- Do not modify `PipelineConfig`.
+- Do not add UI controls.
+- Do not change report generation.
 - Do not change stress engine behavior.
-- Do not change report export file formats beyond the validation stress detail text.
-- Do not add a broad generic assumptions dumper for every stress test.
 - Do not add dependencies.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `app/widgets/validation_summary.py`
-- `reports/generator.py`
-- `tests/test_validation_summary.py`
-- `tests/test_report_export.py`
+- `docs/remove_best_n_trades_config_surface_design_056H.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-056g-impl_stress-result-details-display-implementation_deepseek.md`
+- `docs/agent_reports/2026-06-06_task-056h_remove-best-n-trades-stress-config-surface-design_deepseek.md`
+
+Read-only references may include:
+
+- `app/services/validation_pipeline_service.py`
+- `app/ui/main_window.py`
+- `app/widgets/validation_summary.py`
+- `reports/generator.py`
+- tests around validation pipeline, run flow, and validation summary
 
 ## Acceptance Criteria
 
-1. ValidationSummary shows compact remove-best-N detail sub-lines when serialized assumptions exist.
-2. Markdown report shows matching remove-best-N detail sub-lines.
-3. HTML report shows matching remove-best-N detail sub-lines and escapes dynamic text.
-4. `n`, `removed_count`, `surviving_count`, `pnl_loss_ratio`, and `max_pnl_loss` threshold are visible when present.
-5. Warnings are visible when present and omitted cleanly when empty.
-6. Existing commission/slippage/one-bar-delay/parameter-perturbation stress lines remain compact.
-7. Missing `assumptions`, `warnings`, or `threshold` does not crash any surface.
-8. Focused tests pass.
-9. Full suite passes.
-10. `git diff --check` passes.
+1. Design note clearly maps current configuration flow.
+2. Design recommends one minimal config surface for remove-best-N stress.
+3. Design keeps remove-best-N disabled by default.
+4. Design explains how settings should reach `PipelineConfig` without UI-engine coupling.
+5. Design lists future implementation files and tests.
+6. No production code is changed.
+7. Changelog and task board are updated.
+8. Completion report is created.
+9. `git diff --check` passes.
 
 ## Verification
 
 Run exactly:
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests/test_validation_summary.py tests/test_report_export.py -v
-.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
 
 Expected:
 
-- Focused tests pass.
-- Full suite passes without ignored tests.
 - `git diff --check` passes.
-- Agent status shows Task 056G-Impl completion report as the latest report.
+- Agent status shows Task 056H completion report as the latest report.
+- No tests are required because this is design-only.
 
 ## After Completion
 

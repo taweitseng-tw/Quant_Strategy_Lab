@@ -772,7 +772,27 @@ def _format_markdown_validation(vr: dict) -> str:
     for s in vr.get("stress_results", []):
         deg = s.get("degradation", {}).get("total_pnl", 0)
         passed = "OK" if s.get("passed") else "FAIL"
-        lines.append(f"- **Stress ({s.get('test_name','?')})**: {passed} PnL d={deg:.1%}")
+        name = s.get("test_name", "?")
+        lines.append(f"- **Stress ({name})**: {passed} PnL d={deg:.1%}")
+
+        # Detail sub-lines for remove_best_n_trades.
+        if name == "remove_best_n_trades":
+            assumptions = s.get("assumptions", {}) or {}
+            if assumptions:
+                n_val = assumptions.get("n", "?")
+                removed = assumptions.get("removed_count", "?")
+                surviving = assumptions.get("surviving_count", "?")
+                total = removed + surviving if isinstance(removed, int) and isinstance(surviving, int) else "?"
+                pnl_loss = assumptions.get("pnl_loss_ratio", "?")
+                if isinstance(pnl_loss, float):
+                    pnl_loss = f"{pnl_loss:.3f}"
+                threshold = (s.get("threshold", {}) or {}).get("max_pnl_loss", "?")
+                if isinstance(threshold, float):
+                    threshold = f"{threshold:.2f}"
+                lines.append(f"  - Removed: {removed} of {total} trades (n={n_val}, "
+                             f"pnl_loss={pnl_loss}, threshold={threshold})")
+            for w in (s.get("warnings", []) or []):
+                lines.append(f"  - WARNING: {w}")
     mc = vr.get("monte_carlo_summary", {}) or {}
     ps = (mc.get("percentile_summary", {}) or {}).get("total_pnl", {}) or {}
     if ps:
@@ -832,8 +852,30 @@ def _format_html_validation(vr: dict) -> str:
                      f'Max DD={oos.get("max_drawdown_pnl",0):,.0f}</p>')
     for s in vr.get("stress_results", []):
         deg = s.get("degradation", {}).get("total_pnl", 0)
-        name = html.escape(str(s.get("test_name", "?")))
+        raw_name = s.get("test_name", "?")
+        name = html.escape(str(raw_name))
         parts.append(f'<p><b>Stress ({name}):</b> PnL d={deg:.1%}</p>')
+
+        # Detail sub-lines for remove_best_n_trades.
+        if raw_name == "remove_best_n_trades":
+            assumptions = s.get("assumptions", {}) or {}
+            if assumptions:
+                n_val = assumptions.get("n", "?")
+                removed = assumptions.get("removed_count", "?")
+                surviving = assumptions.get("surviving_count", "?")
+                total = removed + surviving if isinstance(removed, int) and isinstance(surviving, int) else "?"
+                pnl_loss = assumptions.get("pnl_loss_ratio", "?")
+                if isinstance(pnl_loss, float):
+                    pnl_loss = f"{pnl_loss:.3f}"
+                threshold = (s.get("threshold", {}) or {}).get("max_pnl_loss", "?")
+                if isinstance(threshold, float):
+                    threshold = f"{threshold:.2f}"
+                parts.append(f'<div class="stress-detail">Removed: {html.escape(str(removed))} '
+                             f'of {html.escape(str(total))} trades '
+                             f'(n={html.escape(str(n_val))}, pnl_loss={html.escape(str(pnl_loss))}, '
+                             f'threshold={html.escape(str(threshold))})</div>')
+            for w in (s.get("warnings", []) or []):
+                parts.append(f'<div class="warning-item">⚠ {html.escape(w)}</div>')
     mc = vr.get("monte_carlo_summary", {}) or {}
     ps = (mc.get("percentile_summary", {}) or {}).get("total_pnl", {}) or {}
     if ps:

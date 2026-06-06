@@ -281,3 +281,63 @@ def test_elimination_failed_rules_displayed(qapp):
                             assert "min_total_pnl" in str(txt)
                             assert "min_trade_count" in str(txt)
     assert found_elim, "Elimination card with 'ELIMINATED' not found"
+
+
+# ---------------------------------------------------------------------------
+# Stress detail sub-lines (Task 056G-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_stress_remove_best_n_trades_detail_sub_lines(qapp):
+    """remove_best_n_trades must show sub-lines with n, removed, pnl_loss."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0, "total_trades": 4},
+        "stress_results": [
+            {"test_name": "commission_2.0x", "passed": True,
+             "degradation": {"total_pnl": -0.15}},
+            {"test_name": "remove_best_n_trades", "passed": False,
+             "degradation": {"total_pnl": -0.83},
+             "assumptions": {
+                 "n": 2, "removed_count": 2, "surviving_count": 2,
+                 "pnl_loss_ratio": 0.833, "total_baseline_count": 4,
+             },
+             "warnings": ["Some warning text."],
+             "threshold": {"max_pnl_loss": 0.30},
+            },
+        ],
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+
+    assert "commission_2.0x:" in text
+    assert "remove_best_n_trades:" in text
+    assert "Removed:" in text
+    assert "n=2" in text
+    assert "pnl_loss=0.833" in text
+    assert "threshold=0.30" in text
+    assert "Some warning text." in text
+
+
+def test_stress_no_sub_lines_for_basic_tests(qapp):
+    """Basic stress tests must NOT have detail sub-lines."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [
+            {"test_name": "commission_2.0x", "passed": True,
+             "degradation": {"total_pnl": -0.15}},
+            {"test_name": "slippage_2.0x", "passed": True,
+             "degradation": {"total_pnl": -0.08}},
+        ],
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+
+    assert "commission_2.0x:" in text
+    assert "slippage_2.0x:" in text
+    assert "→" not in text  # No sub-lines for basic tests

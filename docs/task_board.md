@@ -8,10 +8,14 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056G-Impl - Stress Result Details Display Implementation
+- [ ] Task 056H - Remove Best N Trades Stress Config Surface Design Only
 
 ## Done
 
+- [x] Task 056G-Impl-Fix2-Codex Review - Stress Result Details Display Acceptance
+- [x] Task 056G-Impl-Fix2 - Escape HTML Stress Detail PnL Loss Value
+- [x] Task 056G-Impl-Fix - HTML Stress Detail Value Escaping
+- [x] Task 056G-Impl - Stress Result Details Display Implementation
 - [x] Task 056G-Codex Review - Stress Result Details Reporting Surface Design Acceptance
 - [x] Task 056G - Stress Result Details Reporting Surface Design Only
 - [x] Task 056F-Fix-Codex Review - Remove Best N Trades Pipeline Assumptions Serialization Acceptance

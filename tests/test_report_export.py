@@ -623,3 +623,100 @@ def test_report_does_not_crash_with_mtf_conditions(mock_strategy, mock_backtest_
     
     assert "[TF: 15m]" in md
     assert "[TF: 15m]" in html
+
+
+# ---------------------------------------------------------------------------
+# Stress detail sub-lines in reports (Task 056G-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_markdown_includes_remove_best_n_detail_lines(mock_strategy, mock_backtest_result):
+    """Markdown report must show remove_best_n sub-lines with assumptions."""
+    vr = _make_validation_dict(stress_results=[
+        {"test_name": "commission_2.0x", "passed": True,
+         "degradation": {"total_pnl": -0.15}},
+        {"test_name": "remove_best_n_trades", "passed": False,
+         "degradation": {"total_pnl": -0.83},
+         "assumptions": {
+             "n": 2, "removed_count": 2, "surviving_count": 2,
+             "pnl_loss_ratio": 0.833,
+         },
+         "warnings": ["Insufficient trades for remove-best-n stress test."],
+         "threshold": {"max_pnl_loss": 0.30},
+        },
+    ])
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+
+    assert "commission_2.0x" in md
+    assert "remove_best_n_trades" in md
+    assert "Removed:" in md
+    assert "n=2" in md
+    assert "pnl_loss=0.833" in md
+    assert "threshold=0.30" in md
+    assert "WARNING:" in md
+    assert "Insufficient trades" in md
+
+
+def test_html_includes_remove_best_n_detail_lines(mock_strategy, mock_backtest_result):
+    """HTML report must show remove_best_n sub-lines with escaped text."""
+    vr = _make_validation_dict(stress_results=[
+        {"test_name": "remove_best_n_trades", "passed": False,
+         "degradation": {"total_pnl": -0.83},
+         "assumptions": {
+             "n": 2, "removed_count": 2, "surviving_count": 2,
+             "pnl_loss_ratio": 0.833,
+         },
+         "warnings": ["Test <script>alert(1)</script>."],
+         "threshold": {"max_pnl_loss": 0.30},
+        },
+    ])
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+
+    assert "remove_best_n_trades" in html_out
+    assert "stress-detail" in html_out
+    assert "Removed:" in html_out
+    assert "n=2" in html_out
+    assert "pnl_loss=0.833" in html_out
+    assert "threshold=0.30" in html_out
+    assert "warning-item" in html_out
+    # HTML warning must be escaped.
+    assert "&lt;script&gt;" in html_out
+    assert "<script>" not in html_out
+
+
+def test_markdown_no_detail_lines_for_basic_stress(mock_strategy, mock_backtest_result):
+    """Basic stress tests must NOT have detail sub-lines."""
+    vr = _make_validation_dict(stress_results=[
+        {"test_name": "commission_2.0x", "passed": True,
+         "degradation": {"total_pnl": -0.15}},
+    ])
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "commission_2.0x" in md
+    assert "Removed:" not in md
+    assert "pnl_loss" not in md
+
+
+def test_html_stress_detail_values_escaped(mock_strategy, mock_backtest_result):
+    """Malicious detail values in remove_best_n_trades must be HTML-escaped."""
+    vr = _make_validation_dict(stress_results=[
+        {"test_name": "remove_best_n_trades", "passed": False,
+         "degradation": {"total_pnl": -0.50},
+         "assumptions": {
+             "n": "<script>x</script>",
+             "removed_count": 1,
+             "surviving_count": 3,
+             "pnl_loss_ratio": "<img src=x>",
+         },
+         "threshold": {"max_pnl_loss": "<b>bad</b>"},
+        },
+    ])
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+
+    # Raw malicious HTML must not appear.
+    assert "<script>x</script>" not in html_out
+    assert "<b>bad</b>" not in html_out
+    assert "<img src=x>" not in html_out
+    # Escaped equivalents must appear.
+    assert "&lt;script&gt;x&lt;/script&gt;" in html_out
+    assert "&lt;b&gt;bad&lt;/b&gt;" in html_out
+    assert "&lt;img src=x&gt;" in html_out

@@ -84,6 +84,27 @@ class ValidationSummary(QWidget):
             deg = s.get("degradation", {})
             pnl_deg = deg.get("total_pnl", 0)
             stress_lines.append(f"{name}: {passed}  PnL Δ={pnl_deg:.1%}")
+
+            # Detail sub-lines for remove_best_n_trades.
+            if name == "remove_best_n_trades":
+                assumptions = s.get("assumptions", {}) or {}
+                if assumptions:
+                    n_val = assumptions.get("n", "?")
+                    removed = assumptions.get("removed_count", "?")
+                    surviving = assumptions.get("surviving_count", "?")
+                    pnl_loss = assumptions.get("pnl_loss_ratio", "?")
+                    if isinstance(pnl_loss, float):
+                        pnl_loss = f"{pnl_loss:.3f}"
+                    threshold = (s.get("threshold", {}) or {}).get("max_pnl_loss", "?")
+                    if isinstance(threshold, float):
+                        threshold = f"{threshold:.2f}"
+                    stress_lines.append(
+                        f"  → Removed: {removed} of {removed + surviving if isinstance(removed, int) and isinstance(surviving, int) else '?'} trades "
+                        f"(n={n_val}, pnl_loss={pnl_loss}, threshold={threshold})"
+                    )
+                warnings = s.get("warnings", []) or []
+                for w in warnings:
+                    stress_lines.append(f"  → ⚠ {w}")
         self._add_section("Stress Tests", "\n".join(stress_lines) if stress_lines else "No stress results.")
 
         # --- Monte Carlo ---
