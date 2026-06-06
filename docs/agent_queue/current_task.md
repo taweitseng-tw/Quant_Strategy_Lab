@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 057G-Impl + 057H-Design - Bootstrap Feature Acceptance Smoke and Remaining Validation Gap Triage.
+Batch 057J-Design + 057K-Design - WF Equity Chart Display Design and 057 Validation Acceptance Triage.
 
 ## Required Reading
 
@@ -24,91 +24,88 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-06_task-057e-fix_057f-impl_bootstrap-display-hardening-and-ui-controls_codex-review.md`
-8. `docs/bootstrap_ui_config_controls_design_057F.md`
-9. `docs/bootstrap_pipeline_report_surface_design_057C.md`
-10. `docs/monte_carlo_bootstrap_ci_design_057A.md`
+7. `docs/review_notes/2026-06-06_task-057g-impl_057h-design_bootstrap-acceptance-and-validation-gap-triage_codex-review.md`
+8. `docs/validation_gap_triage_057H.md`
+9. `docs/bootstrap_ui_config_controls_design_057F.md`
+10. `docs/bootstrap_pipeline_report_surface_design_057C.md`
 11. `docs/v0.2_validation_expansion_readiness.md`
 12. This task file
 
 ## Context
 
-Batch 057E-Fix + 057F-Impl was accepted. Bootstrap Monte Carlo now has engine, pipeline, display, and UI controls. Before adding more features, add a focused acceptance smoke and then produce a design-only triage of any remaining validation gaps.
+Batch 057G-Impl + 057H-Design accepted the bootstrap feature chain and recommended WF per-window equity chart display as the smallest remaining user-visible validation gap. This batch is design-only. Do not implement charts.
 
 ## Scope
 
 ### Do
 
-- Complete two sequential tasks:
-  - Task 057G-Impl - Bootstrap Feature Acceptance Smoke
-  - Task 057H-Design - Remaining Validation Gap Triage
-- For Task 057G-Impl:
-  - Add test-only acceptance smoke coverage for the bootstrap feature chain.
-  - Prefer one new focused test file:
-    - `tests/test_bootstrap_monte_carlo_acceptance.py`
-  - Cover:
-    - default PipelineConfig does not run bootstrap,
-    - opt-in PipelineConfig produces `bootstrap_monte_carlo_result` with `confidence_intervals`,
-    - UI controls pass enabled/custom values into `PipelineConfig`,
-    - widget displays Bootstrap MC when CI data is present,
-    - markdown and HTML reports display Bootstrap MC when CI data is present,
-    - widget/markdown/HTML omit Bootstrap MC when CI data is empty.
-  - Do not change production code unless a test exposes a real bug; if production code must change, keep it minimal and explain why.
-- For Task 057H-Design:
-  - Write `docs/validation_gap_triage_057H.md`.
-  - Design-only triage: summarize what 057 completed, list remaining PRD validation gaps, and recommend exactly one next task.
-  - Include whether price-noise stress, WF equity display, or broader validation acceptance should come next.
+- Complete two sequential design-only tasks:
+  - Task 057J-Design - WF Per-Window Equity Chart Display Design
+  - Task 057K-Design - 057 Validation Expansion Acceptance Triage
+- For Task 057J-Design:
+  - Write `docs/wf_equity_chart_display_design_057J.md`.
+  - Cover widget/report display surfaces for already-stored `walk_forward_summary["windows"][*]["equity_curve"]`.
+  - Include data availability rules, empty/missing equity behavior, chart/table fallback, markdown/HTML strategy, no-new-dependency approach, test plan, and non-goals.
+  - Decide whether first implementation should be widget only, report only, or both.
+- For Task 057K-Design:
+  - Write `docs/validation_expansion_acceptance_triage_057K.md`.
+  - Summarize what 057 added across bootstrap MC and WF equity persistence.
+  - List remaining validation gaps after 057J design.
+  - Recommend exactly one next task:
+    - implement WF equity display,
+    - do validation expansion acceptance smoke,
+    - or pause validation expansion for broader v0.2 hardening.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-057g-impl_057h-design_bootstrap-acceptance-and-validation-gap-triage_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-057j-design_057k-design_wf-equity-display-and-validation-acceptance-triage_deepseek.md`
 
 ### Do Not
 
-- Do not modify Monte Carlo engine code unless acceptance smoke exposes a real bug.
+- Do not modify production code.
+- Do not add tests.
 - Do not add `worst_case_equity`.
 - Do not change walk-forward production code.
-- Do not add new UI controls.
-- Do not change report layout beyond bug fixes required by acceptance smoke.
+- Do not implement charts.
+- Do not modify UI widgets or reports.
 - Do not add dependencies.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `tests/test_bootstrap_monte_carlo_acceptance.py`
-- `docs/validation_gap_triage_057H.md`
+- `docs/wf_equity_chart_display_design_057J.md`
+- `docs/validation_expansion_acceptance_triage_057K.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-057g-impl_057h-design_bootstrap-acceptance-and-validation-gap-triage_deepseek.md`
+- `docs/agent_reports/2026-06-06_task-057j-design_057k-design_wf-equity-display-and-validation-acceptance-triage_deepseek.md`
 
 ## Acceptance Criteria
 
-1. Acceptance tests cover the bootstrap feature chain from pipeline/UI config to widget/report display.
-2. Default-off behavior is covered.
-3. Empty-CI omission behavior is covered across widget/markdown/HTML.
-4. 057H triage note summarizes completed 057 bootstrap work and remaining validation gaps.
-5. 057H recommends exactly one next task.
-6. Changelog and task board are updated.
-7. Completion report is created.
-8. Focused acceptance tests and `git diff --check` pass.
+1. 057J design identifies exact widget/report surfaces and no-dependency rendering approach.
+2. 057J design defines behavior for missing/empty per-window equity curves.
+3. 057J design has a focused implementation/test plan.
+4. 057K triage accurately summarizes 057 completion and remaining validation gaps.
+5. 057K recommends exactly one next task.
+6. No production code or tests are changed.
+7. Changelog and task board are updated.
+8. Completion report is created.
+9. `git diff --check` passes.
 
 ## Verification
 
 Run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/test_bootstrap_monte_carlo_acceptance.py -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
 
 Expected:
 
-- Focused tests pass.
 - `git diff --check` passes.
-- Agent status shows Batch 057G-Impl + 057H-Design completion report as the latest report.
-- No new feature implementation beyond test-only acceptance smoke unless fixing a real bug exposed by the smoke.
+- Agent status shows Batch 057J-Design + 057K-Design completion report as the latest report.
+- No production code or tests are changed.
 
 ## After Completion
 

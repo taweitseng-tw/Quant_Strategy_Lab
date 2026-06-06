@@ -8,10 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Batch 057G-Impl + 057H-Design - Bootstrap Feature Acceptance Smoke and Remaining Validation Gap Triage
+- [ ] Batch 057J-Design + 057K-Design - WF Equity Chart Display Design and 057 Validation Acceptance Triage
 
 ## Done
 
+- [x] Batch 057G-Impl + 057H-Design - Bootstrap Feature Acceptance Smoke and Remaining Validation Gap Triage
+- [x] Batch 057G-Impl + 057H-Design-Codex Review - Bootstrap Feature Acceptance Smoke and Validation Gap Triage Acceptance
 - [x] Batch 057E-Fix + 057F-Impl - Bootstrap Display Hardening and UI Controls
 - [x] Batch 057E-Fix + 057F-Impl-Codex Review - Bootstrap Display Hardening and UI Controls Acceptance
 - [x] Batch 057E-Impl + 057F-Design - Bootstrap Display Surfaces and UI Controls Design

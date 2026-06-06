@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-06-06 - Batch 057G-Impl + 057H-Design Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-057g-impl_057h-design_bootstrap-acceptance-and-validation-gap-triage_codex-review.md` accepting the bootstrap acceptance smoke and validation gap triage with score 9.1 / 10.
+
+### Changed
+- Corrected `docs/validation_gap_triage_057H.md` test-count and full-suite numbers.
+- Updated `docs/agent_queue/current_task.md` with Batch 057J-Design + 057K-Design.
+- Updated `docs/task_board.md` to queue WF equity chart display design and validation acceptance triage.
+
+### Verification
+- Reviewed bootstrap acceptance smoke tests, validation gap triage, and latest agent report.
+- Ran acceptance tests: 10 passed.
+- Ran full suite: 1084 passed, 1 warning.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Batch 057G-Impl + 057H-Design: Bootstrap Acceptance Smoke and Validation Gap Triage
+
+### Added (057G-Impl)
+- `tests/test_bootstrap_monte_carlo_acceptance.py`: 10 acceptance smoke tests covering full chain — default pipeline omits, opt-in produces CI, widget render, widget empty CI, markdown render, HTML render, markdown empty CI, HTML empty CI, UI controls enabled, UI controls disabled.
+
+### Added (057H-Design)
+- `docs/validation_gap_triage_057H.md` — remaining PRD validation gaps triage. Recommends WF equity chart display as next task.
+
+### Verification
+- Acceptance tests: 10 passed.
+- Full suite: 1084 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+
 ## 2026-06-06 - Batch 057E-Fix + 057F-Impl Codex Acceptance
 
 ### Added
