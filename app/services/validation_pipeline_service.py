@@ -14,7 +14,7 @@ from core.models.strategy import Strategy
 from core.models.instrument import InstrumentProfile
 from backtest_engine.runner import run_backtest
 from validation_engine.splitter import split_by_ratio
-from validation_engine.stress_test import stress_commission_multiplier, stress_slippage_multiplier, stress_one_bar_delay, stress_parameter_perturbation
+from validation_engine.stress_test import stress_commission_multiplier, stress_slippage_multiplier, stress_one_bar_delay, stress_parameter_perturbation, stress_remove_best_n_trades
 from validation_engine.monte_carlo import run_missed_trade_monte_carlo
 from validation_engine.walk_forward import walk_forward
 from validation_engine.walk_forward_matrix import walk_forward_matrix
@@ -44,6 +44,9 @@ class PipelineConfig:
     stress_slippage_multiplier: float = 2.0
     run_one_bar_delay_stress: bool = True
     run_parameter_perturbation: bool = True
+    run_remove_best_n_trades_stress: bool = False
+    remove_best_n_trades_n: int = 3
+    remove_best_n_trades_degradation_threshold: float = 0.30
 
     # Monte Carlo.
     mc_iterations: int = 25
@@ -174,6 +177,14 @@ def run_validation_pipeline(
         random.setstate(state)
         stress_results.append(_stress_to_dict(param_res))
 
+    if cfg.run_remove_best_n_trades_stress:
+        n_trades_res = stress_remove_best_n_trades(
+            baseline,
+            n=cfg.remove_best_n_trades_n,
+            degradation_threshold=cfg.remove_best_n_trades_degradation_threshold,
+        )
+        stress_results.append(_stress_to_dict(n_trades_res))
+
     # ── 4. Monte Carlo ──────────────────────────────────────────────────────
     mc = run_missed_trade_monte_carlo(
         baseline,
@@ -256,12 +267,20 @@ def run_validation_pipeline(
 
 
 def _stress_to_dict(sr) -> dict:
-    return {
+    result: dict = {
         "test_name": sr.test_name,
         "passed": sr.passed,
         "degradation": sr.degradation,
         "stressed_metrics": sr.stressed_metrics,
     }
+    # Include assumptions, warnings, and threshold when present.
+    if hasattr(sr, "assumptions"):
+        result["assumptions"] = sr.assumptions
+    if hasattr(sr, "warnings"):
+        result["warnings"] = sr.warnings
+    if hasattr(sr, "threshold"):
+        result["threshold"] = sr.threshold
+    return result
 
 
 def _mc_to_dict(mc) -> dict:

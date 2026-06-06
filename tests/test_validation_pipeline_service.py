@@ -371,3 +371,61 @@ def test_pipeline_oos_metrics_empty_segment_warning():
     else:
         # If OOS had enough rows, we got metrics — also valid
         assert isinstance(result.oos_metrics, dict)
+
+
+# ---------------------------------------------------------------------------
+# Remove Best N Trades pipeline integration (Task 056F)
+# ---------------------------------------------------------------------------
+
+
+def test_remove_best_n_trades_not_included_by_default():
+    """Default PipelineConfig must not include remove_best_n_trades."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    result = run_validation_pipeline(df, strat, commission=2.0)
+
+    test_names = [s["test_name"] for s in result.stress_results]
+    assert not any("remove_best_n_trades" in t for t in test_names)
+    # Default config flag must be false.
+    assert result.config_snapshot.get("run_remove_best_n_trades_stress") is False
+
+
+def test_remove_best_n_trades_included_when_enabled():
+    """Opt-in PipelineConfig must include remove_best_n_trades."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    cfg = PipelineConfig(run_remove_best_n_trades_stress=True, remove_best_n_trades_n=2)
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+
+    test_names = [s["test_name"] for s in result.stress_results]
+    assert any("remove_best_n_trades" in t for t in test_names)
+
+    # Find the actual result.
+    n_trades = next(s for s in result.stress_results if s["test_name"] == "remove_best_n_trades")
+    assert n_trades["test_name"] == "remove_best_n_trades"
+    assert isinstance(n_trades["passed"], bool)
+    assert isinstance(n_trades["stressed_metrics"], dict)
+    assert "total_pnl" in n_trades["stressed_metrics"]
+    # assumptions must be serialized now.
+    assert "assumptions" in n_trades
+    assert n_trades["assumptions"]["n"] == 2
+    assert isinstance(n_trades["assumptions"]["removed_count"], int)
+    assert isinstance(n_trades["assumptions"]["pnl_loss_ratio"], float)
+    # warnings and threshold should also be present.
+    assert "warnings" in n_trades
+
+
+def test_remove_best_n_trades_config_fields_in_snapshot():
+    """Config snapshot must record remove-best-n-trades fields."""
+    cfg = PipelineConfig(
+        run_remove_best_n_trades_stress=True,
+        remove_best_n_trades_n=5,
+        remove_best_n_trades_degradation_threshold=0.25,
+    )
+    df = _make_df(200)
+    strat = _make_strategy()
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+
+    assert result.config_snapshot["run_remove_best_n_trades_stress"] is True
+    assert result.config_snapshot["remove_best_n_trades_n"] == 5
+    assert result.config_snapshot["remove_best_n_trades_degradation_threshold"] == 0.25

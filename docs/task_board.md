@@ -8,10 +8,13 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056F - Remove Best N Trades Pipeline Integration
+- [ ] Task 056G - Stress Result Details Reporting Surface Design Only
 
 ## Done
 
+- [x] Task 056F-Fix-Codex Review - Remove Best N Trades Pipeline Assumptions Serialization Acceptance
+- [x] Task 056F-Fix - Remove Best N Trades Pipeline Assumptions Serialization
+- [x] Task 056F - Remove Best N Trades Pipeline Integration
 - [x] Task 056E-Impl-Fix-Codex Review - Remove Best N Trades Deterministic Test Hardening Acceptance
 - [x] Task 056E-Impl-Fix - Remove Best N Trades Deterministic Test Hardening
 - [x] Task 056E-Impl - Remove Best N Trades Stress Test Engine Implementation

@@ -1,5 +1,61 @@
 # Changelog
 
+## 2026-06-06 - Task 056F-Fix Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056f-fix_remove-best-n-trades-pipeline-assumptions-serialization_codex-review.md` accepting the pipeline assumptions serialization fix with score 8.9 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056G.
+- Updated `docs/task_board.md` to queue stress result details reporting surface design.
+
+### Verification
+- Ran focused validation pipeline and stress tests: 47 passed.
+- Ran the full test suite: 1006 passed, 1 pre-existing warning.
+- Ran `git diff --check`.
+- Manually confirmed serialized remove-best-N-trades output includes `assumptions`, `warnings`, and `threshold`.
+
+## 2026-06-06 - Task 056F-Fix: Remove Best N Trades Pipeline Assumptions Serialization
+
+### Fixed
+- `app/services/validation_pipeline_service.py`: Extended `_stress_to_dict()` to include `assumptions`, `warnings`, and `threshold` fields from `StressTestResult` when present. Previously these were dropped.
+- `tests/test_validation_pipeline_service.py`: Updated opt-in pipeline test to assert `assumptions["n"]`, `assumptions["removed_count"]`, `assumptions["pnl_loss_ratio"]`, and `warnings` are in the serialized dict.
+
+### Verification
+- Focused tests: 47 passed (pipeline + stress).
+- Full suite: 1006 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+- Backward-compatible: existing tests that access `test_name`, `passed`, `degradation`, `stressed_metrics` continue to pass.
+
+## 2026-06-06 - Task 056F Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056f_remove-best-n-trades-pipeline-integration_codex-review.md` marking the pipeline integration as needing assumptions serialization before acceptance.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056F-Fix.
+- Updated `docs/task_board.md` to queue the pipeline assumptions serialization fix.
+
+### Verification
+- Ran focused validation pipeline and stress tests: 47 passed.
+- Ran `git diff --check`.
+- Reviewed `_stress_to_dict()` and confirmed it drops `StressTestResult.assumptions`.
+
+## 2026-06-06 - Task 056F: Remove Best N Trades Pipeline Integration
+
+### Added
+- `app/services/validation_pipeline_service.py`:
+  - Imported `stress_remove_best_n_trades`.
+  - Added `PipelineConfig` fields: `run_remove_best_n_trades_stress: bool = False`, `remove_best_n_trades_n: int = 3`, `remove_best_n_trades_degradation_threshold: float = 0.30`.
+  - Wired `stress_remove_best_n_trades()` into stress section when flag is true.
+- `tests/test_validation_pipeline_service.py`: Added 3 pipeline tests (default off, opt-in on, config fields in snapshot).
+
+### Verification
+- Focused tests: 47 passed (pipeline + stress).
+- Full suite: 1006 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+- Default pipeline behavior unchanged (flag defaults to false).
+
 ## 2026-06-06 - Task 056E-Impl-Fix Codex Acceptance
 
 ### Added

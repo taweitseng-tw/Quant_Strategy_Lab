@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Task 056F - Remove Best N Trades Pipeline Integration.
+Task 056G - Stress Result Details Reporting Surface Design Only.
 
 ## Required Reading
 
@@ -24,84 +24,92 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/remove_best_n_trades_stress_design_056E.md`
-8. `docs/review_notes/2026-06-06_task-056e-impl-fix_remove-best-n-trades-deterministic-test-hardening_codex-review.md`
+7. `docs/review_notes/2026-06-06_task-056f-fix_remove-best-n-trades-pipeline-assumptions-serialization_codex-review.md`
+8. `app/services/validation_pipeline_service.py`
 9. `validation_engine/stress_test.py`
-10. `app/services/validation_pipeline_service.py`
-11. `tests/test_validation_pipeline_service.py`
+10. `app/widgets/validation_summary.py`
+11. `reports/generator.py`
 12. This task file
 
 ## Context
 
-The remove-best-N-trades stress engine function is accepted. The next step is to wire it into the validation pipeline behind an explicit opt-in flag. It must remain off by default because the test is only meaningful when baseline trade count is sufficient.
+Task 056F and 056F-Fix wired remove-best-N-trades stress into the validation pipeline and preserved serialized `assumptions`, `warnings`, and `threshold` fields. The next safe step is not production UI/report implementation yet; first decide how these optional stress details should surface without cluttering the validation summary or exported reports.
 
 ## Scope
 
 ### Do
 
-- In `app/services/validation_pipeline_service.py`:
-  - Import `stress_remove_best_n_trades`.
-  - Add `PipelineConfig` fields:
-    - `run_remove_best_n_trades_stress: bool = False`
-    - `remove_best_n_trades_n: int = 3`
-    - `remove_best_n_trades_degradation_threshold: float = 0.30`
-  - When `run_remove_best_n_trades_stress` is true, call `stress_remove_best_n_trades()` and append `_stress_to_dict(result)` to `stress_results`.
-  - Keep default pipeline behavior unchanged when the flag is false.
-- In `tests/test_validation_pipeline_service.py`:
-  - Add a test showing default config does not include `remove_best_n_trades`.
-  - Add a test showing opt-in config includes `remove_best_n_trades`.
-  - Assert the resulting stress dict includes assumptions such as `n`, `removed_count`, and `pnl_loss_ratio`.
+- Inspect current validation display/reporting surfaces:
+  - `app/widgets/validation_summary.py`
+  - `reports/generator.py`
+  - any service/report helper directly involved in rendering validation stress results
+- Write a design note:
+  - `docs/stress_result_details_surface_design_056G.md`
+- The design must answer:
+  - Which stress result fields are already displayed today.
+  - Whether optional `assumptions`, `warnings`, and `threshold` should be shown in the UI, Markdown/HTML reports, or both.
+  - Minimal display format for remove-best-N-trades details:
+    - `n`
+    - `removed_count`
+    - `surviving_count`
+    - `pnl_loss_ratio`
+    - `threshold["max_pnl_loss"]`
+    - `warnings`
+  - How to keep existing stress tests backward compatible.
+  - Proposed acceptance criteria for a later implementation task.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-056f_remove-best-n-trades-pipeline-integration_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-056g_stress-result-details-reporting-surface-design_deepseek.md`
 
 ### Do Not
 
-- Do not change `validation_engine/stress_test.py` unless an integration bug is discovered.
-- Do not modify UI/report code.
-- Do not add new elimination thresholds.
-- Do not turn this stress test on by default.
+- Do not change production UI code.
+- Do not change report generation code.
+- Do not change validation pipeline behavior.
+- Do not change stress engine behavior.
 - Do not add dependencies.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `app/services/validation_pipeline_service.py`
-- `tests/test_validation_pipeline_service.py`
+- `docs/stress_result_details_surface_design_056G.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-056f_remove-best-n-trades-pipeline-integration_deepseek.md`
+- `docs/agent_reports/2026-06-06_task-056g_stress-result-details-reporting-surface-design_deepseek.md`
+
+Read-only references:
+
+- `app/widgets/validation_summary.py`
+- `reports/generator.py`
+- `app/services/validation_pipeline_service.py`
+- `validation_engine/stress_test.py`
 
 ## Acceptance Criteria
 
-1. Default validation pipeline output is unchanged: no `remove_best_n_trades` stress result unless explicitly enabled.
-2. Opt-in pipeline config appends exactly one `remove_best_n_trades` stress result.
-3. The stress result is serialized through existing `_stress_to_dict()` shape.
-4. The result includes `assumptions["pnl_loss_ratio"]`.
-5. No UI/report/elimination behavior changes.
-6. Focused pipeline tests pass.
-7. Full suite passes.
-8. `git diff --check` passes.
+1. Design note clearly describes current stress result display behavior.
+2. Design note recommends a minimal implementation plan for surfacing optional stress details.
+3. Design explicitly covers remove-best-N-trades assumptions, threshold, and warnings.
+4. No production code is changed.
+5. Changelog and task board are updated.
+6. Completion report is created.
+7. `git diff --check` passes.
 
 ## Verification
 
 Run exactly:
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests/test_validation_pipeline_service.py tests/test_stress_test.py -v
-.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
 
 Expected:
 
-- Focused tests pass.
-- Full suite passes without ignored tests.
 - `git diff --check` passes.
-- Agent status shows Task 056F completion report as the latest report.
+- Agent status shows Task 056G completion report as the latest report.
+- No tests are required because this is design-only.
 
 ## After Completion
 
