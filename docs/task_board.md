@@ -8,10 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056H-Impl - Remove Best N Trades Stress Config Controls
+- [ ] Task 056I - Remove Best N Trades Feature Acceptance Smoke
 
 ## Done
 
+- [x] Task 056H-Impl-Codex Review - Remove Best N Trades Stress Config Controls Acceptance
+- [x] Task 056H-Impl - Remove Best N Trades Stress Config Controls
 - [x] Task 056H-Codex Review - Remove Best N Trades Stress Config Surface Design Acceptance
 - [x] Task 056H - Remove Best N Trades Stress Config Surface Design Only
 - [x] Task 056G-Impl-Fix2-Codex Review - Stress Result Details Display Acceptance

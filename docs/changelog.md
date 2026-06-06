@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-06-06 - Task 056H-Impl Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056h-impl_remove-best-n-trades-stress-config-controls_codex-review.md` accepting the remove-best-N stress config controls with score 9.1 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056I.
+- Updated `docs/task_board.md` to queue remove-best-N feature acceptance smoke coverage.
+
+### Verification
+- Ran focused UI wiring tests: 7 passed.
+- Ran the full test suite: 1016 passed, 1 pre-existing warning.
+- Ran `git diff --check`.
+- Manually confirmed threshold spinbox step and decimals.
+
+## 2026-06-06 - Task 056H-Impl: Remove Best N Trades Stress Config Controls
+
+### Added
+- `app/ui/main_window.py`: Added Validate page controls near WFE checkbox — enable checkbox, N spinbox (min 1, max 50, default 3), threshold double spinbox (min 0.01, max 1.00, default 0.30, step 0.05). Spinboxes disabled when checkbox is unchecked. Values passed into `PipelineConfig()`.
+- `tests/test_wfe_ui_wiring.py`: Added 4 focused tests (controls exist + defaults, spinbox enable/disable toggle, unchecked passes False, checked passes custom values).
+- Existing WFE checkbox behavior unchanged.
+
+### Verification
+- Focused UI wiring tests: 7 passed (3 WFE + 4 new).
+- Full suite: 1016 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+- Engine/UI separation preserved: UI reads controls -> PipelineConfig -> pipeline service.
+
 ## 2026-06-06 - Task 056H Codex Acceptance
 
 ### Added

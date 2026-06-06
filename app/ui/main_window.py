@@ -306,6 +306,46 @@ class MainWindow(QMainWindow):
                 header_layout.addWidget(self.wfe_checkbox)
 
                 layout.addLayout(header_layout)
+
+                # Remove-best-N stress controls.
+                from PySide6.QtWidgets import QSpinBox, QDoubleSpinBox
+                self.remove_best_n_checkbox = QCheckBox("Remove Best N Trades Stress")
+                self.remove_best_n_checkbox.setToolTip(
+                    "Removes the top N best-performing trades and rechecks performance. "
+                    "Requires >N trades to be meaningful. Off by default."
+                )
+                self.remove_best_n_checkbox.setChecked(False)
+
+                self.remove_best_n_n_spin = QSpinBox()
+                self.remove_best_n_n_spin.setMinimum(1)
+                self.remove_best_n_n_spin.setMaximum(50)
+                self.remove_best_n_n_spin.setValue(3)
+                self.remove_best_n_n_spin.setToolTip("Number of best trades to remove.")
+                self.remove_best_n_n_spin.setEnabled(False)
+
+                self.remove_best_n_threshold_spin = QDoubleSpinBox()
+                self.remove_best_n_threshold_spin.setMinimum(0.01)
+                self.remove_best_n_threshold_spin.setMaximum(1.00)
+                self.remove_best_n_threshold_spin.setSingleStep(0.05)
+                self.remove_best_n_threshold_spin.setDecimals(2)
+                self.remove_best_n_threshold_spin.setValue(0.30)
+                self.remove_best_n_threshold_spin.setToolTip("Maximum allowed PnL loss ratio (0.01-1.00).")
+                self.remove_best_n_threshold_spin.setEnabled(False)
+
+                def _toggle_remove_best_n_spins(checked):
+                    self.remove_best_n_n_spin.setEnabled(checked)
+                    self.remove_best_n_threshold_spin.setEnabled(checked)
+
+                self.remove_best_n_checkbox.toggled.connect(_toggle_remove_best_n_spins)
+
+                stress_opts_layout = QHBoxLayout()
+                stress_opts_layout.addWidget(self.remove_best_n_checkbox)
+                stress_opts_layout.addWidget(QLabel("N:"))
+                stress_opts_layout.addWidget(self.remove_best_n_n_spin)
+                stress_opts_layout.addWidget(QLabel("Max PnL Loss:"))
+                stress_opts_layout.addWidget(self.remove_best_n_threshold_spin)
+                stress_opts_layout.addStretch()
+                layout.addLayout(stress_opts_layout)
                 layout.addWidget(self.validation_summary)
                 self.workspace.addWidget(page)
             elif page_name == "Settings":
@@ -1088,10 +1128,23 @@ class MainWindow(QMainWindow):
         if hasattr(self, "wfe_checkbox"):
             calc_wfe = self.wfe_checkbox.isChecked()
 
+        run_remove_best_n = False
+        remove_best_n_n = 3
+        remove_best_n_threshold = 0.30
+        if hasattr(self, "remove_best_n_checkbox"):
+            run_remove_best_n = self.remove_best_n_checkbox.isChecked()
+            remove_best_n_n = self.remove_best_n_n_spin.value()
+            remove_best_n_threshold = self.remove_best_n_threshold_spin.value()
+
         try:
             result = run_validation_pipeline(
                 df, strategy,
-                config=PipelineConfig(mc_iterations=15, calc_wfe=calc_wfe),
+                config=PipelineConfig(
+                    mc_iterations=15, calc_wfe=calc_wfe,
+                    run_remove_best_n_trades_stress=run_remove_best_n,
+                    remove_best_n_trades_n=remove_best_n_n,
+                    remove_best_n_trades_degradation_threshold=remove_best_n_threshold,
+                ),
                 instrument=active_profile,
                 data_source=source_label,
                 commission=2.0,
