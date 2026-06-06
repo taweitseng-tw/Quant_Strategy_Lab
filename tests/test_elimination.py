@@ -149,6 +149,214 @@ def test_oos_missing_fails_when_required():
     assert any("OOS" in r for r in result.failed_rules)
 
 
+# ---------------------------------------------------------------------------
+# IS/OOS Stability ratio rules (Task 056B)
+# ---------------------------------------------------------------------------
+
+
+def _oos_good_oos() -> dict:
+    """OOS metrics that are close to IS: passes PF degradation, DD ratio, avg trade degradation."""
+    return {
+        "total_pnl": 20000.0,
+        "profit_factor": 1.8,  # IS=2.0 → 0.90 degradation
+        "max_drawdown_pnl": 6000.0,  # IS=5000 → 1.2× ratio
+        "total_trades": 40,
+        "avg_trade": 400.0,  # IS=500 → 0.80 degradation
+        "win_rate": 0.55,
+    }
+
+
+def _oos_bad_pf() -> dict:
+    """OOS PF severely degraded: 0.5 / 2.0 = 0.25."""
+    return {
+        "total_pnl": 5000.0,
+        "profit_factor": 0.5,
+        "max_drawdown_pnl": 6000.0,
+        "total_trades": 40,
+        "avg_trade": 100.0,
+        "win_rate": 0.40,
+    }
+
+
+def _oos_bad_dd() -> dict:
+    """OOS DD severely inflated: 20000 / 5000 = 4.0."""
+    return {
+        "total_pnl": 15000.0,
+        "profit_factor": 1.5,
+        "max_drawdown_pnl": 20000.0,
+        "total_trades": 40,
+        "avg_trade": 300.0,
+        "win_rate": 0.50,
+    }
+
+
+def _oos_bad_avg_trade() -> dict:
+    """OOS avg trade severely degraded: 50 / 500 = 0.10."""
+    return {
+        "total_pnl": 1000.0,
+        "profit_factor": 1.5,
+        "max_drawdown_pnl": 6000.0,
+        "total_trades": 40,
+        "avg_trade": 50.0,
+        "win_rate": 0.50,
+    }
+
+
+def test_stability_pf_degradation_passes():
+    """OOS PF close to IS PF must pass with a lenient threshold."""
+    config = EliminationConfig(max_oos_pf_degradation=0.5)  # allow down to 50%
+    result = evaluate_elimination(_good_metrics(), config, oos_metrics=_oos_good_oos())
+    assert result.passed
+
+
+def test_stability_pf_degradation_fails():
+    """OOS PF too low vs IS PF must fail."""
+    config = EliminationConfig(max_oos_pf_degradation=0.5)  # 0.25 < 0.5
+    result = evaluate_elimination(_good_metrics(), config, oos_metrics=_oos_bad_pf())
+    assert not result.passed
+    assert any("max_oos_pf_degradation" in r for r in result.failed_rules)
+
+
+def test_stability_drawdown_ratio_passes():
+    """OOS DD within bounds must pass."""
+    config = EliminationConfig(max_oos_drawdown_ratio=2.0)  # allow up to 2×
+    result = evaluate_elimination(_good_metrics(), config, oos_metrics=_oos_good_oos())
+    assert result.passed
+
+
+def test_stability_drawdown_ratio_fails():
+    """OOS DD too high vs IS DD must fail."""
+    config = EliminationConfig(max_oos_drawdown_ratio=2.0)  # 4.0 > 2.0
+    result = evaluate_elimination(_good_metrics(), config, oos_metrics=_oos_bad_dd())
+    assert not result.passed
+    assert any("max_oos_drawdown_ratio" in r for r in result.failed_rules)
+
+
+def test_stability_avg_trade_degradation_passes():
+    """OOS avg trade close to IS avg trade must pass."""
+    config = EliminationConfig(max_oos_avg_trade_degradation=0.5)  # allow down to 50%
+    result = evaluate_elimination(_good_metrics(), config, oos_metrics=_oos_good_oos())
+    assert result.passed
+
+
+def test_stability_avg_trade_degradation_fails():
+    """OOS avg trade too low vs IS avg trade must fail."""
+    config = EliminationConfig(max_oos_avg_trade_degradation=0.5)  # 0.10 < 0.5
+    result = evaluate_elimination(_good_metrics(), config, oos_metrics=_oos_bad_avg_trade())
+    assert not result.passed
+    assert any("max_oos_avg_trade_degradation" in r for r in result.failed_rules)
+
+
+def test_stability_all_three_pass():
+    """All three stability rules pass simultaneously with good OOS."""
+    config = EliminationConfig(
+        max_oos_pf_degradation=0.5,
+        max_oos_drawdown_ratio=2.0,
+        max_oos_avg_trade_degradation=0.5,
+    )
+    result = evaluate_elimination(_good_metrics(), config, oos_metrics=_oos_good_oos())
+    assert result.passed
+
+
+def test_stability_metrics_missing_warns_by_default():
+    """Stability thresholds set but no OOS metrics → warn, don't fail."""
+    config = EliminationConfig(max_oos_pf_degradation=0.5)
+    result = evaluate_elimination(_good_metrics(), config)  # no oos_metrics
+    assert result.passed
+    assert any("OOS" in w for w in result.warnings)
+
+
+def test_stability_metrics_missing_fails_when_required():
+    """Stability thresholds + require_optional + no OOS data → fail."""
+    config = EliminationConfig(max_oos_pf_degradation=0.5, require_optional=True)
+    result = evaluate_elimination(_good_metrics(), config)
+    assert not result.passed
+    assert any("OOS" in r for r in result.failed_rules)
+
+
+def test_stability_thresholds_none_by_default():
+    """Default EliminationConfig sets all stability fields to None."""
+    config = EliminationConfig()
+    assert config.max_oos_pf_degradation is None
+    assert config.max_oos_drawdown_ratio is None
+    assert config.max_oos_avg_trade_degradation is None
+
+
+def test_stability_all_none_skips_rules():
+    """All stability thresholds None → rules are skipped even with OOS data."""
+    config = EliminationConfig()  # all stability fields are None
+    result = evaluate_elimination(_good_metrics(), config, oos_metrics=_oos_bad_pf())
+    assert result.passed  # no stability rules to fail
+
+
+# ---------------------------------------------------------------------------
+# Uncomputable stability ratios (Task 056B-Fix)
+# ---------------------------------------------------------------------------
+
+
+def _is_zero_pf() -> dict:
+    """IS with profit_factor=0.0 (non-positive)."""
+    return dict(_good_metrics(), profit_factor=0.0)
+
+
+def _is_zero_dd() -> dict:
+    """IS with max_drawdown_pnl=0.0 (non-positive)."""
+    return dict(_good_metrics(), max_drawdown_pnl=0.0)
+
+
+def _is_zero_avg_trade() -> dict:
+    """IS with avg_trade=0.0 (non-positive)."""
+    return dict(_good_metrics(), avg_trade=0.0)
+
+
+def test_stability_pf_degradation_undefined_warns():
+    """PF threshold set but IS PF=0 → warn, don't fail by default."""
+    config = EliminationConfig(max_oos_pf_degradation=0.5)
+    result = evaluate_elimination(_is_zero_pf(), config, oos_metrics=_oos_good_oos())
+    assert result.passed  # not failed — just warned
+    assert any("max_oos_pf_degradation is set" in w for w in result.warnings)
+
+
+def test_stability_pf_degradation_undefined_fails_with_require():
+    """PF threshold set but IS PF=0 + require_optional → fail."""
+    config = EliminationConfig(max_oos_pf_degradation=0.5, require_optional=True)
+    result = evaluate_elimination(_is_zero_pf(), config, oos_metrics=_oos_good_oos())
+    assert not result.passed
+    assert any("max_oos_pf_degradation" in r for r in result.failed_rules)
+
+
+def test_stability_drawdown_ratio_undefined_warns():
+    """DD ratio threshold set but IS DD=0 → warn, don't fail by default."""
+    config = EliminationConfig(max_oos_drawdown_ratio=2.0)
+    result = evaluate_elimination(_is_zero_dd(), config, oos_metrics=_oos_good_oos())
+    assert result.passed
+    assert any("max_oos_drawdown_ratio is set" in w for w in result.warnings)
+
+
+def test_stability_drawdown_ratio_undefined_fails_with_require():
+    """DD ratio threshold set but IS DD=0 + require_optional → fail."""
+    config = EliminationConfig(max_oos_drawdown_ratio=2.0, require_optional=True)
+    result = evaluate_elimination(_is_zero_dd(), config, oos_metrics=_oos_good_oos())
+    assert not result.passed
+    assert any("max_oos_drawdown_ratio" in r for r in result.failed_rules)
+
+
+def test_stability_avg_trade_degradation_undefined_warns():
+    """Avg trade threshold set but IS avg trade=0 → warn, don't fail by default."""
+    config = EliminationConfig(max_oos_avg_trade_degradation=0.5)
+    result = evaluate_elimination(_is_zero_avg_trade(), config, oos_metrics=_oos_good_oos())
+    assert result.passed
+    assert any("max_oos_avg_trade_degradation is set" in w for w in result.warnings)
+
+
+def test_stability_avg_trade_degradation_undefined_fails_with_require():
+    """Avg trade threshold set but IS avg trade=0 + require_optional → fail."""
+    config = EliminationConfig(max_oos_avg_trade_degradation=0.5, require_optional=True)
+    result = evaluate_elimination(_is_zero_avg_trade(), config, oos_metrics=_oos_good_oos())
+    assert not result.passed
+    assert any("max_oos_avg_trade_degradation" in r for r in result.failed_rules)
+
+
 def test_stress_pass_rate_applied():
     config = EliminationConfig(min_stress_pass_rate=0.8)
     stress = [

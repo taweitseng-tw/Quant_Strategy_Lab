@@ -35,6 +35,13 @@ class EliminationConfig:
     min_oos_total_pnl: float | None = None
     min_oos_profit_factor: float | None = None
 
+    # Optional IS/OOS stability ratios (requires OOS metrics).
+    # These compare a metric's OOS value against its IS (train) value.
+    # pf_degradation = OOS_PF / IS_PF — must be ≥ threshold.
+    max_oos_pf_degradation: float | None = None     # e.g. 0.5 (OOS PF must be ≥50% of IS PF)
+    max_oos_drawdown_ratio: float | None = None      # e.g. 2.0 (OOS DD must be ≤2× IS DD)
+    max_oos_avg_trade_degradation: float | None = None  # e.g. 0.5 (OOS avg trade ≥50% of IS avg trade)
+
     # Optional stress-test thresholds.
     min_stress_pass_rate: float | None = None
 
@@ -119,10 +126,62 @@ def evaluate_elimination(
 
     # ── optional OOS ─────────────────────────────────────────────────────────
     if oos_metrics is not None:
+        # Existing direct OOS thresholds.
         _check_gt("min_oos_total_pnl", oos_metrics.get("total_pnl"), config.min_oos_total_pnl, _fail)
         _check_gt("min_oos_profit_factor", oos_metrics.get("profit_factor"), config.min_oos_profit_factor, _fail)
+
+        # IS/OOS stability ratio rules.
+        stability = _compute_oos_stability(oos_metrics, metrics)
+        _oos_stability = False
+
+        # pf_degradation check
+        if config.max_oos_pf_degradation is not None:
+            _oos_stability = True
+            if stability["pf_degradation"] is not None:
+                if stability["pf_degradation"] < config.max_oos_pf_degradation:
+                    _fail(f"max_oos_pf_degradation ({stability['pf_degradation']:.4f} < {config.max_oos_pf_degradation})")
+            else:
+                msg = "max_oos_pf_degradation is set but IS profit factor is non-positive — ratio cannot be computed."
+                if config.require_optional:
+                    _fail(msg)
+                else:
+                    warnings.append(msg + "  Skipping rule.")
+
+        # drawdown_ratio check
+        if config.max_oos_drawdown_ratio is not None:
+            _oos_stability = True
+            if stability["drawdown_ratio"] is not None:
+                if stability["drawdown_ratio"] > config.max_oos_drawdown_ratio:
+                    _fail(f"max_oos_drawdown_ratio ({stability['drawdown_ratio']:.4f} > {config.max_oos_drawdown_ratio})")
+            else:
+                msg = "max_oos_drawdown_ratio is set but IS drawdown is non-positive — ratio cannot be computed."
+                if config.require_optional:
+                    _fail(msg)
+                else:
+                    warnings.append(msg + "  Skipping rule.")
+
+        # avg_trade_degradation check
+        if config.max_oos_avg_trade_degradation is not None:
+            _oos_stability = True
+            if stability["avg_trade_degradation"] is not None:
+                if stability["avg_trade_degradation"] < config.max_oos_avg_trade_degradation:
+                    _fail(f"max_oos_avg_trade_degradation ({stability['avg_trade_degradation']:.4f} < {config.max_oos_avg_trade_degradation})")
+            else:
+                msg = "max_oos_avg_trade_degradation is set but IS avg trade is non-positive — ratio cannot be computed."
+                if config.require_optional:
+                    _fail(msg)
+                else:
+                    warnings.append(msg + "  Skipping rule.")
+
     else:
+        has_any_stability = (
+            config.max_oos_pf_degradation is not None or
+            config.max_oos_drawdown_ratio is not None or
+            config.max_oos_avg_trade_degradation is not None
+        )
         _optional_missing("OOS", config.min_oos_total_pnl, config.min_oos_profit_factor,
+                          config.max_oos_pf_degradation, config.max_oos_drawdown_ratio,
+                          config.max_oos_avg_trade_degradation,
                           require=config.require_optional, fail=_fail, warnings=warnings)
 
     # ── optional stress ──────────────────────────────────────────────────────
@@ -217,6 +276,46 @@ def _optional_missing(
             fail(msg)
         else:
             warnings.append(msg + f"  Skipping {source} rules.")
+
+
+def _compute_oos_stability(oos_metrics: dict, is_metrics: dict) -> dict:
+    """Compute IS/OOS stability ratios from OOS and IS metric dicts.
+
+    Returns a dict with float values (or None when the IS baseline is
+    non-positive and a ratio cannot be meaningfully computed).
+
+    Keys returned
+    -------------
+    pf_degradation : float or None
+        ``oos_pf / is_pf`` — the fraction of IS profit factor retained OOS.
+    drawdown_ratio : float or None
+        ``oos_dd / is_dd`` — how many times larger the OOS drawdown is
+        compared to IS (higher = worse).
+    avg_trade_degradation : float or None
+        ``oos_avg_trade / is_avg_trade`` — fraction of IS avg trade retained OOS.
+    """
+    result: dict[str, float | None] = {
+        "pf_degradation": None,
+        "drawdown_ratio": None,
+        "avg_trade_degradation": None,
+    }
+
+    is_pf = is_metrics.get("profit_factor")
+    oos_pf = oos_metrics.get("profit_factor")
+    if is_pf is not None and is_pf > 0 and oos_pf is not None:
+        result["pf_degradation"] = oos_pf / is_pf
+
+    is_dd = is_metrics.get("max_drawdown_pnl")
+    oos_dd = oos_metrics.get("max_drawdown_pnl")
+    if is_dd is not None and is_dd > 0 and oos_dd is not None:
+        result["drawdown_ratio"] = oos_dd / is_dd
+
+    is_avg = is_metrics.get("avg_trade")
+    oos_avg = oos_metrics.get("avg_trade")
+    if is_avg is not None and is_avg > 0 and oos_avg is not None:
+        result["avg_trade_degradation"] = oos_avg / is_avg
+
+    return result
 
 
 def _get_passed(stress: Any) -> bool:

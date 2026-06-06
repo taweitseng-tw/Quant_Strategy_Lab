@@ -307,3 +307,67 @@ def test_wf_serialization_old_mock_result():
     assert d["median_wfe"] is None
     assert d["defined_wfe_count"] == 0
     assert d["undefined_wfe_count"] == 0
+
+
+# ---------------------------------------------------------------------------
+# OOS data path (Task 056B)
+# ---------------------------------------------------------------------------
+
+
+def test_pipeline_includes_oos_metrics():
+    """Pipeline result must include oos_metrics when OOS segment exists."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    result = run_validation_pipeline(df, strat, commission=2.0)
+
+    assert result.oos_metrics is not None
+    assert isinstance(result.oos_metrics, dict)
+    assert "total_pnl" in result.oos_metrics
+    assert "total_trades" in result.oos_metrics
+
+
+def test_pipeline_oos_metrics_passed_to_elimination():
+    """OOS metrics must be passed into elimination so OOS rules can fire."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    result = run_validation_pipeline(df, strat, commission=2.0)
+
+    # If elimination was called with oos_metrics, it won't warn about missing OOS.
+    elim_warnings = result.elimination_result.get("warnings", [])
+    oos_warnings = [w for w in elim_warnings if "OOS" in w]
+    # No OOS warnings in elimination means OOS data was passed correctly.
+    assert len(oos_warnings) == 0
+
+
+def test_pipeline_oos_metrics_stability_default_skipped():
+    """Default PipelineConfig (no stability thresholds) should not fail OOS rules."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    result = run_validation_pipeline(df, strat, commission=2.0)
+
+    # With default config, stability thresholds are None → rules are skipped.
+    assert result.elimination_result is not None
+    # OOS metrics are present under default config.
+    assert result.oos_metrics is not None
+    assert "total_pnl" in result.oos_metrics
+    # No stability-rule failures since all thresholds default to None.
+    elim_warnings = result.elimination_result.get("warnings", [])
+    stability_warnings = [w for w in elim_warnings if "is set but" in w]
+    assert len(stability_warnings) == 0
+
+
+def test_pipeline_oos_metrics_empty_segment_warning():
+    """Pipeline must handle empty OOS segment gracefully (no crash)."""
+    df = _make_df(30)  # very short dataset
+    cfg = PipelineConfig(train_ratio=0.9, validation_ratio=0.05, oos_ratio=0.05)
+    strat = _make_strategy()
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+
+    # oos_metrics may be None for very small OOS
+    if result.oos_metrics is None:
+        assert any("OOS" in w for w in result.warnings) or any(
+            "OOS" in w for w in (result.elimination_result.get("warnings", []) if result.elimination_result else [])
+        )
+    else:
+        # If OOS had enough rows, we got metrics — also valid
+        assert isinstance(result.oos_metrics, dict)

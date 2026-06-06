@@ -1,5 +1,76 @@
 # Changelog
 
+## 2026-06-06 - Task 056B-Fix Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056b-fix_oos-stability-undefined-ratio_codex-review.md` accepting the undefined-ratio hardening fix with score 8.9 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056C.
+- Updated `docs/task_board.md` to queue OOS stability reporting surface design.
+
+### Verification
+- Ran focused elimination, validation pipeline, and strategy service tests: 63 passed.
+- Ran the full test suite without ignored tests: 986 passed, 1 pre-existing warning.
+- Ran `git diff --check`.
+- Ran a manual behavior probe confirming warn-by-default and `require_optional=True` fail behavior.
+
+## 2026-06-06 - Task 056B-Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056b_is-oos-stability-gate_codex-review.md` marking the IS/OOS stability gate as needing narrow hardening.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056B-Fix.
+- Updated `docs/task_board.md` to queue the undefined-ratio and test-quality hardening task.
+
+### Verification
+- Ran focused elimination, validation pipeline, and strategy service tests.
+- Ran the full test suite without ignored tests.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Task 056B-Fix: OOS Stability Undefined Ratio and Test Quality Hardening
+
+### Fixed
+- `validation_engine/elimination.py`: Enabled stability rules no longer silently skip when the IS denominator is non-positive.
+  - When a stability threshold is set but the ratio cannot be computed:
+    (IS PF=0, IS DD=0, or IS avg trade=0):
+    - Warn by default (skip rule).
+    - Fail when `require_optional=True`.
+- `tests/test_validation_pipeline_service.py`: Replaced vacuous `assert ... or True` with concrete assertions verifying OOS metrics presence and zero stability warnings.
+
+### Added
+- 8 new focused tests in `tests/test_elimination.py` for uncomputable ratios:
+  - 3 warn-by-default tests (PF, DD, avg trade with zero IS denominator).
+  - 3 `require_optional=True` fail tests.
+  - 2 helper fixtures (`_is_zero_pf`, `_is_zero_dd`, `_is_zero_avg_trade`).
+
+### Verification
+- Focused tests: 63 passed.
+- Full suite: 986 passed, 1 pre-existing warning (no ignores).
+- `git diff --check` passes.
+
+## 2026-06-06 - Task 056B: IS/OOS Stability Gate Implementation
+
+### Added
+- `validation_engine/elimination.py`:
+  - Added `_compute_oos_stability(oos_metrics, is_metrics) -> dict` helper computing PF degradation, drawdown ratio, and avg trade degradation ratios.
+  - Added 3 new `EliminationConfig` fields: `max_oos_pf_degradation`, `max_oos_drawdown_ratio`, `max_oos_avg_trade_degradation` (all `None` by default, backward-compatible).
+  - Wired IS/OOS stability ratio rules into `evaluate_elimination()` — rules fire only when `oos_metrics` is provided and the threshold is set.
+- `app/services/validation_pipeline_service.py`:
+  - Added OOS backtest on `split.oos` (step 2.5) — runs `run_backtest(strategy, split.oos, ...)` when OOS segment exists.
+  - Passes `oos_metrics=oos_baseline.metrics` into `evaluate_elimination()`.
+  - Added `oos_metrics: dict | None` field to `PipelineResult` for UI/report inspection.
+  - Graceful handling when OOS segment is empty or None (warning, no crash).
+- `tests/test_elimination.py`: Added 13 focused tests covering all 3 stability rules (pass/fail), combined pass, missing OOS data (warn/fail), default None, and all-None skip.
+- `tests/test_validation_pipeline_service.py`: Added 4 pipeline OOS data path tests (OOS metrics present, passed to elimination, default skip, empty segment warning).
+- `tests/test_strategy_service_elimination_config.py`: Updated expected keys set to include 3 new stability fields.
+
+### Verification
+- Focused tests: 47 passed (test_elimination.py + test_validation_pipeline_service.py).
+- Full test suite: 964 passed, 1 pre-existing warning (excluding pre-existing Qt abort in test_ga_build_wiring.py).
+- `git diff --check` passes.
+
 ## 2026-06-06 - Task 056A-Fix-Codex Review
 
 ### Added

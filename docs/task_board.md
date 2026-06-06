@@ -8,10 +8,13 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056B - IS/OOS Stability Gate Implementation
+- [ ] Task 056C - OOS Stability Reporting Surface Design Only
 
 ## Done
 
+- [x] Task 056B-Fix-Codex Review - OOS Stability Undefined Ratio Acceptance
+- [x] Task 056B-Fix - OOS Stability Undefined Ratio and Test Quality Hardening
+- [x] Task 056B - IS/OOS Stability Gate Implementation
 - [x] Task 056A-Fix - OOS Stability Triage Data Path Correction
 - [x] Task 056A - Next Validation Expansion Triage Design Only
 

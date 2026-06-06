@@ -26,11 +26,13 @@ def test_strategy_service_get_elimination_config_dict():
     assert isinstance(cfg, dict)
     
     expected_keys = {
-        "min_total_pnl", "min_profit_factor", "max_drawdown_pnl", 
-        "min_avg_trade", "min_trade_count", "min_win_rate", 
-        "min_oos_total_pnl", "min_oos_profit_factor", 
-        "min_stress_pass_rate", "min_monte_carlo_p05_pnl", 
-        "min_walk_forward_pass_rate", "require_optional"
+        "min_total_pnl", "min_profit_factor", "max_drawdown_pnl",
+        "min_avg_trade", "min_trade_count", "min_win_rate",
+        "min_oos_total_pnl", "min_oos_profit_factor",
+        "min_stress_pass_rate", "min_monte_carlo_p05_pnl",
+        "min_walk_forward_pass_rate", "require_optional",
+        "max_oos_pf_degradation", "max_oos_drawdown_ratio",
+        "max_oos_avg_trade_degradation",
     }
     assert set(cfg.keys()) == expected_keys
 

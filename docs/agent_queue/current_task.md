@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Task 056B - IS/OOS Stability Gate Implementation.
+Task 056C - OOS Stability Reporting Surface Design Only.
 
 ## Required Reading
 
@@ -24,86 +24,87 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/next_validation_expansion_triage_056A.md`
-8. `docs/review_notes/2026-06-06_task-056a-fix_oos-stability-data-path-correction_codex-review.md`
-9. `app/services/validation_pipeline_service.py`
-10. `validation_engine/elimination.py`
-11. `tests/test_elimination.py`
-12. `tests/test_validation_pipeline_service.py`
-13. This task file
+7. `docs/review_notes/2026-06-06_task-056b-fix_oos-stability-undefined-ratio_codex-review.md`
+8. `app/services/validation_pipeline_service.py`
+9. `validation_engine/elimination.py`
+10. `app/widgets/validation_summary.py`
+11. Relevant report/export files discovered by search
+12. This task file
 
 ## Context
 
-Task 056A-Fix corrected the OOS stability data path. The pipeline currently creates an OOS split, but does not run an OOS backtest and does not pass OOS metrics into `evaluate_elimination()`. `evaluate_elimination()` already accepts `oos_metrics`, but only checks two basic OOS thresholds. This task implements the narrow pipeline plumbing and stability rules together.
+Task 056B now computes OOS metrics in the validation pipeline and passes them into elimination stability rules. The next risk is product-surface drift: UI/report output may hide OOS metrics, stability warnings, or fail reasons, making the new validation gate hard to inspect.
+
+This task is design only. Do not implement UI/report changes yet.
 
 ## Scope
 
 ### Do
 
-- In `app/services/validation_pipeline_service.py`:
-  - Run a narrow OOS backtest on `split.oos` when an OOS segment exists and has rows.
-  - Pass `oos_metrics=oos_baseline.metrics` into `evaluate_elimination()`.
-  - Preserve current behavior when OOS is missing or empty; do not crash.
-  - Include enough OOS diagnostics in `PipelineResult` or `elimination_result` so later UI/report tasks can inspect them.
-- In `validation_engine/elimination.py`:
-  - Add `_compute_oos_stability(oos_metrics: dict, is_metrics: dict) -> dict`.
-  - Add optional `EliminationConfig` fields:
-    - `max_oos_pf_degradation: float | None = None`
-    - `max_oos_drawdown_ratio: float | None = None`
-    - `max_oos_avg_trade_degradation: float | None = None`
-  - Wire rules into `evaluate_elimination()` only when `oos_metrics` is provided and the relevant config field is set.
-  - Keep existing OOS threshold behavior backward-compatible.
-- Add focused tests in:
-  - `tests/test_elimination.py`
-  - `tests/test_validation_pipeline_service.py`
-- Update `docs/changelog.md` and `docs/task_board.md`.
+- Trace where validation pipeline results are currently displayed or exported:
+  - Validation summary UI.
+  - Report generation/export surfaces.
+  - Any structured result serialization that already exists.
+- Identify the minimal product surface needed for OOS stability:
+  - OOS metrics to show.
+  - Stability ratios to show, if available.
+  - Warning/fail reason wording.
+  - Research-only disclaimer placement if a report surface is involved.
+- Propose the smallest follow-up implementation task with file list and acceptance criteria.
+- Write a design note:
+  - `docs/oos_stability_reporting_surface_design_056C.md`
+- Update:
+  - `docs/changelog.md`
+  - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-056b_is-oos-stability-gate_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-056c_oos-stability-reporting-surface-design_deepseek.md`
 
 ### Do Not
 
-- Do not change backtest engine behavior.
-- Do not add new stress tests.
-- Do not modify Monte Carlo or walk-forward logic.
-- Do not add UI components.
+- Do not change production code.
+- Do not change tests.
+- Do not implement UI, report, export, or serialization changes.
 - Do not add dependencies.
+- Do not rename existing validation fields.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `app/services/validation_pipeline_service.py`
-- `validation_engine/elimination.py`
-- `tests/test_elimination.py`
-- `tests/test_validation_pipeline_service.py`
+- `docs/oos_stability_reporting_surface_design_056C.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-056b_is-oos-stability-gate_deepseek.md`
+- `docs/agent_reports/2026-06-06_task-056c_oos-stability-reporting-surface-design_deepseek.md`
+
+Read-only inspection likely includes:
+
+- `app/services/validation_pipeline_service.py`
+- `validation_engine/elimination.py`
+- `app/widgets/validation_summary.py`
+- report/export modules found with `rg`
 
 ## Acceptance Criteria
 
-1. Pipeline runs an OOS backtest when OOS data exists.
-2. Pipeline passes OOS metrics into `evaluate_elimination()`.
-3. New stability rules fail/pass deterministically in focused tests.
-4. Missing or empty OOS data does not crash the pipeline.
-5. Existing elimination tests remain compatible.
-6. Completion report exists.
+1. The design note accurately traces the current result flow from validation pipeline to UI/report surfaces.
+2. The design note recommends one small implementation task, not a broad redesign.
+3. The recommendation preserves engine/UI separation.
+4. No production code or tests are changed.
+5. `docs/changelog.md` and `docs/task_board.md` are updated.
+6. `git diff --check` passes.
 
 ## Verification
 
-Run:
+Run exactly:
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests/test_elimination.py tests/test_validation_pipeline_service.py -v
-.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
 
 Expected:
 
-- Focused tests pass.
-- Full suite passes.
 - `git diff --check` passes.
+- Agent status shows Task 056C completion report as the latest report.
+- No production code or tests changed.
 
 ## After Completion
 
