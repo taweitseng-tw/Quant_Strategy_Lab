@@ -8,10 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Batch 057J-Impl + 057L-Design - WF Equity Summary Widget and Report Surface Design
+- [ ] Batch 057L-Impl + 057M-Design - WF Equity Report Tables and 057 Acceptance Smoke Design
 
 ## Done
 
+- [x] Batch 057J-Impl + 057L-Design - WF Equity Summary Widget and Report Surface Design
+- [x] Batch 057J-Impl + 057L-Design-Codex Review - WF Equity Summary Widget and Report Surface Design Acceptance
 - [x] Batch 057J-Design + 057K-Design - WF Equity Chart Display Design and 057 Validation Acceptance Triage
 - [x] Batch 057J-Design + 057K-Design-Codex Review - WF Equity Display Design and Validation Acceptance Triage
 - [x] Batch 057G-Impl + 057H-Design - Bootstrap Feature Acceptance Smoke and Remaining Validation Gap Triage

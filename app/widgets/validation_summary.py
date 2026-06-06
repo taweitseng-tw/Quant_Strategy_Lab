@@ -153,6 +153,27 @@ class ValidationSummary(QWidget):
             f"Pass Rate: {(wf.get('pass_rate', 0) or 0) * 100:.0f}%"
         ) if wf else "Walk-forward skipped (dataset too short).")
 
+        # --- WF Equity Summary ---
+        windows = wf.get("windows") or []
+        equity_windows = [w for w in windows
+                          if isinstance(w.get("equity_curve"), list) and len(w.get("equity_curve", [])) >= 2]
+        if equity_windows:
+            MAX_SHOW = 5
+            lines = []
+            for i, w in enumerate(equity_windows[:MAX_SHOW]):
+                curve = w["equity_curve"]
+                start_eq = curve[0]
+                end_eq = curve[-1]
+                pct = (end_eq - start_eq) / abs(start_eq) * 100 if abs(start_eq) > 1e-9 else 0.0
+                status = "PASSED" if w.get("passed") else "FAILED"
+                lines.append(
+                    f"W{w.get('index', i)}: {start_eq:,.0f} → {end_eq:,.0f} "
+                    f"({pct:+.1f}%)  {status}"
+                )
+            if len(equity_windows) > MAX_SHOW:
+                lines.append(f"... {len(equity_windows) - MAX_SHOW} more windows")
+            self._add_section("WF Equity Summary", "\n".join(lines))
+
         # --- Walk-forward Matrix ---
         wfm = self._get(result, "walk_forward_matrix_summary", {}) or {}
         if wfm:

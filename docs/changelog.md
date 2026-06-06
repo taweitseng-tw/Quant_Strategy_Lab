@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-06-06 - Batch 057J-Impl + 057L-Design Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-057j-impl_057l-design_wf-equity-summary-widget-and-report-design_codex-review.md` accepting the WF equity summary widget and report design with score 8.9 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 057L-Impl + 057M-Design.
+- Updated `docs/task_board.md` to queue WF equity report tables and final acceptance smoke design.
+
+### Verification
+- Reviewed WF equity widget implementation, tests, report surface design, and latest agent report.
+- Ran focused widget tests: 21 passed.
+- Ran full suite: 1088 passed, 1 warning.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Batch 057J-Impl + 057L-Design: WF Equity Summary Widget and Report Surface Design
+
+### Added (057J-Impl)
+- `app/widgets/validation_summary.py`: WF Equity Summary section after Walk-Forward card. Shows per-window equity start/end/change% for up to 5 windows. Omits when equity data missing/empty.
+- `tests/test_validation_summary.py`: 4 new tests (shown, absent no equity, absent no windows key, capped at 5).
+
+### Added (057L-Design)
+- `docs/wf_equity_report_surface_design_057L.md` — markdown/HTML table design with row limits and formatting rules.
+
+### Verification
+- Focused widget tests: 21 passed.
+- Full suite: 1088 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+
 ## 2026-06-06 - Batch 057J-Design + 057K-Design Codex Acceptance
 
 ### Added

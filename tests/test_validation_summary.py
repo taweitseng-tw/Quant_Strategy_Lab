@@ -484,3 +484,94 @@ def test_bootstrap_mc_pf_formatted_two_decimals(qapp):
     assert "1.16" in text
     assert "2.80" in text
     assert "1.95" in text
+
+
+# ---------------------------------------------------------------------------
+# WF Equity Summary (Task 057J-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_wf_equity_summary_shown_when_present(qapp):
+    """WF Equity Summary must appear when windows have equity curves."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "walk_forward_summary": {
+            "window_count": 3, "pass_count": 2, "pass_rate": 0.67,
+            "windows": [
+                {"index": 0, "equity_curve": [100000.0, 100500.0, 100200.0, 101000.0], "passed": True},
+                {"index": 1, "equity_curve": [100000.0, 99500.0, 99000.0], "passed": False},
+                {"index": 2, "equity_curve": [100000.0, 100100.0], "passed": True},
+            ],
+        },
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+
+    assert "WF Equity Summary" in text
+    assert "+1.0%" in text or "101000" in text
+    assert "-1.0%" in text or "99000" in text
+    assert "PASSED" in text
+
+
+def test_wf_equity_summary_absent_when_no_equity(qapp):
+    """WF Equity Summary must NOT appear when no windows have equity."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "walk_forward_summary": {
+            "window_count": 2, "pass_count": 1, "pass_rate": 0.5,
+            "windows": [
+                {"index": 0, "equity_curve": None, "passed": True},
+                {"index": 1, "passed": False},
+            ],
+        },
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+    assert "WF Equity Summary" not in text
+
+
+def test_wf_equity_summary_absent_when_no_windows_key(qapp):
+    """WF Equity Summary must NOT appear when windows key is missing."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "walk_forward_summary": {"window_count": 2, "pass_count": 1, "pass_rate": 0.5},
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+    assert "WF Equity Summary" not in text
+
+
+def test_wf_equity_summary_capped_at_5_windows(qapp):
+    """WF Equity Summary must show '... more windows' when > 5 windows."""
+    windows = []
+    for i in range(7):
+        windows.append({
+            "index": i,
+            "equity_curve": [100000.0, 100000.0 + i * 100.0],
+            "passed": True,
+        })
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "walk_forward_summary": {"window_count": 7, "pass_count": 7, "pass_rate": 1.0, "windows": windows},
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+
+    assert "WF Equity Summary" in text
+    assert "more windows" in text  # "2 more windows"
