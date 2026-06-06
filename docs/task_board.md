@@ -8,10 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Batch 057A-057B - Validation Gap Design Batch
+- [ ] Batch 057A-Fix + 057B-Impl - Validation Gap Hardening Batch
 
 ## Done
 
+- [x] Batch 057A-057B - Validation Gap Design Batch
+- [x] Batch 057A-057B-Codex Review - Validation Gap Design Batch Acceptance
 - [x] Task 056N - Milestone Direction Decision Brief
 - [x] Task 056N-Codex Review - Milestone Direction Decision Brief Acceptance
 - [x] Task 056M - v0.2 Validation Expansion Release Readiness Audit

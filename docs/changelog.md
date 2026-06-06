@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-06-06 - Batch 057A-057B Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-057ab_validation-gap-design-batch_codex-review.md` accepting the validation gap design batch with score 8.3 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 057A-Fix + 057B-Impl.
+- Updated `docs/task_board.md` to queue Monte Carlo design hardening and walk-forward equity implementation.
+
+### Verification
+- Reviewed the 057A and 057B design documents and latest agent report.
+- Inspected current Monte Carlo, walk-forward, and validation pipeline code.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Batch 057A-057B: Validation Gap Design Batch
+
+### Added
+- **Task 057A**: `docs/monte_carlo_bootstrap_ci_design_057A.md` — design for bootstrap resampling Monte Carlo with confidence intervals.
+  - Separate `run_bootstrap_monte_carlo()` function, reuses `MonteCarloResult` schema.
+  - Adds `confidence_intervals` and `worst_case_equity` fields (backward-compatible).
+  - Deterministic seed behavior, 200 iterations default.
+  - Worst-case equity curve deferred to v0.3.
+- **Task 057B**: `docs/walk_forward_equity_persistence_design_057B.md` — design for per-window equity curve storage.
+  - One new field: `WalkForwardWindow.equity_curve: list[float] | None`.
+  - Default off (`store_equity=False`), negligible memory overhead (~16 KB typical).
+  - Serialization via `asdict()`, no persistence.
+  - Backward-compatible with existing WF consumers.
+- Both designs are independent, reviewable separately.
+
+### Changed
+- Updated `docs/task_board.md` (057A, 057B -> Done).
+
+### Verification
+- No production code changed (design batch only).
+- `git diff --check` passes.
+
 ## 2026-06-06 - Task 056N Codex Acceptance
 
 ### Added
