@@ -1,5 +1,90 @@
 # Changelog
 
+## 2026-06-06 - Task 056E-Fix2 Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056e-fix2_remove-best-n-trades-design-duplicate-cleanup_codex-review.md` accepting the duplicate cleanup with score 9.1 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056E-Impl.
+- Updated `docs/task_board.md` to queue the engine-only remove-best-N-trades implementation.
+
+### Verification
+- Confirmed stale duplicate pipeline strings and the old `degration_threshold` typo are gone.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Task 056E-Fix2: Remove Best N Trades Design Duplicate Cleanup
+
+### Fixed
+- Deleted stale duplicated pipeline sections from `docs/remove_best_n_trades_stress_design_056E.md`:
+  - `### 4.1 PipelineConfig Addition` (old)
+  - `### 4.2 Pipeline Wires After Existing Stress Tests` (old, included `degration_threshold` typo)
+- The corrected deferred pipeline sections (`### 4.1` through `### 4.4`) remain.
+
+### Verification
+- `rg -n "degration|PipelineConfig Addition|Pipeline Wires After Existing Stress Tests"` returns no matches.
+- No production code changed.
+- `git diff --check` passes.
+
+## 2026-06-06 - Task 056E-Fix Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056e-fix_remove-best-n-trades-stress-design-hardening_codex-review.md` marking the design hardening as needing a narrow duplicate-section cleanup.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056E-Fix2.
+- Updated `docs/task_board.md` to queue the duplicate cleanup task.
+
+### Verification
+- Reviewed the corrected design and found stale duplicated pipeline sections plus the old `degration_threshold` typo still present.
+- Confirmed no production code or tests changed.
+
+## 2026-06-06 - Task 056E Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056e_remove-best-n-trades-stress-design_codex-review.md` marking the remove-best-N-trades stress-test design as needing hardening before implementation.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056E-Fix.
+- Updated `docs/task_board.md` to queue the design hardening task.
+
+### Verification
+- Reviewed the design against existing stress-test degradation semantics, pipeline stress collection, and elimination stress pass-rate behavior.
+- Confirmed no production code or tests changed.
+
+## 2026-06-06 - Task 056E-Fix: Remove Best N Trades Stress Test Design Hardening
+
+### Fixed
+- **P1 (degradation sign)**: Corrected pass/fail to use a separate `pnl_loss_ratio` stored in `assumptions`, preserving the existing `degradation = (stressed - base) / abs(base)` convention from `_build_result()`.
+- **P1 (implementation scope)**: Split implementation into two tasks: engine-only first (`stress_test.py` + tests), pipeline wiring later.
+- **P2 (low-trade-count)**: Changed `0 < trades <= n` from vacuously pass to explicitly **fail** (`passed=False`, `assumptions["insufficient_trades"]=True`).
+- **P3 (typo)**: Removed `degration_threshold` typo from deferred pipeline wiring example.
+- Added `ValueError` for invalid `n < 0` and negative `degradation_threshold`.
+
+### Changed
+- Updated `docs/task_board.md` (Task 056E-Fix -> Done).
+
+### Verification
+- No production code changed (design-only hardening).
+- `git diff --check` passes.
+
+## 2026-06-06 - Task 056E: Remove Best N Trades Stress Test Design Only
+
+### Added
+- Created `docs/remove_best_n_trades_stress_design_056E.md` — design for `stress_remove_best_n_trades()`:
+  - Function signature: `stress_remove_best_n_trades(baseline, *, n=3, degradation_threshold=0.30) -> StressTestResult`.
+  - Operates on trade-list only (no re-backtest), fully deterministic (no randomness).
+  - Removes top N trades by PnL descending, recomputes metrics on survivors.
+  - Degradation-threshold pass/fail; vacuously passes with 0 or fewer-than-N trades.
+  - 8 test plan cases + 3 PipelineConfig fields for future integration.
+
+### Changed
+- Updated `docs/task_board.md` (Task 056E -> Done).
+
+### Verification
+- No production code changed (design-only).
+- `git diff --check` passes.
+
 ## 2026-06-06 - Task 056D Codex Acceptance
 
 ### Added
