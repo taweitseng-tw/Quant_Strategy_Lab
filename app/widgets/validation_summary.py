@@ -119,12 +119,15 @@ class ValidationSummary(QWidget):
         ps = mc.get("percentile_summary", {}) or {}
         pnl_ps = ps.get("total_pnl", {}) or {}
         wc = mc.get("worst_case", {}) or {}
+        wc_pnl = wc.get("total_pnl", "N/A")
+        if isinstance(wc_pnl, (int, float)):
+            wc_pnl = f"{wc_pnl:,.0f}"
         self._add_section("Monte Carlo", (
             f"Iterations: {mc.get('iterations', '?')}  |  "
             f"p05: {pnl_ps.get('p5', '?'):,.0f}  |  "
             f"p50: {pnl_ps.get('p50', '?'):,.0f}  |  "
             f"p95: {pnl_ps.get('p95', '?'):,.0f}  |  "
-            f"Worst-case PnL: {wc.get('total_pnl', '?'):,.0f}"
+            f"Worst-case PnL: {wc_pnl}"
         ) if pnl_ps else "No MC data.")
 
         # --- Bootstrap MC ---

@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-06-07 - Batch 058B-Fix + 058C-Design Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-07_task-058b-fix_058c-design_widget-mc-hardening-and-normalizer-warning-triage_codex-review.md` accepting the widget MC hardening and normalizer warning triage with score 9.0 / 10.
+
+### Changed
+- Codex adjusted the missing worst-case fallback from `"?"` to `"N/A"` and strengthened widget tests to assert the fallback text.
+- Updated `docs/agent_queue/current_task.md` with Batch 058D-Fix + 058E-Verify.
+- Updated `docs/task_board.md` to queue normalizer warning suppression and zero-warning verification.
+
+### Verification
+- Ran widget tests: 23 passed.
+- Ran full suite: 1103 passed, 1 warning.
+- Ran `git diff --check`.
+- Confirmed tag `v0.2-alpha-validation-expansion` remains on `1a9c533`.
+
+## 2026-06-07 - Batch 058B-Fix + 058C-Design: Widget MC Worst-case Defensive Fix and Normalizer Warning Triage
+
+### Fixed (058B-Fix)
+- `app/widgets/validation_summary.py`: MC card now defends against missing `worst_case` or `worst_case.total_pnl`. Falls back to string `"N/A"` instead of crashing on `:,.0f` format.
+- `tests/test_validation_summary.py`: 2 new tests (missing `worst_case`, missing `total_pnl`).
+
+### Added (058C-Design)
+- `docs/normalizer_datetime_warning_triage_058C.md` — triage of the pre-existing pandas datetime warning. Recommends test-level suppression.
+
+### Verification
+- Focused widget tests: 23 passed.
+- Full suite: 1103 passed, 1 warning.
+- `git diff --check` passes.
+
 ## 2026-06-07 - Task 058A Codex Acceptance
 
 ### Added

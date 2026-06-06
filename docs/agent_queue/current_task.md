@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 058B-Fix + 058C-Design - Widget MC Worst-case Defensive Fix and Normalizer Warning Triage Design.
+Batch 058D-Fix + 058E-Verify - Normalizer Warning Suppression and Zero-warning Verification.
 
 ## Required Reading
 
@@ -24,71 +24,69 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-07_task-058a_v0.2-cleanup-hardening-audit_codex-review.md`
-8. `docs/v0.2_cleanup_hardening_audit_058A.md`
+7. `docs/review_notes/2026-06-07_task-058b-fix_058c-design_widget-mc-hardening-and-normalizer-warning-triage_codex-review.md`
+8. `docs/normalizer_datetime_warning_triage_058C.md`
 9. This task file
 
 ## Context
 
-Task 058A found 0 blockers and 1 recommended cleanup. The valid cleanup is a display hardening issue in `ValidationSummary`: Monte Carlo percentile data can render while `worst_case.total_pnl` is absent, causing a string fallback to be formatted with `:,.0f`.
+Batch 058B-Fix + 058C-Design was accepted by Codex. The remaining known warning is emitted only by `tests/test_csv_importer.py::test_normalize_malformed_datetime_raises`, where malformed datetime input intentionally triggers pandas' format inference warning before QSL raises `NormalizerError`.
 
 ## Scope
 
 ### Do
 
 - Complete two sequential tasks:
-  - Task 058B-Fix - Widget MC Worst-case Defensive Display Fix
-  - Task 058C-Design - Normalizer Datetime Warning Triage Design
-- For Task 058B-Fix:
-  - Update `app/widgets/validation_summary.py` so Monte Carlo rendering does not crash when `monte_carlo_summary["worst_case"]` or `worst_case["total_pnl"]` is missing.
-  - Preserve current display when valid worst-case PnL exists.
-  - Use a clear `N/A` style fallback instead of numeric formatting on non-numeric values.
-  - Add focused tests in `tests/test_validation_summary.py`.
-- For Task 058C-Design:
-  - Create `docs/normalizer_datetime_warning_triage_058C.md`.
-  - Design-only; do not change `data_engine/normalizer.py`.
-  - Explain the current pandas warning, why it is non-blocking, candidate fixes, risks, and one recommended future implementation path.
+  - Task 058D-Fix - Suppress Known Normalizer Malformed Datetime Warning in Test
+  - Task 058E-Verify - Zero-warning Verification Note
+- For Task 058D-Fix:
+  - Update `tests/test_csv_importer.py` only.
+  - Suppress the specific pandas warning only for `test_normalize_malformed_datetime_raises`.
+  - Keep the `NormalizerError` assertion intact.
+  - Do not change `data_engine/normalizer.py`.
+- For Task 058E-Verify:
+  - Create `docs/zero_warning_verification_058E.md`.
+  - Document the warning source, the test-level suppression, and the final verification result.
   - Recommend exactly one next two-task batch.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-07_task-058b-fix_058c-design_widget-mc-hardening-and-normalizer-warning-triage_deepseek.md`
+  - `docs/agent_reports/2026-06-07_task-058d-fix_058e-verify_normalizer-warning-suppression-and-zero-warning-verification_deepseek.md`
 
 ### Do Not
 
-- Do not change validation engine logic.
-- Do not change Monte Carlo computation semantics.
-- Do not change `data_engine/normalizer.py` in this batch.
+- Do not change production Python code.
+- Do not change normalizer behavior.
+- Do not broadly suppress all warnings.
 - Do not create, delete, move, retarget, or push any git tag.
-- Do not add broad ignore rules.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `app/widgets/validation_summary.py`
-- `tests/test_validation_summary.py`
-- `docs/normalizer_datetime_warning_triage_058C.md`
+- `tests/test_csv_importer.py`
+- `docs/zero_warning_verification_058E.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-07_task-058b-fix_058c-design_widget-mc-hardening-and-normalizer-warning-triage_deepseek.md`
+- `docs/agent_reports/2026-06-07_task-058d-fix_058e-verify_normalizer-warning-suppression-and-zero-warning-verification_deepseek.md`
 
 ## Acceptance Criteria
 
-1. ValidationSummary does not crash when MC percentile data exists but worst-case data is missing.
-2. Existing valid MC display behavior is preserved.
-3. Focused widget tests cover missing `worst_case` and/or missing `total_pnl`.
-4. 058C design file exists and does not modify normalizer code.
-5. Changelog and task board are updated.
-6. Completion report is created.
-7. Focused tests, full suite, `git diff --check`, tag verification, and agent status pass.
+1. The malformed datetime test still asserts `NormalizerError`.
+2. Only the specific pandas datetime inference warning is suppressed.
+3. No production code changes are made.
+4. Full suite reports zero warnings.
+5. Zero-warning verification note exists.
+6. Changelog and task board are updated.
+7. Completion report is created.
+8. Focused test, full suite, `git diff --check`, tag verification, and agent status pass.
 
 ## Verification
 
 Run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/test_validation_summary.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_csv_importer.py::test_normalize_malformed_datetime_raises -q
 .\.venv\Scripts\python.exe -m pytest -q
 git diff --check
 git show --no-patch --decorate --date=iso --format=fuller v0.2-alpha-validation-expansion
@@ -97,11 +95,11 @@ powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 
 Expected:
 
-- Focused widget tests pass.
-- Full suite passes with only known pre-existing warning.
+- Focused malformed datetime test passes.
+- Full suite passes and reports no warnings.
 - `git diff --check` passes.
 - Tag remains unchanged and points to `1a9c533`.
-- Agent status shows Batch 058B-Fix + 058C-Design completion report as latest report.
+- Agent status shows Batch 058D-Fix + 058E-Verify completion report as latest report.
 
 ## After Completion
 

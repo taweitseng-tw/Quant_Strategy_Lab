@@ -8,10 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Batch 058B-Fix + 058C-Design - Widget MC Worst-case Defensive Fix and Normalizer Warning Triage Design
+- [ ] Batch 058D-Fix + 058E-Verify - Normalizer Warning Suppression and Zero-warning Verification
 
 ## Done
 
+- [x] Batch 058B-Fix + 058C-Design-Codex Review - Widget MC Hardening and Normalizer Warning Triage Acceptance
+- [x] Batch 058B-Fix + 058C-Design - Widget MC Worst-case Defensive Fix and Normalizer Warning Triage Design
 - [x] Task 058A-Codex Review - v0.2 Cleanup and Hardening Audit Acceptance
 - [x] Task 058A - v0.2 Cleanup and Hardening Audit
 - [x] Batch 057U-Fix + 057V-MilestoneDecision-Codex Review - Post-tag Reconciliation and Milestone Decision Acceptance

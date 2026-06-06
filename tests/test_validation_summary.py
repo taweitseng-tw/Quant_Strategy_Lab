@@ -575,3 +575,50 @@ def test_wf_equity_summary_capped_at_5_windows(qapp):
 
     assert "WF Equity Summary" in text
     assert "more windows" in text  # "2 more windows"
+
+
+# ---------------------------------------------------------------------------
+# MC worst_case defensive (Task 058B-Fix)
+# ---------------------------------------------------------------------------
+
+
+def test_mc_card_missing_worst_case(qapp):
+    """MC card must not crash when worst_case is missing."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "monte_carlo_summary": {
+            "iterations": 15,
+            "percentile_summary": {"total_pnl": {"p5": 1000.0, "p50": 5000.0, "p95": 9000.0}},
+            # worst_case intentionally missing
+        },
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+    assert "Monte Carlo" in text
+    assert "Worst-case PnL:" in text
+    assert "Worst-case PnL: N/A" in text
+    assert "No MC data." not in text  # pnl_ps is present, so card renders
+
+
+def test_mc_card_missing_worst_total_pnl(qapp):
+    """MC card must not crash when worst_case exists but total_pnl is missing."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "monte_carlo_summary": {
+            "iterations": 15,
+            "percentile_summary": {"total_pnl": {"p5": 1000.0, "p50": 5000.0, "p95": 9000.0}},
+            "worst_case": {},  # empty
+        },
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+    assert "Worst-case PnL:" in text
+    assert "Worst-case PnL: N/A" in text
