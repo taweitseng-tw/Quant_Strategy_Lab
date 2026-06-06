@@ -8,10 +8,13 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056J-Impl - Opt-in IS Baseline Quality Precheck
+- [ ] Task 056K - IS Baseline Precheck Visibility Surface Design Only
 
 ## Done
 
+- [x] Task 056J-Impl-Fix-Codex Review - Opt-in IS Baseline Quality Precheck Acceptance
+- [x] Task 056J-Impl-Fix - Nonpositive PnL Precheck Test Hardening
+- [x] Task 056J-Impl - Opt-in IS Baseline Quality Precheck
 - [x] Task 056J-Fix-Codex Review - Validation Follow-up Triage Precision Acceptance
 - [x] Task 056J-Fix - Validation Follow-up Triage Precision Correction
 - [x] Task 056J - Validation Expansion Follow-up Triage Design Only

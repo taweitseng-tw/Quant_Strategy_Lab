@@ -1,5 +1,63 @@
 # Changelog
 
+## 2026-06-06 - Task 056J-Impl/Fix Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056j-impl-fix_nonpositive-pnl-precheck-test-hardening_codex-review.md` accepting the opt-in IS baseline quality precheck and test hardening with score 9.0 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056K.
+- Updated `docs/task_board.md` to queue IS baseline precheck visibility surface design.
+
+### Verification
+- Ran focused validation pipeline tests: 29 passed.
+- Ran the full test suite: 1032 passed, 1 pre-existing warning.
+- Ran `git diff --check`.
+- Manually confirmed early-return output preserves OOS metrics and skipped stress/MC/WF state.
+
+## 2026-06-06 - Task 056J-Impl-Fix: Nonpositive PnL Precheck Test Hardening
+
+### Fixed
+- `tests/test_validation_pipeline_service.py`:
+  - Replaced weak nonpositive-PnL tests with deterministic monkeypatched tests using a synthetic `BacktestResult(trades=5, pnl=-100)`.
+  - `test_precheck_nonpositive_pnl_triggers_early_return`: proves the branch fires with nonzero trades + negative PnL; asserts `precheck_failed=True`, stress/MC/WF skipped, appropriate warning.
+  - `test_precheck_nonpositive_pnl_disabled_does_not_short_circuit`: proves same negative-PnL baseline passes through when flag is off.
+- No production code changed.
+
+### Verification
+- Focused pipeline tests: 29 passed.
+- Full suite: 1032 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+
+## 2026-06-06 - Task 056J-Impl Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056j-impl_opt-in-is-baseline-quality-precheck_codex-review.md` marking Task 056J-Impl as needing nonpositive-PnL precheck test hardening before acceptance.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056J-Impl-Fix.
+- Updated `docs/task_board.md` to queue nonpositive-PnL precheck test hardening.
+
+### Verification
+- Ran focused validation pipeline tests: 29 passed.
+- Ran `git diff --check`.
+- Manually confirmed the current implementation can trigger the nonpositive-PnL branch with nonzero trades, but existing tests do not lock that branch.
+
+## 2026-06-06 - Task 056J-Impl: Opt-in IS Baseline Quality Precheck
+
+### Added
+- `app/services/validation_pipeline_service.py`:
+  - Added `PipelineConfig.run_is_baseline_quality_precheck: bool = False` and `fail_is_baseline_on_nonpositive_pnl: bool = False`.
+  - Added `PipelineResult.precheck_failed: bool = False`.
+  - When precheck is enabled and baseline has zero trades, returns early with structured metadata (empty stress/MC/WF, warning, failed elimination).
+  - Nonpositive PnL check is separately opt-in via `fail_is_baseline_on_nonpositive_pnl`.
+- `tests/test_validation_pipeline_service.py`: Added 7 focused tests (default off, zero trades triggers, nonzero passes through, nonpositive disabled by default, nonpositive enabled, config snapshot, metadata preserved).
+
+### Verification
+- Focused pipeline tests: 29 passed.
+- Full suite: 1032 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+
 ## 2026-06-06 - Task 056J/Fix Codex Acceptance
 
 ### Added

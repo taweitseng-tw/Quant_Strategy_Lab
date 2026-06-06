@@ -64,6 +64,10 @@ class PipelineConfig:
     matrix_test_bars_list: list[int] | None = None
     matrix_step_bars_list: list[int] | None = None
 
+    # Quality precheck (opt-in only).
+    run_is_baseline_quality_precheck: bool = False
+    fail_is_baseline_on_nonpositive_pnl: bool = False
+
     # Elimination.
     elimination_config: EliminationConfig | None = None
 
@@ -92,6 +96,7 @@ class PipelineResult:
     walk_forward_matrix_summary: dict | None = None
     elimination_result: dict | None = None
     oos_metrics: dict | None = None
+    precheck_failed: bool = False
     warnings: list[str] = field(default_factory=list)
     config_snapshot: dict = field(default_factory=dict)
     data_source: str = ""
@@ -143,6 +148,37 @@ def run_validation_pipeline(
         oos_baseline = run_backtest(strategy, split.oos, instrument=instrument, **backtest_kwargs)
     else:
         warnings.append("OOS segment is empty or None — OOS metrics not available for elimination.")
+
+    # ── 2.7 IS baseline quality precheck (opt-in) ──────────────────────────
+    if cfg.run_is_baseline_quality_precheck:
+        precheck_fail_reason: str | None = None
+
+        if baseline.metrics.get("total_trades", 0) == 0:
+            precheck_fail_reason = "Validation precheck failed: strategy has zero baseline trades."
+        elif cfg.fail_is_baseline_on_nonpositive_pnl and baseline.metrics.get("total_pnl", 0) <= 0:
+            precheck_fail_reason = "Validation precheck failed: strategy has non-positive baseline PnL."
+
+        if precheck_fail_reason:
+            warnings.append(f"{precheck_fail_reason} Stress/MC/WF skipped.")
+            return PipelineResult(
+                split_metadata={
+                    "train_rows": split.train_meta.get("row_count", 0),
+                    "validation_rows": split.validation_meta.get("row_count", 0),
+                    "oos_rows": split.oos_meta.get("row_count", 0),
+                },
+                baseline_metrics=baseline.metrics,
+                oos_metrics=oos_baseline.metrics if oos_baseline is not None else None,
+                precheck_failed=True,
+                elimination_result={
+                    "passed": False,
+                    "failed_rules": [precheck_fail_reason],
+                    "warnings": [],
+                    "config_snapshot": {},
+                },
+                warnings=warnings,
+                config_snapshot=cfg.to_dict(),
+                data_source=data_source,
+            )
 
     # ── 3. Stress tests ─────────────────────────────────────────────────────
     stress_results: list[dict] = []
@@ -255,6 +291,7 @@ def run_validation_pipeline(
         walk_forward_matrix_summary=wf_matrix_summary,
         elimination_result=elim_dict,
         oos_metrics=oos_metrics,
+        precheck_failed=False,
         warnings=warnings,
         config_snapshot=cfg.to_dict(),
         data_source=data_source,

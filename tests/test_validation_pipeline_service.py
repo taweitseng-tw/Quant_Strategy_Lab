@@ -429,3 +429,149 @@ def test_remove_best_n_trades_config_fields_in_snapshot():
     assert result.config_snapshot["run_remove_best_n_trades_stress"] is True
     assert result.config_snapshot["remove_best_n_trades_n"] == 5
     assert result.config_snapshot["remove_best_n_trades_degradation_threshold"] == 0.25
+
+
+# ---------------------------------------------------------------------------
+# IS Baseline Quality Precheck (Task 056J-Impl)
+# ---------------------------------------------------------------------------
+
+
+def _make_zero_trade_strategy() -> Strategy:
+    """Strategy that never triggers — no entry conditions."""
+    return Strategy(name="empty")
+
+
+def test_precheck_default_config_does_not_short_circuit():
+    """Default config must not precheck."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    result = run_validation_pipeline(df, strat, commission=2.0)
+    assert not result.precheck_failed
+    assert result.stress_results
+    assert result.monte_carlo_summary is not None
+
+
+def test_precheck_zero_trades_triggers_early_return():
+    """Enabled precheck with zero trades must return precheck_failed=True."""
+    df = _make_df(200)
+    strat = _make_zero_trade_strategy()
+    cfg = PipelineConfig(run_is_baseline_quality_precheck=True)
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+
+    assert result.precheck_failed
+    assert result.stress_results == []
+    assert result.monte_carlo_summary is None
+    assert result.walk_forward_summary is None
+    assert "zero baseline trades" in result.warnings[0].lower()
+    assert not result.elimination_result["passed"]
+
+
+def test_precheck_with_trades_passes_through():
+    """Enabled precheck with nonzero trades must proceed normally."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    cfg = PipelineConfig(run_is_baseline_quality_precheck=True)
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+
+    assert not result.precheck_failed
+    assert result.stress_results  # not empty
+    assert result.monte_carlo_summary is not None
+
+
+def test_precheck_nonpositive_pnl_not_triggered_by_default():
+    """fail_is_baseline_on_nonpositive_pnl=False must not short-circuit on negative PnL."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    cfg = PipelineConfig(run_is_baseline_quality_precheck=True)
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+    # precheck only triggers on zero trades by default.
+    assert not result.precheck_failed
+
+
+def test_precheck_nonpositive_pnl_triggers_early_return(monkeypatch):
+    """fail_is_baseline_on_nonpositive_pnl=True must short-circuit with nonzero trades + negative PnL."""
+    from core.models.backtest_result import BacktestResult
+
+    # Deterministic baseline: 5 trades, negative PnL.
+    fake_baseline = BacktestResult(
+        trades=[],
+        metrics={"total_trades": 5, "total_pnl": -100.0, "profit_factor": 0.0},
+        assumptions={},
+        warnings=[],
+    )
+    monkeypatch.setattr(
+        "app.services.validation_pipeline_service.run_backtest",
+        lambda *a, **kw: fake_baseline,
+    )
+
+    df = _make_df(200)
+    strat = _make_strategy()
+    cfg = PipelineConfig(
+        run_is_baseline_quality_precheck=True,
+        fail_is_baseline_on_nonpositive_pnl=True,
+    )
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+
+    assert result.precheck_failed
+    assert result.baseline_metrics["total_trades"] == 5
+    assert result.baseline_metrics["total_pnl"] == -100.0
+    assert any("non-positive baseline pnl" in w.lower() for w in result.warnings)
+    assert result.stress_results == []
+    assert result.monte_carlo_summary is None
+    assert result.walk_forward_summary is None
+
+
+def test_precheck_nonpositive_pnl_disabled_does_not_short_circuit(monkeypatch):
+    """Same negative-PnL baseline passes through when nonpositive flag is off."""
+    from core.models.backtest_result import BacktestResult
+
+    fake_baseline = BacktestResult(
+        trades=[],
+        metrics={"total_trades": 5, "total_pnl": -100.0, "profit_factor": 0.0},
+        assumptions={},
+        warnings=[],
+    )
+    monkeypatch.setattr(
+        "app.services.validation_pipeline_service.run_backtest",
+        lambda *a, **kw: fake_baseline,
+    )
+
+    df = _make_df(200)
+    strat = _make_strategy()
+    cfg = PipelineConfig(
+        run_is_baseline_quality_precheck=True,
+        fail_is_baseline_on_nonpositive_pnl=False,  # explicitly off
+    )
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+
+    assert not result.precheck_failed
+    # Normal pipeline ran (stress results present).
+    assert result.stress_results
+
+
+def test_precheck_config_fields_in_snapshot():
+    """Config snapshot must record precheck fields."""
+    cfg = PipelineConfig(
+        run_is_baseline_quality_precheck=True,
+        fail_is_baseline_on_nonpositive_pnl=True,
+    )
+    df = _make_df(200)
+    strat = _make_strategy()
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+
+    assert result.config_snapshot["run_is_baseline_quality_precheck"] is True
+    assert result.config_snapshot["fail_is_baseline_on_nonpositive_pnl"] is True
+    # Config fields are in snapshot regardless of whether precheck triggered.
+
+
+def test_precheck_preserves_metadata_on_early_return():
+    """Early return must preserve split_metadata, baseline, and config."""
+    df = _make_df(200)
+    strat = _make_zero_trade_strategy()
+    cfg = PipelineConfig(run_is_baseline_quality_precheck=True)
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+
+    assert result.precheck_failed
+    assert result.split_metadata["train_rows"] > 0
+    assert result.baseline_metrics["total_trades"] == 0
+    assert result.config_snapshot["run_is_baseline_quality_precheck"] is True
