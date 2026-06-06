@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-06-07 - Task 058A Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-07_task-058a_v0.2-cleanup-hardening-audit_codex-review.md` accepting the v0.2 cleanup/hardening audit with score 8.9 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 058B-Fix + 058C-Design.
+- Updated `docs/task_board.md` to queue the widget MC worst-case defensive fix and normalizer warning triage design.
+
+### Verification
+- Reviewed latest DeepSeek report and audit findings.
+- Confirmed tag `v0.2-alpha-validation-expansion` remains on `1a9c533`.
+- Ran full suite: 1101 passed, 1 warning.
+- Ran `git diff --check`.
+
+## 2026-06-07 - Task 058A: v0.2 Cleanup and Hardening Audit
+
+### Added
+- `docs/v0.2_cleanup_hardening_audit_058A.md` — comprehensive audit covering documentation drift, test coverage (all 056/057 areas adequate), edge-case risks (1 recommended fix), known warning triage, and generated artifact hygiene.
+
+### Findings
+- **Blockers**: 0
+- **Recommended cleanup**: 1 (widget MC card defensive `.get()` on `worst_case`)
+- **Defer**: 3 (config validation, widget format edge, normalizer warning)
+
+### Verification
+- Tag `v0.2-alpha-validation-expansion` → `1a9c533` unchanged.
+- Full suite: 1101 passed, 1 warning.
+- `git diff --check` passes.
+
 ## 2026-06-07 - Batch 057U-Fix + 057V-MilestoneDecision Codex Acceptance
 
 ### Added

@@ -8,10 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 058A - v0.2 Cleanup and Hardening Audit
+- [ ] Batch 058B-Fix + 058C-Design - Widget MC Worst-case Defensive Fix and Normalizer Warning Triage Design
 
 ## Done
 
+- [x] Task 058A-Codex Review - v0.2 Cleanup and Hardening Audit Acceptance
+- [x] Task 058A - v0.2 Cleanup and Hardening Audit
 - [x] Batch 057U-Fix + 057V-MilestoneDecision-Codex Review - Post-tag Reconciliation and Milestone Decision Acceptance
 - [x] Batch 057U-Fix + 057V-MilestoneDecision - Post-tag Documentation Reconciliation and Next Milestone Decision
 - [x] Batch 057T-Signoff + 057U-Decision-Codex Review - Needs Post-tag State Reconciliation

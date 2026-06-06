@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Task 058A - v0.2 Cleanup and Hardening Audit.
+Batch 058B-Fix + 058C-Design - Widget MC Worst-case Defensive Fix and Normalizer Warning Triage Design.
 
 ## Required Reading
 
@@ -24,80 +24,84 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-07_task-057u-fix_057v-milestone-decision_post-tag-doc-reconciliation-and-next-milestone_codex-review.md`
-8. `docs/post_v0.2_milestone_decision_057V.md`
+7. `docs/review_notes/2026-06-07_task-058a_v0.2-cleanup-hardening-audit_codex-review.md`
+8. `docs/v0.2_cleanup_hardening_audit_058A.md`
 9. This task file
 
 ## Context
 
-v0.2 Alpha validation expansion is tagged as `v0.2-alpha-validation-expansion` and points to `1a9c533`. Codex accepted post-tag documentation reconciliation. The recommended next direction is a low-risk v0.2 cleanup/hardening audit before starting v0.3 feature work.
+Task 058A found 0 blockers and 1 recommended cleanup. The valid cleanup is a display hardening issue in `ValidationSummary`: Monte Carlo percentile data can render while `worst_case.total_pnl` is absent, causing a string fallback to be formatted with `:,.0f`.
 
 ## Scope
 
 ### Do
 
-- Perform an audit-only pass for v0.2 cleanup/hardening.
-- Create `docs/v0.2_cleanup_hardening_audit_058A.md`.
-- Focus on:
-  - lingering documentation drift
-  - test coverage gaps around 056/057 validation expansion features
-  - small edge-case risks in reports/widgets/pipeline config
-  - known warning triage
-  - generated artifact hygiene
-- Classify each finding as:
-  - blocker
-  - recommended cleanup
-  - defer
-- Recommend exactly one next two-task batch.
+- Complete two sequential tasks:
+  - Task 058B-Fix - Widget MC Worst-case Defensive Display Fix
+  - Task 058C-Design - Normalizer Datetime Warning Triage Design
+- For Task 058B-Fix:
+  - Update `app/widgets/validation_summary.py` so Monte Carlo rendering does not crash when `monte_carlo_summary["worst_case"]` or `worst_case["total_pnl"]` is missing.
+  - Preserve current display when valid worst-case PnL exists.
+  - Use a clear `N/A` style fallback instead of numeric formatting on non-numeric values.
+  - Add focused tests in `tests/test_validation_summary.py`.
+- For Task 058C-Design:
+  - Create `docs/normalizer_datetime_warning_triage_058C.md`.
+  - Design-only; do not change `data_engine/normalizer.py`.
+  - Explain the current pandas warning, why it is non-blocking, candidate fixes, risks, and one recommended future implementation path.
+  - Recommend exactly one next two-task batch.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-07_task-058a_v0.2-cleanup-hardening-audit_deepseek.md`
+  - `docs/agent_reports/2026-06-07_task-058b-fix_058c-design_widget-mc-hardening-and-normalizer-warning-triage_deepseek.md`
 
 ### Do Not
 
-- Do not change production Python code.
-- Do not change tests unless documenting an audit fixture is impossible without it.
+- Do not change validation engine logic.
+- Do not change Monte Carlo computation semantics.
+- Do not change `data_engine/normalizer.py` in this batch.
 - Do not create, delete, move, retarget, or push any git tag.
 - Do not add broad ignore rules.
-- Do not delete, move, archive, or commit generated project brief artifacts.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `docs/v0.2_cleanup_hardening_audit_058A.md`
+- `app/widgets/validation_summary.py`
+- `tests/test_validation_summary.py`
+- `docs/normalizer_datetime_warning_triage_058C.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-07_task-058a_v0.2-cleanup-hardening-audit_deepseek.md`
+- `docs/agent_reports/2026-06-07_task-058b-fix_058c-design_widget-mc-hardening-and-normalizer-warning-triage_deepseek.md`
 
 ## Acceptance Criteria
 
-1. Audit file exists and is audit-only.
-2. Findings are classified as blocker, recommended cleanup, or defer.
-3. Audit covers docs, tests, report/widget/pipeline edge risks, known warning, and generated artifact hygiene.
-4. Audit recommends exactly one next two-task batch.
+1. ValidationSummary does not crash when MC percentile data exists but worst-case data is missing.
+2. Existing valid MC display behavior is preserved.
+3. Focused widget tests cover missing `worst_case` and/or missing `total_pnl`.
+4. 058C design file exists and does not modify normalizer code.
 5. Changelog and task board are updated.
 6. Completion report is created.
-7. Full suite, `git diff --check`, tag verification, and agent status pass.
+7. Focused tests, full suite, `git diff --check`, tag verification, and agent status pass.
 
 ## Verification
 
 Run:
 
 ```powershell
-git show --no-patch --decorate --date=iso --format=fuller v0.2-alpha-validation-expansion
+.\.venv\Scripts\python.exe -m pytest tests/test_validation_summary.py -q
 .\.venv\Scripts\python.exe -m pytest -q
 git diff --check
+git show --no-patch --decorate --date=iso --format=fuller v0.2-alpha-validation-expansion
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
 
 Expected:
 
-- Tag remains unchanged and points to `1a9c533`.
+- Focused widget tests pass.
 - Full suite passes with only known pre-existing warning.
 - `git diff --check` passes.
-- Agent status shows Task 058A completion report as latest report.
+- Tag remains unchanged and points to `1a9c533`.
+- Agent status shows Batch 058B-Fix + 058C-Design completion report as latest report.
 
 ## After Completion
 
