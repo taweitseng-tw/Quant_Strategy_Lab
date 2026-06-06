@@ -1,5 +1,47 @@
 # Changelog
 
+## 2026-06-06 - Task 056C-Fix Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056c-fix_oos-stability-reporting-surface-design-correction_codex-review.md` accepting the corrected OOS metrics display design with score 8.8 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056D.
+- Updated `docs/task_board.md` to queue OOS metrics display implementation.
+
+### Verification
+- Reviewed the corrected design against the prior Codex blocker.
+- Confirmed the next implementation scope displays only existing `oos_metrics` values and defers stability ratio display.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Task 056C Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056c_oos-stability-reporting-surface-design_codex-review.md` marking the OOS stability reporting surface design as needing correction before implementation.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056C-Fix.
+- Updated `docs/task_board.md` to queue the design correction.
+
+### Verification
+- Reviewed the design against validation pipeline, elimination, validation summary widget, report generator, and main-window log surfaces.
+- Confirmed the current design would require ratio computation outside the engine/service layer unless narrowed or backed by structured output.
+
+## 2026-06-06 - Task 056C-Fix: OOS Stability Reporting Surface Design Correction
+
+### Changed
+- Revised `docs/oos_stability_reporting_surface_design_056C.md`:
+  - **Removed all stability ratio display requirements from UI/report surfaces.** Task 056D now displays only raw `oos_metrics` dict values (PnL, PF, Trades, Max DD, Win Rate) with no ratio computation.
+  - **Deferred ratio display** until a structured engine/service-layer `oos_stability` payload exists with its own tests.
+  - **Added acceptance criteria** for Task 056D (7 items covering widget, markdown, HTML, log panel, empty-data handling, test compatibility, git diff).
+  - **Fixed garbled symbols** in data flow diagram — replaced Unicode box-drawing characters with plain ASCII brackets and arrows.
+- Updated `docs/task_board.md` (Task 056C-Fix -> Done).
+
+### Verification
+- No production code changed (design-only correction).
+- `git diff --check` passes.
+- Engine/UI separation preserved: corrected design displays only pre-computed structured data.
+
 ## 2026-06-06 - Task 056B-Fix Codex Acceptance
 
 ### Added
@@ -14,6 +56,23 @@
 - Ran the full test suite without ignored tests: 986 passed, 1 pre-existing warning.
 - Ran `git diff --check`.
 - Ran a manual behavior probe confirming warn-by-default and `require_optional=True` fail behavior.
+
+## 2026-06-06 - Task 056C: OOS Stability Reporting Surface Design Only
+
+### Added
+- Created `docs/oos_stability_reporting_surface_design_056C.md` tracing the current validation result flow through UI widget, report generator, and log panel.
+- Findings:
+  - `PipelineResult.oos_metrics` is computed but no consumer reads it.
+  - ValidationSummary widget, report generator, and log panel all lack OOS metrics display.
+- Proposed minimal implementation scope (Task 056D): add OOS Metrics card to widget + OOS metrics line to both report formatters + one-line OOS summary in log panel.
+- Design decisions preserve engine/UI separation.
+
+### Changed
+- Updated `docs/task_board.md` (Task 056C → Done).
+
+### Verification
+- No production code changed (design-only).
+- `git diff --check` passes.
 
 ## 2026-06-06 - Task 056B-Codex Review
 

@@ -8,10 +8,13 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056C - OOS Stability Reporting Surface Design Only
+- [ ] Task 056D - OOS Metrics Display Surface Implementation
 
 ## Done
 
+- [x] Task 056C-Fix-Codex Review - OOS Stability Reporting Surface Design Correction Acceptance
+- [x] Task 056C-Fix - OOS Stability Reporting Surface Design Correction
+- [x] Task 056C - OOS Stability Reporting Surface Design Only
 - [x] Task 056B-Fix-Codex Review - OOS Stability Undefined Ratio Acceptance
 - [x] Task 056B-Fix - OOS Stability Undefined Ratio and Test Quality Hardening
 - [x] Task 056B - IS/OOS Stability Gate Implementation

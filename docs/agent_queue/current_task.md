@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Task 056C - OOS Stability Reporting Surface Design Only.
+Task 056D - OOS Metrics Display Surface Implementation.
 
 ## Required Reading
 
@@ -24,87 +24,100 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-06_task-056b-fix_oos-stability-undefined-ratio_codex-review.md`
-8. `app/services/validation_pipeline_service.py`
-9. `validation_engine/elimination.py`
+7. `docs/oos_stability_reporting_surface_design_056C.md`
+8. `docs/review_notes/2026-06-06_task-056c-fix_oos-stability-reporting-surface-design-correction_codex-review.md`
+9. `app/services/validation_pipeline_service.py`
 10. `app/widgets/validation_summary.py`
-11. Relevant report/export files discovered by search
-12. This task file
+11. `reports/generator.py`
+12. `app/ui/main_window.py`
+13. Relevant existing tests:
+    - `tests/test_validation_summary.py`
+    - `tests/test_report_export.py`
+    - `tests/test_active_dataset.py`
+14. This task file
 
 ## Context
 
-Task 056B now computes OOS metrics in the validation pipeline and passes them into elimination stability rules. The next risk is product-surface drift: UI/report output may hide OOS metrics, stability warnings, or fail reasons, making the new validation gate hard to inspect.
+Task 056B added `PipelineResult.oos_metrics`. Task 056C-Fix corrected the reporting design so UI/report/log surfaces must display only existing structured OOS metrics, without recomputing IS/OOS stability ratios in presentation code.
 
-This task is design only. Do not implement UI/report changes yet.
+This task is a narrow display implementation.
 
 ## Scope
 
 ### Do
 
-- Trace where validation pipeline results are currently displayed or exported:
-  - Validation summary UI.
-  - Report generation/export surfaces.
-  - Any structured result serialization that already exists.
-- Identify the minimal product surface needed for OOS stability:
-  - OOS metrics to show.
-  - Stability ratios to show, if available.
-  - Warning/fail reason wording.
-  - Research-only disclaimer placement if a report surface is involved.
-- Propose the smallest follow-up implementation task with file list and acceptance criteria.
-- Write a design note:
-  - `docs/oos_stability_reporting_surface_design_056C.md`
+- In `app/widgets/validation_summary.py`:
+  - Add an "OOS Metrics" card after Walk-Forward Matrix and before Elimination.
+  - Read only `result.oos_metrics`.
+  - If `oos_metrics` is `None` or empty, show `No OOS data.`
+  - If present, show PnL, PF, Trades, Max DD, and Win Rate.
+- In `reports/generator.py`:
+  - Add one OOS metrics line after the Baseline line in `_format_markdown_validation()`.
+  - Add one OOS metrics line after the Baseline paragraph in `_format_html_validation()`.
+  - Read only `vr.get("oos_metrics", {})`.
+  - If missing or empty, skip the OOS line.
+- In `app/ui/main_window.py`:
+  - Add one log line after the elimination log line when `result.oos_metrics` is present.
+  - Example content: `OOS: PnL=..., PF=..., Trades=...`.
+- Add or update focused tests:
+  - `tests/test_validation_summary.py`: OOS card appears with metrics and handles missing OOS data.
+  - `tests/test_report_export.py` or another existing report test file: Markdown and HTML validation evidence include the OOS line when `oos_metrics` is present and omit it when absent.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-056c_oos-stability-reporting-surface-design_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-056d_oos-metrics-display-surface-implementation_deepseek.md`
 
 ### Do Not
 
-- Do not change production code.
-- Do not change tests.
-- Do not implement UI, report, export, or serialization changes.
+- Do not change engine logic.
+- Do not change `validation_engine/elimination.py`.
+- Do not change `PipelineResult` schema.
+- Do not compute PF degradation, drawdown ratio, or average-trade degradation in UI/report/log code.
+- Do not add new stability ratio display.
 - Do not add dependencies.
-- Do not rename existing validation fields.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `docs/oos_stability_reporting_surface_design_056C.md`
+- `app/widgets/validation_summary.py`
+- `reports/generator.py`
+- `app/ui/main_window.py`
+- `tests/test_validation_summary.py`
+- `tests/test_report_export.py`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-056c_oos-stability-reporting-surface-design_deepseek.md`
-
-Read-only inspection likely includes:
-
-- `app/services/validation_pipeline_service.py`
-- `validation_engine/elimination.py`
-- `app/widgets/validation_summary.py`
-- report/export modules found with `rg`
+- `docs/agent_reports/2026-06-06_task-056d_oos-metrics-display-surface-implementation_deepseek.md`
 
 ## Acceptance Criteria
 
-1. The design note accurately traces the current result flow from validation pipeline to UI/report surfaces.
-2. The design note recommends one small implementation task, not a broad redesign.
-3. The recommendation preserves engine/UI separation.
-4. No production code or tests are changed.
-5. `docs/changelog.md` and `docs/task_board.md` are updated.
-6. `git diff --check` passes.
+1. ValidationSummary displays OOS metrics when `oos_metrics` exists.
+2. ValidationSummary displays `No OOS data.` when OOS metrics are absent.
+3. Markdown reports include exactly one OOS metrics line when `oos_metrics` exists.
+4. HTML reports include exactly one OOS metrics paragraph when `oos_metrics` exists.
+5. Markdown/HTML reports omit the OOS line when `oos_metrics` is absent.
+6. Main-window validation log prints an OOS summary only when `result.oos_metrics` exists.
+7. UI/report/log code does not compute OOS/IS stability ratios.
+8. Focused tests and full suite pass.
+9. `git diff --check` passes.
 
 ## Verification
 
 Run exactly:
 
 ```powershell
+.venv\Scripts\python.exe -m pytest tests/test_validation_summary.py tests/test_report_export.py tests/test_active_dataset.py -v
+.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
 
 Expected:
 
+- Focused tests pass.
+- Full suite passes without ignored tests.
 - `git diff --check` passes.
-- Agent status shows Task 056C completion report as the latest report.
-- No production code or tests changed.
+- Agent status shows Task 056D completion report as the latest report.
 
 ## After Completion
 
