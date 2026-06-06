@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Task 056E-Impl - Remove Best N Trades Stress Test Engine Implementation.
+Task 056F - Remove Best N Trades Pipeline Integration.
 
 ## Required Reading
 
@@ -25,86 +25,72 @@ Before doing anything, read:
 5. `docs/task_board.md`
 6. `docs/changelog.md`
 7. `docs/remove_best_n_trades_stress_design_056E.md`
-8. `docs/review_notes/2026-06-06_task-056e-fix2_remove-best-n-trades-design-duplicate-cleanup_codex-review.md`
+8. `docs/review_notes/2026-06-06_task-056e-impl-fix_remove-best-n-trades-deterministic-test-hardening_codex-review.md`
 9. `validation_engine/stress_test.py`
-10. `tests/test_stress_test.py`
-11. This task file
+10. `app/services/validation_pipeline_service.py`
+11. `tests/test_validation_pipeline_service.py`
+12. This task file
 
 ## Context
 
-The design for Remove Best N Trades is accepted. This implementation must be engine-only: add the stress function and focused engine tests, but do not wire it into the validation pipeline yet.
+The remove-best-N-trades stress engine function is accepted. The next step is to wire it into the validation pipeline behind an explicit opt-in flag. It must remain off by default because the test is only meaningful when baseline trade count is sufficient.
 
 ## Scope
 
 ### Do
 
-- In `validation_engine/stress_test.py`:
-  - Add `stress_remove_best_n_trades(baseline: BacktestResult, *, n: int = 3, degradation_threshold: float = 0.30) -> StressTestResult`.
-  - Operate on `baseline.trades` only; do not re-run backtests.
-  - Sort trades by `pnl` descending and remove the top `n`.
-  - Recompute stressed metrics with `compute_metrics(surviving_trades)`.
-  - Preserve existing `degradation` convention: `(stressed - baseline) / abs(baseline)`.
-  - Use separate `pnl_loss_ratio` in `assumptions` for pass/fail.
-  - Do not mutate `baseline.trades`.
-  - Raise `ValueError` for non-int or negative `n`.
-  - Raise `ValueError` for negative `degradation_threshold`.
-  - Handle edge cases:
-    - zero trades: pass with warning.
-    - `n == 0`: pass with no trades removed and `assumptions["n_zero"] = True`.
-    - `0 < trade_count <= n`: fail with warning and `assumptions["insufficient_trades"] = True`.
-- In `tests/test_stress_test.py`, add focused tests for:
-  - deterministic output.
-  - PnL worsens after removing best trades.
-  - fails above threshold.
-  - passes within threshold.
-  - zero trades vacuous pass.
-  - insufficient trades fail.
-  - does not mutate baseline.
-  - structured output fields.
-  - negative `n` raises.
-  - negative `degradation_threshold` raises.
+- In `app/services/validation_pipeline_service.py`:
+  - Import `stress_remove_best_n_trades`.
+  - Add `PipelineConfig` fields:
+    - `run_remove_best_n_trades_stress: bool = False`
+    - `remove_best_n_trades_n: int = 3`
+    - `remove_best_n_trades_degradation_threshold: float = 0.30`
+  - When `run_remove_best_n_trades_stress` is true, call `stress_remove_best_n_trades()` and append `_stress_to_dict(result)` to `stress_results`.
+  - Keep default pipeline behavior unchanged when the flag is false.
+- In `tests/test_validation_pipeline_service.py`:
+  - Add a test showing default config does not include `remove_best_n_trades`.
+  - Add a test showing opt-in config includes `remove_best_n_trades`.
+  - Assert the resulting stress dict includes assumptions such as `n`, `removed_count`, and `pnl_loss_ratio`.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-056e-impl_remove-best-n-trades-stress-engine-implementation_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-056f_remove-best-n-trades-pipeline-integration_deepseek.md`
 
 ### Do Not
 
-- Do not modify `app/services/validation_pipeline_service.py`.
-- Do not add PipelineConfig fields.
-- Do not wire this stress test into the pipeline.
+- Do not change `validation_engine/stress_test.py` unless an integration bug is discovered.
 - Do not modify UI/report code.
-- Do not change elimination thresholds.
+- Do not add new elimination thresholds.
+- Do not turn this stress test on by default.
 - Do not add dependencies.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `validation_engine/stress_test.py`
-- `tests/test_stress_test.py`
+- `app/services/validation_pipeline_service.py`
+- `tests/test_validation_pipeline_service.py`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-056e-impl_remove-best-n-trades-stress-engine-implementation_deepseek.md`
+- `docs/agent_reports/2026-06-06_task-056f_remove-best-n-trades-pipeline-integration_deepseek.md`
 
 ## Acceptance Criteria
 
-1. `stress_remove_best_n_trades()` exists and returns `StressTestResult`.
-2. The implementation does not mutate `baseline.trades`.
-3. The implementation preserves existing `degradation` sign convention.
-4. `pnl_loss_ratio` is present in `assumptions` and is not stored as `degradation["total_pnl"]`.
-5. Low-trade-count behavior matches the accepted design.
-6. No pipeline, UI, report, or elimination behavior changes.
-7. Focused stress tests pass.
-8. Full suite passes.
-9. `git diff --check` passes.
+1. Default validation pipeline output is unchanged: no `remove_best_n_trades` stress result unless explicitly enabled.
+2. Opt-in pipeline config appends exactly one `remove_best_n_trades` stress result.
+3. The stress result is serialized through existing `_stress_to_dict()` shape.
+4. The result includes `assumptions["pnl_loss_ratio"]`.
+5. No UI/report/elimination behavior changes.
+6. Focused pipeline tests pass.
+7. Full suite passes.
+8. `git diff --check` passes.
 
 ## Verification
 
 Run exactly:
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests/test_stress_test.py -v
+.venv\Scripts\python.exe -m pytest tests/test_validation_pipeline_service.py tests/test_stress_test.py -v
 .venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
@@ -112,10 +98,10 @@ powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 
 Expected:
 
-- Focused stress tests pass.
+- Focused tests pass.
 - Full suite passes without ignored tests.
 - `git diff --check` passes.
-- Agent status shows Task 056E-Impl completion report as the latest report.
+- Agent status shows Task 056F completion report as the latest report.
 
 ## After Completion
 

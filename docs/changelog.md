@@ -1,5 +1,68 @@
 # Changelog
 
+## 2026-06-06 - Task 056E-Impl-Fix Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056e-impl-fix_remove-best-n-trades-deterministic-test-hardening_codex-review.md` accepting the remove-best-N-trades engine implementation and deterministic test hardening with score 9.0 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056F.
+- Updated `docs/task_board.md` to queue remove-best-N-trades pipeline integration.
+- Added `.reasonix/` to `.gitignore` so local Reasonix tool artifacts do not pollute agent status output.
+
+### Verification
+- Ran focused stress tests: 26 passed.
+- Ran the full test suite: 1003 passed, 1 pre-existing warning.
+- Ran `git diff --check`.
+- Confirmed deterministic tests now assert stressed PnL, degradation sign, `pnl_loss_ratio`, and pass/fail behavior without generated trade-count guards.
+
+## 2026-06-06 - Task 056E-Impl-Fix: Remove Best N Trades Deterministic Test Hardening
+
+### Fixed
+- `tests/test_stress_test.py`: Replaced the weak conditional-guarded tests with a deterministic synthetic baseline helper `_make_synthetic_baseline()` built from explicit `Trade` objects and `compute_metrics()`.
+- Removed all `if baseline.metrics["total_trades"] >= N:` conditional guards that could silently skip core assertions.
+- Added `test_remove_best_n_trades_exact_metrics` asserting exact `degradation["total_pnl"] == -0.833333` and `pnl_loss_ratio == 0.833333` against a known synthetic baseline (PnLs: 100, 50, -20, -10).
+- Threshold tests (`fails_above_threshold`, `passes_within_threshold`) now deterministically verify pass/fail without conditional guards.
+
+### Verification
+- Focused stress tests: 26 passed (15 existing + 11 new).
+- Full suite: 1003 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+- No implementation changes needed — engine code already correct.
+
+## 2026-06-06 - Task 056E-Impl Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056e-impl_remove-best-n-trades-stress-engine-implementation_codex-review.md` marking the engine implementation as needing deterministic test hardening before acceptance.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056E-Impl-Fix.
+- Updated `docs/task_board.md` to queue deterministic test hardening.
+
+### Verification
+- Ran focused stress tests: 25 passed.
+- Ran the full test suite: 1002 passed, 1 pre-existing warning.
+- Ran `git diff --check`.
+- Manually confirmed the generated test baseline currently has only one trade, allowing conditional core assertions to skip.
+
+## 2026-06-06 - Task 056E-Impl: Remove Best N Trades Stress Test Engine Implementation
+
+### Added
+- `validation_engine/stress_test.py`: Added `stress_remove_best_n_trades(baseline, *, n=3, degradation_threshold=0.30) -> StressTestResult`.
+  - Sorts trades by PnL descending, removes top N, recomputes metrics via `compute_metrics()`.
+  - Preserves existing degradation sign convention: `(stressed - base) / abs(base)`.
+  - Separates `pnl_loss_ratio` into `assumptions` for pass/fail (positive = worse).
+  - Handles zero trades (vaporous pass), insufficient trades (`passed=False`), `n == 0`, negative/invalid inputs (`ValueError`).
+  - Does not mutate `baseline.trades`.
+  - Engine-only: no pipeline config or wiring.
+- `tests/test_stress_test.py`: Added 10 focused tests (deterministic, worsens PnL, fail above threshold, pass within threshold, zero trades, insufficient trades fail, no mutation, structured output, negative n raises, negative threshold raises).
+
+### Verification
+- Focused stress tests: 25 passed (15 existing + 10 new).
+- Full suite: 1002 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+- No pipeline, UI, report, or elimination code changed.
+
 ## 2026-06-06 - Task 056E-Fix2 Codex Acceptance
 
 ### Added

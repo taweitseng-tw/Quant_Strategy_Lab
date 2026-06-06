@@ -8,10 +8,13 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056E-Impl - Remove Best N Trades Stress Test Engine Implementation
+- [ ] Task 056F - Remove Best N Trades Pipeline Integration
 
 ## Done
 
+- [x] Task 056E-Impl-Fix-Codex Review - Remove Best N Trades Deterministic Test Hardening Acceptance
+- [x] Task 056E-Impl-Fix - Remove Best N Trades Deterministic Test Hardening
+- [x] Task 056E-Impl - Remove Best N Trades Stress Test Engine Implementation
 - [x] Task 056E-Fix2-Codex Review - Remove Best N Trades Design Duplicate Cleanup Acceptance
 - [x] Task 056E-Fix2 - Remove Best N Trades Design Duplicate Cleanup
 - [x] Task 056E-Fix - Remove Best N Trades Stress Test Design Hardening

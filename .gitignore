@@ -40,6 +40,7 @@ config/
 scratch*.py
 pytest*.txt
 test.pdf
+.reasonix/
 1/
 2/
 virtual/

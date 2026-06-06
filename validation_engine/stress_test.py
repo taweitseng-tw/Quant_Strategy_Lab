@@ -339,6 +339,128 @@ def stress_parameter_perturbation(
     )
 
 
+def stress_remove_best_n_trades(
+    baseline: BacktestResult,
+    *,
+    n: int = 3,
+    degradation_threshold: float = 0.30,
+) -> StressTestResult:
+    """Remove the top *n* best-performing trades (by PnL) and recompute metrics.
+
+    This is a worst-case sensitivity check: if a strategy only passes because
+    of 1-2 lucky outlier trades, this test should flag it.
+
+    Parameters
+    ----------
+    baseline : BacktestResult
+        Baseline IS backtest result containing a trade list.
+    n : int
+        Number of best trades to remove. Must be a non-negative int.
+    degradation_threshold : float
+        Maximum allowed PnL loss ratio before failing.
+        ``pnl_loss_ratio = (base_pnl - stressed_pnl) / abs(base_pnl)``.
+        Must be non-negative.
+
+    Returns
+    -------
+    StressTestResult
+
+    Raises
+    ------
+    ValueError
+        If *n* is not a non-negative int.
+    ValueError
+        If *degradation_threshold* is negative.
+    """
+    # -- input validation ----------------------------------------------------
+    if not isinstance(n, int) or isinstance(n, bool) or n < 0:
+        raise ValueError(f"n must be a non-negative int, got {n!r}.")
+    if not isinstance(degradation_threshold, (int, float)) or degradation_threshold < 0:
+        raise ValueError(
+            f"degradation_threshold must be a non-negative number, got {degradation_threshold!r}."
+        )
+
+    trades = baseline.trades
+
+    # -- zero trades ---------------------------------------------------------
+    if not trades:
+        return StressTestResult(
+            test_name="remove_best_n_trades",
+            passed=True,
+            baseline_metrics=baseline.metrics,
+            stressed_metrics=baseline.metrics,
+            degradation={},
+            assumptions={"n": n, "removed_count": 0, "surviving_count": 0,
+                         "total_baseline_count": 0, "pnl_loss_ratio": 0.0},
+            warnings=["No trades to stress — baseline has zero trades."],
+            threshold={"max_pnl_loss": degradation_threshold},
+        )
+
+    # -- sort by PnL descending, remove top n ---------------------------------
+    sorted_trades = sorted(trades, key=lambda t: t.pnl, reverse=True)
+    removed = min(n, len(trades))
+    surviving = sorted_trades[removed:]  # a new list — no mutation
+
+    # -- recompute metrics ----------------------------------------------------
+    stressed_metrics = compute_metrics(surviving)
+    base_pnl = float(baseline.metrics.get("total_pnl", 0.0))
+    stressed_pnl = float(stressed_metrics.get("total_pnl", 0.0))
+
+    # -- degradation (existing _build_result convention) ----------------------
+    degradation: dict[str, float] = {}
+    for key in ("total_pnl", "profit_factor", "win_rate", "avg_trade", "total_trades"):
+        base = float(baseline.metrics.get(key, 0.0))
+        stressed = float(stressed_metrics.get(key, 0.0))
+        degradation[key] = round((stressed - base) / abs(base), 6) if abs(base) > 1e-9 else 0.0
+
+    # -- pnl_loss_ratio (separate, positive = worse, for pass/fail) ----------
+    if abs(base_pnl) > 1e-9:
+        pnl_loss_ratio = (base_pnl - stressed_pnl) / abs(base_pnl)
+    else:
+        pnl_loss_ratio = 0.0
+
+    # -- pass/fail ------------------------------------------------------------
+    if removed >= len(trades) and len(trades) > 0:
+        # All trades removed (0 < trades <= n).
+        passed = False
+        warnings = [
+            f"Insufficient trades for remove-best-n stress test "
+            f"(trades={len(trades)}, n={n})."
+        ]
+        insufficient = True
+    elif abs(base_pnl) < 1e-9:
+        passed = True
+        warnings = []
+        insufficient = False
+    else:
+        passed = pnl_loss_ratio <= degradation_threshold
+        warnings = []
+        insufficient = False
+
+    assumptions = {
+        "n": n,
+        "removed_count": removed,
+        "surviving_count": len(surviving),
+        "total_baseline_count": len(trades),
+        "pnl_loss_ratio": round(pnl_loss_ratio, 6),
+    }
+    if n == 0:
+        assumptions["n_zero"] = True
+    if insufficient:
+        assumptions["insufficient_trades"] = True
+
+    return StressTestResult(
+        test_name="remove_best_n_trades",
+        passed=passed,
+        baseline_metrics=baseline.metrics,
+        stressed_metrics=stressed_metrics,
+        degradation=degradation,
+        assumptions=assumptions,
+        warnings=warnings,
+        threshold={"max_pnl_loss": degradation_threshold},
+    )
+
+
 # ---------------------------------------------------------------------------
 # internal helpers
 # ---------------------------------------------------------------------------

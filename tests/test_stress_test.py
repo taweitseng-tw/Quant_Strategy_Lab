@@ -6,12 +6,15 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from core.models.backtest_result import BacktestResult, Trade
 from core.models.strategy import Condition, Strategy, StrategyBlock
 from backtest_engine.runner import run_backtest
+from backtest_engine.metrics import compute_metrics
 from validation_engine.stress_test import (
     StressTestResult,
     stress_commission_multiplier,
     stress_random_missed_trades,
+    stress_remove_best_n_trades,
     stress_slippage_multiplier,
 )
 
@@ -298,3 +301,141 @@ def test_one_bar_delay_too_short_dataframe():
     result = stress_one_bar_delay(strat, df, baseline)
     assert result.passed
     assert any("too short" in w.lower() for w in result.warnings)
+
+
+# ---------------------------------------------------------------------------
+# Remove Best N Trades stress test (Task 056E-Impl / 056E-Impl-Fix)
+# ---------------------------------------------------------------------------
+
+
+def _make_synthetic_baseline(pnls: list[float]) -> BacktestResult:
+    """Build a deterministic baseline from explicit trade PnL values."""
+    import math
+    trades = [
+        Trade(
+            entry_time=pd.Timestamp("2024-01-01 09:30"),
+            exit_time=pd.Timestamp("2024-01-01 10:00"),
+            direction="long",
+            entry_price=100.0,
+            exit_price=110.0,
+            quantity=1,
+            pnl=pnl,
+            exit_reason="signal",
+        )
+        for pnl in pnls
+    ]
+    metrics = compute_metrics(trades)
+    return BacktestResult(
+        trades=trades,
+        metrics=metrics,
+        assumptions={},
+        warnings=[],
+    )
+
+
+def test_remove_best_n_trades_deterministic():
+    """Same baseline must produce identical results."""
+    baseline = _make_synthetic_baseline([100.0, 50.0, -20.0, -10.0])
+    r1 = stress_remove_best_n_trades(baseline, n=1)
+    r2 = stress_remove_best_n_trades(baseline, n=1)
+    assert r1.stressed_metrics == r2.stressed_metrics
+    assert r1.degradation == r2.degradation
+    assert r1.passed == r2.passed
+
+
+def test_remove_best_n_trades_worsens_pnl():
+    """PnL must not improve after removing best trades."""
+    baseline = _make_synthetic_baseline([100.0, 50.0, -20.0, -10.0])
+    # baseline total_pnl=120, remove best (100) -> stressed_pnl=20
+    result = stress_remove_best_n_trades(baseline, n=1)
+    assert result.stressed_metrics["total_pnl"] == pytest.approx(20.0)
+    assert result.stressed_metrics["total_pnl"] <= baseline.metrics["total_pnl"]
+
+
+def test_remove_best_n_trades_exact_metrics():
+    """Verify exact degradation and pnl_loss_ratio against known values."""
+    baseline = _make_synthetic_baseline([100.0, 50.0, -20.0, -10.0])
+    result = stress_remove_best_n_trades(baseline, n=1)
+
+    # baseline total_pnl=120, stressed=20
+    assert result.stressed_metrics["total_pnl"] == pytest.approx(20.0)
+    assert result.degradation["total_pnl"] == pytest.approx(-0.833333, abs=1e-5)
+    assert result.assumptions["pnl_loss_ratio"] == pytest.approx(0.833333, abs=1e-5)
+    assert result.assumptions["removed_count"] == 1
+    assert result.assumptions["surviving_count"] == 3
+
+
+def test_remove_best_n_trades_fails_above_threshold():
+    """Fails when pnl_loss_ratio > degradation_threshold."""
+    baseline = _make_synthetic_baseline([100.0, 50.0, -20.0, -10.0])
+    # pnl_loss_ratio ~0.833, threshold 0.30 -> fail
+    result = stress_remove_best_n_trades(baseline, n=1, degradation_threshold=0.30)
+    assert not result.passed
+
+
+def test_remove_best_n_trades_passes_within_threshold():
+    """Passes when pnl_loss_ratio <= degradation_threshold."""
+    baseline = _make_synthetic_baseline([100.0, 50.0, -20.0, -10.0])
+    # pnl_loss_ratio ~0.833, threshold 0.99 -> pass
+    result = stress_remove_best_n_trades(baseline, n=1, degradation_threshold=0.99)
+    assert result.passed
+    assert "pnl_loss_ratio" in result.assumptions
+
+
+def test_remove_best_n_trades_zero_trades():
+    """Empty baseline -> vacuous pass with warning."""
+    baseline = _make_synthetic_baseline([])
+    assert baseline.metrics["total_trades"] == 0
+
+    result = stress_remove_best_n_trades(baseline, n=2)
+    assert result.passed
+    assert len(result.warnings) >= 1
+    assert "zero trades" in result.warnings[0].lower()
+
+
+def test_remove_best_n_trades_insufficient_trades_fails():
+    """0 < trades <= n -> passed=False with insufficient_trades."""
+    baseline = _make_synthetic_baseline([100.0, 50.0])
+    # 2 trades, n=5 -> insufficient
+    result = stress_remove_best_n_trades(baseline, n=5)
+    assert not result.passed
+    assert result.assumptions.get("insufficient_trades") is True
+
+
+def test_remove_best_n_trades_does_not_mutate_baseline():
+    """Baseline trade list must be unchanged."""
+    baseline = _make_synthetic_baseline([100.0, 50.0, -20.0, -10.0])
+    trades_before = [t.pnl for t in baseline.trades]
+    stress_remove_best_n_trades(baseline, n=1)
+    trades_after = [t.pnl for t in baseline.trades]
+    assert trades_before == trades_after
+
+
+def test_remove_best_n_trades_structured_output():
+    """Result must have all required fields."""
+    baseline = _make_synthetic_baseline([100.0, 50.0, -20.0, -10.0])
+    result = stress_remove_best_n_trades(baseline, n=1)
+
+    assert result.test_name == "remove_best_n_trades"
+    assert isinstance(result.passed, bool)
+    assert isinstance(result.baseline_metrics, dict)
+    assert isinstance(result.stressed_metrics, dict)
+    assert isinstance(result.degradation, dict)
+    assert isinstance(result.assumptions, dict)
+    assert "pnl_loss_ratio" in result.assumptions
+    assert "removed_count" in result.assumptions
+    assert isinstance(result.warnings, list)
+
+
+def test_remove_best_n_trades_negative_n_raises():
+    """n < 0 raises ValueError."""
+    baseline = _make_synthetic_baseline([100.0])
+    with pytest.raises(ValueError, match="non-negative"):
+        stress_remove_best_n_trades(baseline, n=-1)
+
+
+def test_remove_best_n_trades_negative_threshold_raises():
+    """degradation_threshold < 0 raises ValueError."""
+    baseline = _make_synthetic_baseline([100.0])
+    with pytest.raises(ValueError, match="non-negative"):
+        stress_remove_best_n_trades(baseline, n=2, degradation_threshold=-0.1)
