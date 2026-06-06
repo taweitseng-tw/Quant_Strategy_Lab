@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-06-06 - Task 056N Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056n_milestone-direction-decision-brief_codex-review.md` accepting the milestone direction decision brief with score 8.8 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 057A-057B.
+- Updated `docs/task_board.md` to queue a two-task validation gap design batch.
+
+### Verification
+- Reviewed the Task 056N report and milestone direction brief.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Task 056N: Milestone Direction Decision Brief
+
+### Added
+- Created `docs/milestone_direction_056N.md` — user-facing decision brief comparing 4 next-milestone directions.
+- Recommended default: Direction A — Complete remaining validation gaps (MC bootstrap, WF equity).
+- Other options: B (data/instrument polish), C (strategy generation UX), D (system-wide release hardening).
+- Awaiting user decision to select concrete next task.
+
+### Changed
+- Updated `docs/task_board.md` (Task 056N -> Done).
+
+### Verification
+- No production code changed (decision brief only).
+- `git diff --check` passes.
+
 ## 2026-06-06 - Task 056M Codex Acceptance
 
 ### Added

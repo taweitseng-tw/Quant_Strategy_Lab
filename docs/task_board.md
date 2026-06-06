@@ -8,10 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056N - Milestone Direction Decision Brief
+- [ ] Batch 057A-057B - Validation Gap Design Batch
 
 ## Done
 
+- [x] Task 056N - Milestone Direction Decision Brief
+- [x] Task 056N-Codex Review - Milestone Direction Decision Brief Acceptance
 - [x] Task 056M - v0.2 Validation Expansion Release Readiness Audit
 - [x] Task 056M-Codex Review - v0.2 Validation Expansion Release Readiness Acceptance
 - [x] Task 056L - Validation Expansion Series Acceptance and Next-Scope Triage
