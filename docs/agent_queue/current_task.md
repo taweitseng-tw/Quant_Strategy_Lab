@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 057M-Impl + 057N-Design - Final 057 Acceptance Smoke and Release Readiness Triage Design.
+Batch 057Q-Docs + 057R-ReleaseNotes - README Milestone Sync and v0.2 Release Notes.
 
 ## Required Reading
 
@@ -24,75 +24,73 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-06_task-057l-impl_057m-design_wf-equity-report-tables-and-acceptance-smoke-design_codex-review.md`
-8. `docs/validation_expansion_acceptance_smoke_design_057M.md`
+7. `docs/review_notes/2026-06-06_task-057m-fix_057p-audit_acceptance-smoke-hardening-and-v0.2-release-readiness_codex-review.md`
+8. `docs/v0.2_release_readiness_audit_057P.md`
 9. This task file
 
 ## Context
 
-Batch 057L-Impl + 057M-Design was accepted by Codex. Bootstrap MC and WF equity now have engine/pipeline/UI/report surfaces. This batch should seal the 057 validation expansion chain with end-to-end acceptance smoke tests, then design the final release-readiness triage for this v0.2 validation expansion slice.
+Codex accepted Batch 057M-Fix + 057P-Audit with score 8.9 / 10. The v0.2 alpha validation expansion slice is GO, but release docs need final cleanup before a clean v0.2 baseline. `README.md` still says `Prototype v0.0.1`, and generated project brief artifacts are present under `docs/` but must not be committed into the release baseline without explicit approval.
 
 ## Scope
 
 ### Do
 
 - Complete two sequential tasks:
-  - Task 057M-Impl - Final 057 Validation Expansion Acceptance Smoke
-  - Task 057N-Design - 057/v0.2 Validation Expansion Release Readiness Triage Design
-- For Task 057M-Impl:
-  - Create `tests/test_validation_expansion_acceptance_smoke.py`.
-  - Implement the 8 tests described in `docs/validation_expansion_acceptance_smoke_design_057M.md`.
-  - Cover bootstrap MC pipeline opt-in, bootstrap widget/report visibility, bootstrap UI control wiring, WF equity widget/report visibility, default-off behavior, and empty-output omissions.
-  - Prefer reusing existing fixtures/helpers from bootstrap, validation pipeline, UI wiring, widget, and report tests.
-  - Keep this primarily test-only. Production code changes are allowed only if the new acceptance smoke exposes a real defect.
-- For Task 057N-Design:
-  - Create `docs/validation_expansion_release_readiness_triage_057N.md`.
-  - Summarize the 056/057 validation expansion capabilities now covered.
-  - Identify remaining risks, test gaps, and any release blockers for v0.2 alpha validation expansion.
-  - Estimate whether the validation expansion slice is ready for final v0.2 release-readiness audit.
+  - Task 057Q-Docs - README Milestone Sync and Generated Brief Artifact Hygiene
+  - Task 057R-ReleaseNotes - v0.2 Alpha Validation Expansion Release Notes
+- For Task 057Q-Docs:
+  - Update `README.md` current milestone from `Prototype v0.0.1` to `v0.2 Alpha - validation expansion release-ready`.
+  - Replace the prototype goal text with a concise v0.2 alpha validation expansion summary.
+  - Keep the financial/research-only posture intact; do not imply trading advice or live trading readiness.
+  - Add targeted `.gitignore` entries for generated local project brief artifacts only after verifying no tracked file would be ignored.
+  - Do not delete or move `docs/project_brief_2026-06-06*` files in this task.
+- For Task 057R-ReleaseNotes:
+  - Create `docs/v0.2_alpha_validation_expansion_release_notes_057R.md`.
+  - Summarize completed 056/057 validation expansion capabilities.
+  - Include verification summary: acceptance smoke, full suite, known warning.
+  - Include known deferred items from `docs/v0.2_release_readiness_audit_057P.md`.
+  - Include release caveats: research/backtesting only, no financial advice, no live trading.
   - Recommend exactly one next two-task batch.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-057m-impl_057n-design_final-acceptance-smoke-and-release-readiness-triage_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-057q-docs_057r-release-notes_readme-sync-and-v0.2-release-notes_deepseek.md`
 
 ### Do Not
 
-- Do not add new features.
-- Do not add new dependencies.
-- Do not broaden Monte Carlo, walk-forward, or report behavior beyond defects found by acceptance smoke.
-- Do not modify core architecture.
-- Do not create plotted WF charts.
+- Do not add new product features.
+- Do not change production Python code.
+- Do not delete, move, archive, or commit generated project brief artifacts.
+- Do not create a git tag.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `tests/test_validation_expansion_acceptance_smoke.py`
-- `docs/validation_expansion_release_readiness_triage_057N.md`
+- `README.md`
+- `.gitignore`
+- `docs/v0.2_alpha_validation_expansion_release_notes_057R.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-057m-impl_057n-design_final-acceptance-smoke-and-release-readiness-triage_deepseek.md`
-- Production files only if a real acceptance defect is discovered.
+- `docs/agent_reports/2026-06-06_task-057q-docs_057r-release-notes_readme-sync-and-v0.2-release-notes_deepseek.md`
 
 ## Acceptance Criteria
 
-1. The new acceptance smoke test file exists and covers all 8 scenarios from the 057M design.
-2. Tests verify real pipeline/widget/report/UI wiring behavior, not only hardcoded strings.
-3. Default-off and empty-output omission behavior is covered.
-4. No production behavior changes are made unless required to fix a real failing acceptance path.
-5. 057N design gives a concise release-readiness triage and one clear next two-task batch.
-6. Changelog and task board are updated.
-7. Completion report is created.
-8. Focused acceptance smoke, relevant nearby tests, full suite, and `git diff --check` pass.
+1. README current milestone no longer says `Prototype v0.0.1`.
+2. README v0.2 summary is accurate, concise, and does not imply live trading or financial advice.
+3. `.gitignore` handles generated local project brief artifacts without hiding intended source docs broadly.
+4. v0.2 release notes summarize capabilities, verification, caveats, and deferred items.
+5. Changelog and task board are updated.
+6. Completion report is created.
+7. `git diff --check`, full suite, and agent status pass.
 
 ## Verification
 
 Run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/test_validation_expansion_acceptance_smoke.py -q
-.\.venv\Scripts\python.exe -m pytest tests/test_report_export.py tests/test_bootstrap_monte_carlo_acceptance.py tests/test_wfe_ui_wiring.py -q
+git check-ignore -v docs/project_brief_2026-06-06.pdf docs/project_brief_2026-06-06.pptx docs/~$project_brief_2026-06-06.pptx
 .\.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
@@ -100,11 +98,10 @@ powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 
 Expected:
 
-- New acceptance smoke tests pass.
-- Nearby report/bootstrap/WF UI tests pass.
+- Generated project brief binary/temp artifacts are ignored by targeted rules.
 - Full suite passes with only known pre-existing warnings.
 - `git diff --check` passes.
-- Agent status shows Batch 057M-Impl + 057N-Design completion report as the latest report.
+- Agent status shows Batch 057Q-Docs + 057R-ReleaseNotes completion report as the latest report.
 
 ## After Completion
 

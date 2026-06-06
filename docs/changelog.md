@@ -1,5 +1,67 @@
 # Changelog
 
+## 2026-06-06 - Batch 057M-Fix + 057P-Audit Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-057m-fix_057p-audit_acceptance-smoke-hardening-and-v0.2-release-readiness_codex-review.md` accepting the acceptance smoke hardening and v0.2 release-readiness audit with score 8.9 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 057Q-Docs + 057R-ReleaseNotes.
+- Updated `docs/task_board.md` to queue README/docs hygiene and v0.2 release notes.
+
+### Verification
+- Reviewed latest DeepSeek report, acceptance smoke, and release-readiness audit.
+- Ran acceptance smoke: 8 passed.
+- Ran full suite: 1101 passed, 1 warning.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Batch 057M-Fix + 057P-Audit: Acceptance Smoke Hardening and v0.2 Release Readiness Audit
+
+### Fixed (057M-Fix)
+- `tests/test_validation_expansion_acceptance_smoke.py`: Strengthened `test_empty_ci_and_equity_omitted` to verify omission across all three surfaces (widget + Markdown + HTML).
+
+### Added (057P-Audit)
+- `docs/v0.2_release_readiness_audit_057P.md` — comprehensive v0.2 audit:
+  - All PRD Alpha v0.2 items mapped to tasks/files/tests.
+  - README milestone drift flagged (says "Prototype v0.0.1").
+  - `docs/project_brief_2026-06-06.md` flagged for archive/disposition.
+  - **Verdict: GO.** Recommended next: README update + brief disposition.
+
+### Verification
+- Acceptance smoke: 8 passed.
+- Full suite: 1101 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+
+## 2026-06-06 - Batch 057M-Impl + 057N-Design Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-057m-impl_057n-design_final-acceptance-smoke-and-release-readiness-triage_codex-review.md` with a needs-fix verdict and score 8.7 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 057M-Fix + 057P-Audit.
+- Updated `docs/task_board.md` to queue acceptance smoke omission hardening and the v0.2 release-readiness audit.
+
+### Verification
+- Reviewed latest DeepSeek report and acceptance smoke implementation.
+- Ran acceptance smoke: 8 passed.
+- Ran nearby regression tests: 66 passed.
+- Ran full suite: 1101 passed, 1 warning.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Batch 057M-Impl + 057N-Design: Final 057 Acceptance Smoke and Release Readiness Triage Design
+
+### Added (057M-Impl)
+- `tests/test_validation_expansion_acceptance_smoke.py`: 8 end-to-end acceptance smoke tests covering bootstrap pipeline/widget/report/UI + WF equity widget/report + default-off + empty-omitted behavior.
+
+### Added (057N-Design)
+- `docs/validation_expansion_release_readiness_triage_057N.md` — verdict: READY for final v0.2 release-readiness audit. Recommends system-wide audit as next batch.
+
+### Verification
+- Acceptance smoke: 8 passed.
+- Nearby regression (report + bootstrap + UI): 66 passed.
+- Full suite: 1101 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+
 ## 2026-06-06 - Batch 057L-Impl + 057M-Design Codex Acceptance
 
 ### Added

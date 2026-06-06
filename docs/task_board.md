@@ -8,10 +8,14 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Batch 057M-Impl + 057N-Design - Final 057 Acceptance Smoke and Release Readiness Triage Design
+- [ ] Batch 057Q-Docs + 057R-ReleaseNotes - README Milestone Sync and v0.2 Release Notes
 
 ## Done
 
+- [x] Batch 057M-Fix + 057P-Audit-Codex Review - Acceptance Smoke Hardening and v0.2 Release Readiness Acceptance
+- [x] Batch 057M-Fix + 057P-Audit - Acceptance Smoke Omission Hardening and v0.2 Release Readiness Audit
+- [x] Batch 057M-Impl + 057N-Design-Codex Review - Needs Acceptance Smoke Hardening
+- [x] Batch 057M-Impl + 057N-Design - Final 057 Acceptance Smoke and Release Readiness Triage Design
 - [x] Batch 057L-Impl + 057M-Design-Codex Review - WF Equity Report Tables and Acceptance Smoke Design Acceptance
 - [x] Batch 057L-Impl + 057M-Design - WF Equity Report Tables and 057 Acceptance Smoke Design
 - [x] Batch 057J-Impl + 057L-Design - WF Equity Summary Widget and Report Surface Design
