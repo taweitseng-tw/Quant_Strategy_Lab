@@ -8,10 +8,14 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Batch 057T-Signoff + 057U-Decision - v0.2 Final Sign-off and Tag Decision
+- [ ] Task 058A - v0.2 Cleanup and Hardening Audit
 
 ## Done
 
+- [x] Batch 057U-Fix + 057V-MilestoneDecision-Codex Review - Post-tag Reconciliation and Milestone Decision Acceptance
+- [x] Batch 057U-Fix + 057V-MilestoneDecision - Post-tag Documentation Reconciliation and Next Milestone Decision
+- [x] Batch 057T-Signoff + 057U-Decision-Codex Review - Needs Post-tag State Reconciliation
+- [x] Batch 057T-Signoff + 057U-Decision - v0.2 Final Sign-off and Tag Decision
 - [x] Batch 057Q-Fix + 057S-TagPrep-Codex Review - Generated Artifact Hygiene and v0.2 Tag Prep Acceptance
 - [x] Batch 057Q-Fix + 057S-TagPrep - Generated Artifact Hygiene Fix and v0.2 Baseline Tag Prep
 - [x] Batch 057Q-Docs + 057R-ReleaseNotes-Codex Review - Needs Generated Artifact Hygiene Fix

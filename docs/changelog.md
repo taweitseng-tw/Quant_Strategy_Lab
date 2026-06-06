@@ -1,5 +1,62 @@
 # Changelog
 
+## 2026-06-07 - Batch 057U-Fix + 057V-MilestoneDecision Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-07_task-057u-fix_057v-milestone-decision_post-tag-doc-reconciliation-and-next-milestone_codex-review.md` accepting post-tag documentation reconciliation and milestone decision with score 9.0 / 10.
+
+### Changed
+- `.gitignore`: Generalized local generated project brief ignore rule from `docs/_v2_project_brief.pptx` to `docs/_v*_project_brief.pptx` after a new local generated `_v4` artifact appeared.
+- Updated `docs/agent_queue/current_task.md` with Task 058A.
+- Updated `docs/task_board.md` to queue v0.2 cleanup/hardening audit.
+
+### Verification
+- Confirmed annotated tag `v0.2-alpha-validation-expansion` exists and points to `1a9c533`.
+- Verified no tracked project brief/PDF/PPTX/BAK docs match the generated artifact patterns.
+- Ran full suite: 1101 passed, 1 warning.
+- Ran `git diff --check`.
+
+## 2026-06-07 - Batch 057U-Fix + 057V-MilestoneDecision: Post-tag Doc Reconciliation and Next Milestone
+
+### Fixed (057U-Fix)
+- `docs/v0.2_tag_decision_057U.md`: Updated to reflect tag `v0.2-alpha-validation-expansion` exists and points to `1a9c533`. Removed pre-tag options.
+- `docs/v0.2_final_signoff_057T.md`: Updated verdict to "Tagged" with tag reference.
+
+### Added (057V-MilestoneDecision)
+- `docs/post_v0.2_milestone_decision_057V.md` — 3 next directions: A (v0.2 cleanup), B (v0.3 features), C (v1.0 archive design). Recommends Option A.
+
+### Verification
+- Tag `v0.2-alpha-validation-expansion` → `1a9c533` confirmed.
+- Full suite: 1101 passed, 1 warning.
+- `git diff --check` passes.
+
+## 2026-06-07 - Batch 057T-Signoff + 057U-Decision Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-07_task-057t-signoff_057u-decision_v0.2-final-signoff-and-tag-decision_codex-review.md` with a needs-reconciliation verdict and score 8.4 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 057U-Fix + 057V-MilestoneDecision.
+- Updated `docs/task_board.md` to queue post-tag documentation reconciliation and milestone direction decision.
+
+### Verification
+- Reviewed latest DeepSeek report, final sign-off docs, and tag decision docs.
+- Confirmed annotated tag `v0.2-alpha-validation-expansion` exists and points to `1a9c533`.
+- Ran full suite: 1101 passed, 1 warning.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Batch 057T-Signoff + 057U-Decision: v0.2 Final Sign-off and Tag Decision
+
+### Added (057T-Signoff)
+- `docs/v0.2_final_signoff_057T.md` — confirms no blockers, all release evidence present, verdict: READY.
+
+### Added (057U-Decision)
+- `docs/v0.2_tag_decision_057U.md` — recommends tag `v0.2-alpha-validation-expansion`. Tag NOT created. Two user options: create tag or skip.
+
+### Verification
+- Full suite: 1101 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+
 ## 2026-06-06 - Batch 057Q-Fix + 057S-TagPrep Codex Acceptance
 
 ### Added

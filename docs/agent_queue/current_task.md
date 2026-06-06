@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 057T-Signoff + 057U-Decision - v0.2 Final Sign-off and Tag Decision.
+Task 058A - v0.2 Cleanup and Hardening Audit.
 
 ## Required Reading
 
@@ -24,77 +24,69 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-06_task-057q-fix_057s-tag-prep_generated-artifact-hygiene-and-v0.2-tag-prep_codex-review.md`
-8. `docs/v0.2_alpha_validation_expansion_release_notes_057R.md`
-9. `docs/v0.2_baseline_tag_prep_057S.md`
-10. This task file
+7. `docs/review_notes/2026-06-07_task-057u-fix_057v-milestone-decision_post-tag-doc-reconciliation-and-next-milestone_codex-review.md`
+8. `docs/post_v0.2_milestone_decision_057V.md`
+9. This task file
 
 ## Context
 
-Codex accepted Batch 057Q-Fix + 057S-TagPrep with score 9.1 / 10. v0.2 alpha validation expansion is release-ready. The final remaining step is a concise sign-off package and a user-facing decision note for whether Codex should create the recommended tag `v0.2-alpha-validation-expansion`.
+v0.2 Alpha validation expansion is tagged as `v0.2-alpha-validation-expansion` and points to `1a9c533`. Codex accepted post-tag documentation reconciliation. The recommended next direction is a low-risk v0.2 cleanup/hardening audit before starting v0.3 feature work.
 
 ## Scope
 
 ### Do
 
-- Complete two sequential tasks:
-  - Task 057T-Signoff - Final v0.2 Changelog and Task Board Sign-off
-  - Task 057U-Decision - User Tag Decision Note
-- For Task 057T-Signoff:
-  - Create `docs/v0.2_final_signoff_057T.md`.
-  - Confirm final release evidence:
-    - release notes file
-    - tag prep file
-    - full suite result
-    - known warning
-    - generated artifact hygiene status
-  - Confirm there are no open v0.2 validation expansion blockers.
-  - Do not rewrite historical changelog entries beyond adding the current batch entry.
-- For Task 057U-Decision:
-  - Create `docs/v0.2_tag_decision_057U.md`.
-  - State exactly what tag is recommended: `v0.2-alpha-validation-expansion`.
-  - State that the tag has not been created.
-  - Give the user two clear options:
-    - ask Codex to create the tag
-    - skip tagging and continue development
-  - Recommend exactly one next step depending on the user's choice.
+- Perform an audit-only pass for v0.2 cleanup/hardening.
+- Create `docs/v0.2_cleanup_hardening_audit_058A.md`.
+- Focus on:
+  - lingering documentation drift
+  - test coverage gaps around 056/057 validation expansion features
+  - small edge-case risks in reports/widgets/pipeline config
+  - known warning triage
+  - generated artifact hygiene
+- Classify each finding as:
+  - blocker
+  - recommended cleanup
+  - defer
+- Recommend exactly one next two-task batch.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-057t-signoff_057u-decision_v0.2-final-signoff-and-tag-decision_deepseek.md`
+  - `docs/agent_reports/2026-06-07_task-058a_v0.2-cleanup-hardening-audit_deepseek.md`
 
 ### Do Not
 
-- Do not create a git tag.
-- Do not add new product features.
 - Do not change production Python code.
+- Do not change tests unless documenting an audit fixture is impossible without it.
+- Do not create, delete, move, retarget, or push any git tag.
+- Do not add broad ignore rules.
 - Do not delete, move, archive, or commit generated project brief artifacts.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `docs/v0.2_final_signoff_057T.md`
-- `docs/v0.2_tag_decision_057U.md`
+- `docs/v0.2_cleanup_hardening_audit_058A.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-057t-signoff_057u-decision_v0.2-final-signoff-and-tag-decision_deepseek.md`
+- `docs/agent_reports/2026-06-07_task-058a_v0.2-cleanup-hardening-audit_deepseek.md`
 
 ## Acceptance Criteria
 
-1. Final sign-off file confirms v0.2 validation expansion has no blockers.
-2. Tag decision file clearly states tag name and that it has not been created.
-3. User options are clear and do not imply a tag was already created.
-4. No production code changes.
+1. Audit file exists and is audit-only.
+2. Findings are classified as blocker, recommended cleanup, or defer.
+3. Audit covers docs, tests, report/widget/pipeline edge risks, known warning, and generated artifact hygiene.
+4. Audit recommends exactly one next two-task batch.
 5. Changelog and task board are updated.
 6. Completion report is created.
-7. Full suite, `git diff --check`, and agent status pass.
+7. Full suite, `git diff --check`, tag verification, and agent status pass.
 
 ## Verification
 
 Run:
 
 ```powershell
+git show --no-patch --decorate --date=iso --format=fuller v0.2-alpha-validation-expansion
 .\.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
@@ -102,9 +94,10 @@ powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 
 Expected:
 
+- Tag remains unchanged and points to `1a9c533`.
 - Full suite passes with only known pre-existing warning.
 - `git diff --check` passes.
-- Agent status shows Batch 057T-Signoff + 057U-Decision completion report as the latest report.
+- Agent status shows Task 058A completion report as latest report.
 
 ## After Completion
 
