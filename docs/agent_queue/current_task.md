@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 057L-Impl + 057M-Design - WF Equity Report Tables and 057 Acceptance Smoke Design.
+Batch 057M-Impl + 057N-Design - Final 057 Acceptance Smoke and Release Readiness Triage Design.
 
 ## Required Reading
 
@@ -24,89 +24,87 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-06_task-057j-impl_057l-design_wf-equity-summary-widget-and-report-design_codex-review.md`
-8. `docs/wf_equity_report_surface_design_057L.md`
-9. `docs/wf_equity_chart_display_design_057J.md`
-10. `docs/validation_expansion_acceptance_triage_057K.md`
-11. `docs/v0.2_validation_expansion_readiness.md`
-12. This task file
+7. `docs/review_notes/2026-06-06_task-057l-impl_057m-design_wf-equity-report-tables-and-acceptance-smoke-design_codex-review.md`
+8. `docs/validation_expansion_acceptance_smoke_design_057M.md`
+9. This task file
 
 ## Context
 
-Batch 057J-Impl + 057L-Design accepted the WF equity summary widget and report table design. Implement report tables only, and separately design the final 057 validation expansion acceptance smoke.
+Batch 057L-Impl + 057M-Design was accepted by Codex. Bootstrap MC and WF equity now have engine/pipeline/UI/report surfaces. This batch should seal the 057 validation expansion chain with end-to-end acceptance smoke tests, then design the final release-readiness triage for this v0.2 validation expansion slice.
 
 ## Scope
 
 ### Do
 
 - Complete two sequential tasks:
-  - Task 057L-Impl - WF Equity Report Tables
-  - Task 057M-Design - 057 Validation Expansion Acceptance Smoke Design
-- For Task 057L-Impl:
-  - Implement reports-only WF equity tables in `reports/generator.py`.
-  - Add markdown table after the existing WF line only when `walk_forward_summary["windows"]` contains at least one `equity_curve` list with at least two points.
-  - Add HTML table with escaped/static-safe formatting and existing CSS classes where appropriate.
-  - Show at most five valid equity windows and add a `... N more windows ...` row when more exist.
-  - Use integer formatting for start/end equity and one decimal for percent change.
-  - Omit report table when windows are missing, empty, all equity curves are missing/empty, or all curves have fewer than two points.
-  - Add focused markdown/HTML tests in `tests/test_report_export.py`.
-- For Task 057M-Design:
-  - Write `docs/validation_expansion_acceptance_smoke_design_057M.md`.
-  - Design-only; do not implement acceptance smoke.
-  - Define final 057 acceptance smoke coverage for bootstrap MC plus WF equity storage/widget/report visibility.
-  - Include exact proposed test file name, test list, fixtures, verification command, and non-goals.
+  - Task 057M-Impl - Final 057 Validation Expansion Acceptance Smoke
+  - Task 057N-Design - 057/v0.2 Validation Expansion Release Readiness Triage Design
+- For Task 057M-Impl:
+  - Create `tests/test_validation_expansion_acceptance_smoke.py`.
+  - Implement the 8 tests described in `docs/validation_expansion_acceptance_smoke_design_057M.md`.
+  - Cover bootstrap MC pipeline opt-in, bootstrap widget/report visibility, bootstrap UI control wiring, WF equity widget/report visibility, default-off behavior, and empty-output omissions.
+  - Prefer reusing existing fixtures/helpers from bootstrap, validation pipeline, UI wiring, widget, and report tests.
+  - Keep this primarily test-only. Production code changes are allowed only if the new acceptance smoke exposes a real defect.
+- For Task 057N-Design:
+  - Create `docs/validation_expansion_release_readiness_triage_057N.md`.
+  - Summarize the 056/057 validation expansion capabilities now covered.
+  - Identify remaining risks, test gaps, and any release blockers for v0.2 alpha validation expansion.
+  - Estimate whether the validation expansion slice is ready for final v0.2 release-readiness audit.
+  - Recommend exactly one next two-task batch.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-057l-impl_057m-design_wf-equity-report-tables-and-acceptance-smoke-design_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-057m-impl_057n-design_final-acceptance-smoke-and-release-readiness-triage_deepseek.md`
 
 ### Do Not
 
-- Do not modify walk-forward engine or validation pipeline.
-- Do not add `worst_case_equity`.
-- Do not implement plotted charts.
-- Do not modify ValidationSummary widget in this batch.
-- Do not add new UI controls.
-- Do not add dependencies.
+- Do not add new features.
+- Do not add new dependencies.
+- Do not broaden Monte Carlo, walk-forward, or report behavior beyond defects found by acceptance smoke.
+- Do not modify core architecture.
+- Do not create plotted WF charts.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `reports/generator.py`
-- `tests/test_report_export.py`
-- `docs/validation_expansion_acceptance_smoke_design_057M.md`
+- `tests/test_validation_expansion_acceptance_smoke.py`
+- `docs/validation_expansion_release_readiness_triage_057N.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-057l-impl_057m-design_wf-equity-report-tables-and-acceptance-smoke-design_deepseek.md`
+- `docs/agent_reports/2026-06-06_task-057m-impl_057n-design_final-acceptance-smoke-and-release-readiness-triage_deepseek.md`
+- Production files only if a real acceptance defect is discovered.
 
 ## Acceptance Criteria
 
-1. Markdown and HTML reports show WF equity table only when valid equity curves are present.
-2. Markdown and HTML reports omit WF equity table for missing/empty/too-short equity data.
-3. Report tables are capped to five valid windows and indicate omitted remaining windows.
-4. Focused report tests cover shown, absent, and row-limit behavior.
-5. 057M design defines final 057 validation expansion acceptance smoke without implementation.
+1. The new acceptance smoke test file exists and covers all 8 scenarios from the 057M design.
+2. Tests verify real pipeline/widget/report/UI wiring behavior, not only hardcoded strings.
+3. Default-off and empty-output omission behavior is covered.
+4. No production behavior changes are made unless required to fix a real failing acceptance path.
+5. 057N design gives a concise release-readiness triage and one clear next two-task batch.
 6. Changelog and task board are updated.
 7. Completion report is created.
-8. Focused report tests and `git diff --check` pass.
+8. Focused acceptance smoke, relevant nearby tests, full suite, and `git diff --check` pass.
 
 ## Verification
 
 Run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/test_report_export.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_validation_expansion_acceptance_smoke.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_report_export.py tests/test_bootstrap_monte_carlo_acceptance.py tests/test_wfe_ui_wiring.py -q
+.\.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
 
 Expected:
 
-- Focused report tests pass.
+- New acceptance smoke tests pass.
+- Nearby report/bootstrap/WF UI tests pass.
+- Full suite passes with only known pre-existing warnings.
 - `git diff --check` passes.
-- Agent status shows Batch 057L-Impl + 057M-Design completion report as the latest report.
-- Final acceptance smoke is designed only, not implemented.
+- Agent status shows Batch 057M-Impl + 057N-Design completion report as the latest report.
 
 ## After Completion
 

@@ -838,3 +838,76 @@ def test_html_omits_bootstrap_when_ci_empty(mock_strategy, mock_backtest_result)
     })
     html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
     assert "Bootstrap MC" not in html_out
+
+
+# ---------------------------------------------------------------------------
+# WF Equity tables in reports (Task 057L-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_markdown_wf_equity_table_shown(mock_strategy, mock_backtest_result):
+    """Markdown must show WF equity table when equity curves are present."""
+    vr = _make_validation_dict(walk_forward_summary={
+        "window_count": 3, "pass_count": 2, "pass_rate": 0.67,
+        "windows": [
+            {"index": 0, "equity_curve": [100000.0, 100500.0, 101000.0], "passed": True},
+            {"index": 1, "equity_curve": [100000.0, 99000.0], "passed": False},
+        ],
+    })
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "WF Equity by Window" in md
+    assert "101,000" in md
+    assert "+1.0%" in md
+    assert "PASSED" in md
+
+
+def test_markdown_wf_equity_table_absent(mock_strategy, mock_backtest_result):
+    """Markdown must omit WF equity table when no equity data."""
+    vr = _make_validation_dict(walk_forward_summary={
+        "window_count": 2, "pass_count": 1, "pass_rate": 0.5,
+        "windows": [
+            {"index": 0, "equity_curve": None, "passed": True},
+        ],
+    })
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "WF Equity by Window" not in md
+
+
+def test_html_wf_equity_table_shown(mock_strategy, mock_backtest_result):
+    """HTML must show WF equity table when equity curves are present."""
+    vr = _make_validation_dict(walk_forward_summary={
+        "window_count": 2, "pass_count": 1, "pass_rate": 0.5,
+        "windows": [
+            {"index": 0, "equity_curve": [100000.0, 105000.0], "passed": True},
+            {"index": 1, "equity_curve": [100000.0, 98000.0], "passed": False},
+        ],
+    })
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "WF Equity by Window" in html_out
+    assert "pnl-positive" in html_out
+    assert "pnl-negative" in html_out
+    assert "PASSED" in html_out
+
+
+def test_html_wf_equity_table_absent(mock_strategy, mock_backtest_result):
+    """HTML must omit WF equity table when no equity data."""
+    vr = _make_validation_dict(walk_forward_summary={
+        "window_count": 2, "pass_count": 1, "pass_rate": 0.5,
+    })
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "WF Equity by Window" not in html_out
+
+
+def test_wf_equity_table_capped_at_5(mock_strategy, mock_backtest_result):
+    """WF equity table must show '... more windows' when >5 windows."""
+    windows = []
+    for i in range(7):
+        windows.append({
+            "index": i, "equity_curve": [100000.0, 100000.0 + i * 100.0], "passed": True,
+        })
+    vr = _make_validation_dict(walk_forward_summary={
+        "window_count": 7, "pass_count": 7, "pass_rate": 1.0, "windows": windows,
+    })
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "WF Equity by Window" in md
+    assert "2 more" in md

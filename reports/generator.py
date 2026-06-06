@@ -829,6 +829,23 @@ def _format_markdown_validation(vr: dict) -> str:
             avg_str = f"{avg_wfe:.2f}" if avg_wfe is not None else "N/A"
             med_str = f"{med_wfe:.2f}" if med_wfe is not None else "N/A"
             lines.append(f"- **WF Efficiency**: Avg={avg_str}, Median={med_str}, Defined Windows={def_cnt}, Undefined Windows={undef_cnt}")
+    windows = wf.get("windows") or []
+    equity_windows = [w for w in windows
+                      if isinstance(w.get("equity_curve"), list) and len(w.get("equity_curve", [])) >= 2]
+    if equity_windows:
+        MAX = 5
+        lines.append(f"\n- **WF Equity by Window**:")
+        lines.append("  | # | Start | End | Change | Result |")
+        lines.append("  |---|---|---|---|:---:|")
+        for w in equity_windows[:MAX]:
+            curve = w["equity_curve"]
+            start = curve[0]
+            end = curve[-1]
+            pct = (end - start) / abs(start) * 100 if abs(start) > 1e-9 else 0.0
+            status = "PASSED" if w.get("passed") else "FAILED"
+            lines.append(f"  | {w.get('index', '?')} | {start:,.0f} | {end:,.0f} | {pct:+.1f}% | {status} |")
+        if len(equity_windows) > MAX:
+            lines.append(f"  | ... | — | — | {len(equity_windows) - MAX} more | ... |")
     wfm = vr.get("walk_forward_matrix_summary", {}) or {}
     if wfm:
         total = wfm.get("config_count", 0)
@@ -933,6 +950,25 @@ def _format_html_validation(vr: dict) -> str:
             avg_str = f"{avg_wfe:.2f}" if avg_wfe is not None else "N/A"
             med_str = f"{med_wfe:.2f}" if med_wfe is not None else "N/A"
             parts.append(f'<p><b>WF Efficiency:</b> Avg={avg_str}, Median={med_str}, Defined Windows={def_cnt}, Undefined Windows={undef_cnt}</p>')
+    windows = wf.get("windows") or []
+    equity_windows = [w for w in windows
+                      if isinstance(w.get("equity_curve"), list) and len(w.get("equity_curve", [])) >= 2]
+    if equity_windows:
+        MAX = 5
+        parts.append('<p><b>WF Equity by Window</b></p>')
+        parts.append('<table><thead><tr><th>#</th><th>Start</th><th>End</th><th>Change</th><th>Result</th></tr></thead><tbody>')
+        for w in equity_windows[:MAX]:
+            curve = w["equity_curve"]
+            start = curve[0]
+            end = curve[-1]
+            pct = (end - start) / abs(start) * 100 if abs(start) > 1e-9 else 0.0
+            pnl_class = "pnl-positive" if pct >= 0 else "pnl-negative"
+            status = "PASSED" if w.get("passed") else "FAILED"
+            parts.append(f'<tr><td>{w.get("index","?")}</td><td>{start:,.0f}</td><td>{end:,.0f}</td>'
+                         f'<td class="{pnl_class}">{pct:+.1f}%</td><td>{status}</td></tr>')
+        if len(equity_windows) > MAX:
+            parts.append(f'<tr><td colspan="5">... {len(equity_windows) - MAX} more windows ...</td></tr>')
+        parts.append('</tbody></table>')
     wfm = vr.get("walk_forward_matrix_summary", {}) or {}
     if wfm:
         total = wfm.get("config_count", 0)

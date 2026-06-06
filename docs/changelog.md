@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-06-06 - Batch 057L-Impl + 057M-Design Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-057l-impl_057m-design_wf-equity-report-tables-and-acceptance-smoke-design_codex-review.md` accepting the WF equity report tables and final 057 acceptance smoke design with score 9.0 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 057M-Impl + 057N-Design.
+- Updated `docs/task_board.md` to queue the final 057 acceptance smoke implementation and release-readiness triage design.
+
+### Verification
+- Reviewed latest DeepSeek report and code diff.
+- Ran focused report tests: 45 passed.
+- Ran full suite: 1093 passed, 1 warning.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Batch 057L-Impl + 057M-Design: WF Equity Report Tables and 057 Acceptance Smoke Design
+
+### Added (057L-Impl)
+- `reports/generator.py`: WF equity markdown table and HTML table after WF section. Max 5 windows shown with overflow row. Markdown uses `| table |` format; HTML uses `<table>` with existing `pnl-positive`/`pnl-negative` CSS classes.
+- `tests/test_report_export.py`: 5 new tests (markdown shown/absent, HTML shown/absent, capped at 5).
+
+### Added (057M-Design)
+- `docs/validation_expansion_acceptance_smoke_design_057M.md` — final 057 acceptance smoke design (8 tests, 1 file).
+
+### Verification
+- Focused report tests: 45 passed.
+- Full suite: 1093 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+
 ## 2026-06-06 - Batch 057J-Impl + 057L-Design Codex Acceptance
 
 ### Added
