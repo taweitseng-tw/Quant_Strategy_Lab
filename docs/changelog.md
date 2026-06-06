@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-06-06 - Task 056H Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056h_remove-best-n-trades-stress-config-surface-design_codex-review.md` accepting the remove-best-N stress config surface design with score 8.8 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056H-Impl.
+- Updated `docs/task_board.md` to queue remove-best-N stress config controls.
+
+### Verification
+- Reviewed `docs/remove_best_n_trades_config_surface_design_056H.md`.
+- Confirmed current `PipelineConfig` construction and WFE checkbox wiring in `app/ui/main_window.py`.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Task 056H: Remove Best N Trades Stress Config Surface Design Only
+
+### Added
+- Created `docs/remove_best_n_trades_config_surface_design_056H.md` — design for where users should enable/configure `remove_best_n_trades` stress.
+- Recommend adding a minimal header group on the Validate page (checkbox + n spinbox + threshold spinbox), following the existing WFE checkbox pattern.
+- Engine/UI separation preserved: UI reads controls → PipelineConfig → pipeline service → engine.
+- Off by default; settings only active when checkbox is checked.
+
+### Changed
+- Updated `docs/task_board.md` (Task 056H -> Done).
+
+### Verification
+- No production code changed (design-only).
+- `git diff --check` passes.
+
 ## 2026-06-06 - Task 056G-Impl/Fix/Fix2 Codex Acceptance
 
 ### Added

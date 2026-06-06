@@ -8,10 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056H - Remove Best N Trades Stress Config Surface Design Only
+- [ ] Task 056H-Impl - Remove Best N Trades Stress Config Controls
 
 ## Done
 
+- [x] Task 056H-Codex Review - Remove Best N Trades Stress Config Surface Design Acceptance
+- [x] Task 056H - Remove Best N Trades Stress Config Surface Design Only
 - [x] Task 056G-Impl-Fix2-Codex Review - Stress Result Details Display Acceptance
 - [x] Task 056G-Impl-Fix2 - Escape HTML Stress Detail PnL Loss Value
 - [x] Task 056G-Impl-Fix - HTML Stress Detail Value Escaping
