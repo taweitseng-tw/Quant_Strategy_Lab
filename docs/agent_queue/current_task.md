@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 057J-Design + 057K-Design - WF Equity Chart Display Design and 057 Validation Acceptance Triage.
+Batch 057J-Impl + 057L-Design - WF Equity Summary Widget and Report Surface Design.
 
 ## Required Reading
 
@@ -24,88 +24,93 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-06_task-057g-impl_057h-design_bootstrap-acceptance-and-validation-gap-triage_codex-review.md`
-8. `docs/validation_gap_triage_057H.md`
-9. `docs/bootstrap_ui_config_controls_design_057F.md`
-10. `docs/bootstrap_pipeline_report_surface_design_057C.md`
+7. `docs/review_notes/2026-06-06_task-057j-design_057k-design_wf-equity-display-and-validation-acceptance-triage_codex-review.md`
+8. `docs/wf_equity_chart_display_design_057J.md`
+9. `docs/validation_expansion_acceptance_triage_057K.md`
+10. `docs/validation_gap_triage_057H.md`
 11. `docs/v0.2_validation_expansion_readiness.md`
 12. This task file
 
 ## Context
 
-Batch 057G-Impl + 057H-Design accepted the bootstrap feature chain and recommended WF per-window equity chart display as the smallest remaining user-visible validation gap. This batch is design-only. Do not implement charts.
+Batch 057J-Design + 057K-Design accepted a no-dependency, widget-first WF equity summary approach. Implement the widget summary only, and separately harden the report/table design before any report implementation.
 
 ## Scope
 
 ### Do
 
-- Complete two sequential design-only tasks:
-  - Task 057J-Design - WF Per-Window Equity Chart Display Design
-  - Task 057K-Design - 057 Validation Expansion Acceptance Triage
-- For Task 057J-Design:
-  - Write `docs/wf_equity_chart_display_design_057J.md`.
-  - Cover widget/report display surfaces for already-stored `walk_forward_summary["windows"][*]["equity_curve"]`.
-  - Include data availability rules, empty/missing equity behavior, chart/table fallback, markdown/HTML strategy, no-new-dependency approach, test plan, and non-goals.
-  - Decide whether first implementation should be widget only, report only, or both.
-- For Task 057K-Design:
-  - Write `docs/validation_expansion_acceptance_triage_057K.md`.
-  - Summarize what 057 added across bootstrap MC and WF equity persistence.
-  - List remaining validation gaps after 057J design.
-  - Recommend exactly one next task:
-    - implement WF equity display,
-    - do validation expansion acceptance smoke,
-    - or pause validation expansion for broader v0.2 hardening.
+- Complete two sequential tasks:
+  - Task 057J-Impl - WF Equity Summary Widget
+  - Task 057L-Design - WF Equity Report Surface Design Hardening
+- For Task 057J-Impl:
+  - Implement widget-only WF equity summary in `app/widgets/validation_summary.py`.
+  - Use already-serialized `walk_forward_summary["windows"][*]["equity_curve"]`.
+  - Add a compact "WF Equity Summary" section after the existing Walk-Forward section only when at least one window has a non-empty equity curve.
+  - Render no more than the first 5 windows to keep the widget compact, with a suffix line such as `... N more windows` if needed.
+  - For each shown window, display:
+    - window index,
+    - start equity,
+    - end equity,
+    - percent change,
+    - PASSED/FAILED from `passed`.
+  - Omit the section when `windows` is missing, empty, all equity curves are missing/empty, or all curves have fewer than 2 points.
+  - Add focused tests in `tests/test_validation_summary.py`.
+- For Task 057L-Design:
+  - Write `docs/wf_equity_report_surface_design_057L.md`.
+  - Design-only; do not implement report output.
+  - Harden markdown/HTML table design, row limits, escaping/formatting rules, empty behavior, and focused report test plan.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-057j-design_057k-design_wf-equity-display-and-validation-acceptance-triage_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-057j-impl_057l-design_wf-equity-summary-widget-and-report-design_deepseek.md`
 
 ### Do Not
 
-- Do not modify production code.
-- Do not add tests.
+- Do not modify walk-forward engine or validation pipeline.
 - Do not add `worst_case_equity`.
-- Do not change walk-forward production code.
-- Do not implement charts.
-- Do not modify UI widgets or reports.
+- Do not implement plotted charts.
+- Do not modify reports in this batch.
+- Do not add report tests in this batch.
 - Do not add dependencies.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `docs/wf_equity_chart_display_design_057J.md`
-- `docs/validation_expansion_acceptance_triage_057K.md`
+- `app/widgets/validation_summary.py`
+- `tests/test_validation_summary.py`
+- `docs/wf_equity_report_surface_design_057L.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-057j-design_057k-design_wf-equity-display-and-validation-acceptance-triage_deepseek.md`
+- `docs/agent_reports/2026-06-06_task-057j-impl_057l-design_wf-equity-summary-widget-and-report-design_deepseek.md`
 
 ## Acceptance Criteria
 
-1. 057J design identifies exact widget/report surfaces and no-dependency rendering approach.
-2. 057J design defines behavior for missing/empty per-window equity curves.
-3. 057J design has a focused implementation/test plan.
-4. 057K triage accurately summarizes 057 completion and remaining validation gaps.
-5. 057K recommends exactly one next task.
-6. No production code or tests are changed.
-7. Changelog and task board are updated.
-8. Completion report is created.
-9. `git diff --check` passes.
+1. Widget shows WF Equity Summary only when valid per-window equity curves are present.
+2. Widget omits WF Equity Summary for missing/empty/too-short equity data.
+3. Widget summary is capped to the first 5 windows and indicates omitted remaining windows.
+4. Focused widget tests cover present, absent, and row-limit behavior.
+5. 057L report design defines markdown/HTML table behavior without implementation.
+6. Changelog and task board are updated.
+7. Completion report is created.
+8. Focused widget tests and `git diff --check` pass.
 
 ## Verification
 
 Run:
 
 ```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_validation_summary.py -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
 
 Expected:
 
+- Focused widget tests pass.
 - `git diff --check` passes.
-- Agent status shows Batch 057J-Design + 057K-Design completion report as the latest report.
-- No production code or tests are changed.
+- Agent status shows Batch 057J-Impl + 057L-Design completion report as the latest report.
+- Reports are designed only, not implemented.
 
 ## After Completion
 

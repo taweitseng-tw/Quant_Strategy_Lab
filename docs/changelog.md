@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-06-06 - Batch 057J-Design + 057K-Design Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-057j-design_057k-design_wf-equity-display-and-validation-acceptance-triage_codex-review.md` accepting the WF equity display design and validation acceptance triage with score 8.8 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 057J-Impl + 057L-Design.
+- Updated `docs/task_board.md` to queue WF equity summary widget implementation and report surface design hardening.
+
+### Verification
+- Reviewed WF equity display design, validation acceptance triage, and latest agent report.
+- Inspected current ValidationSummary and WF serialization surfaces.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Batch 057J-Design + 057K-Design: WF Equity Display Design and Validation Acceptance Triage
+
+### Added (057J-Design)
+- `docs/wf_equity_chart_display_design_057J.md` — no-dependency WF per-window equity summary table design for widget, markdown, and HTML. Recommends widget-only first.
+
+### Added (057K-Design)
+- `docs/validation_expansion_acceptance_triage_057K.md` — summary of 057 completion, remaining gaps, recommendation to implement WF equity widget display next.
+
+### Verification
+- No production code changed (design-only batch).
+- `git diff --check` passes.
+
 ## 2026-06-06 - Batch 057G-Impl + 057H-Design Codex Acceptance
 
 ### Added
