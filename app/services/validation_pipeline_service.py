@@ -15,7 +15,7 @@ from core.models.instrument import InstrumentProfile
 from backtest_engine.runner import run_backtest
 from validation_engine.splitter import split_by_ratio
 from validation_engine.stress_test import stress_commission_multiplier, stress_slippage_multiplier, stress_one_bar_delay, stress_parameter_perturbation, stress_remove_best_n_trades
-from validation_engine.monte_carlo import run_missed_trade_monte_carlo
+from validation_engine.monte_carlo import run_missed_trade_monte_carlo, run_bootstrap_monte_carlo
 from validation_engine.walk_forward import walk_forward
 from validation_engine.walk_forward_matrix import walk_forward_matrix
 from validation_engine.elimination import EliminationConfig, evaluate_elimination
@@ -52,6 +52,11 @@ class PipelineConfig:
     mc_iterations: int = 25
     mc_miss_probability: float = 0.1
     mc_base_seed: int = 42
+
+    # Bootstrap Monte Carlo (default off).
+    run_bootstrap_monte_carlo: bool = False
+    bootstrap_iterations: int = 200
+    bootstrap_confidence_level: float = 0.95
 
     # Walk-forward (auto-sized when None).
     wf_train_bars: int | None = None
@@ -93,6 +98,7 @@ class PipelineResult:
     baseline_metrics: dict = field(default_factory=dict)
     stress_results: list[dict] = field(default_factory=list)
     monte_carlo_summary: dict | None = None
+    bootstrap_monte_carlo_result: dict | None = None
     walk_forward_summary: dict | None = None
     walk_forward_matrix_summary: dict | None = None
     elimination_result: dict | None = None
@@ -231,6 +237,17 @@ def run_validation_pipeline(
     )
     mc_summary = _mc_to_dict(mc)
 
+    # ── 4.5 Bootstrap Monte Carlo ───────────────────────────────────────────
+    bootstrap_result = None
+    if cfg.run_bootstrap_monte_carlo:
+        bootstrap = run_bootstrap_monte_carlo(
+            baseline,
+            iterations=cfg.bootstrap_iterations,
+            base_seed=cfg.mc_base_seed,
+            confidence_level=cfg.bootstrap_confidence_level,
+        )
+        bootstrap_result = _bootstrap_mc_to_dict(bootstrap)
+
     # ── 5. Walk-forward ─────────────────────────────────────────────────────
     n = len(df)
     wf_train = cfg.wf_train_bars or max(20, n // 3)
@@ -288,6 +305,7 @@ def run_validation_pipeline(
         baseline_metrics=baseline.metrics,
         stress_results=stress_results,
         monte_carlo_summary=mc_summary,
+        bootstrap_monte_carlo_result=bootstrap_result,
         walk_forward_summary=wf_summary,
         walk_forward_matrix_summary=wf_matrix_summary,
         elimination_result=elim_dict,
@@ -326,6 +344,20 @@ def _mc_to_dict(mc) -> dict:
         "iterations": mc.iterations,
         "percentile_summary": mc.percentile_summary,
         "worst_case": mc.worst_case,
+    }
+
+
+def _bootstrap_mc_to_dict(mc) -> dict | None:
+    if mc is None:
+        return None
+    return {
+        "test_name": mc.test_name,
+        "iterations": mc.iterations,
+        "percentile_summary": mc.percentile_summary,
+        "worst_case": mc.worst_case,
+        "confidence_intervals": mc.confidence_intervals,
+        "assumptions": mc.assumptions,
+        "stability_score": mc.stability_score,
     }
 
 

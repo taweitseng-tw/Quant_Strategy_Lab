@@ -62,10 +62,54 @@ if cfg.run_bootstrap_monte_carlo:
 
 ## 6. Display (Widget + Reports) — Deferred After Pipeline
 
-- **Widget**: Add a "Bootstrap MC" card after existing MC card, showing CI values.
-- **Markdown/HTML**: Add CI lines in validation evidence section.
+### 6.1 ValidationSummary Widget
 
-Exact format TBD in a follow-up display task.
+After the existing MC card, add a "Bootstrap MC" card when `bootstrap_monte_carlo_result` is present:
+
+```
+Bootstrap MC (200 iterations)
+Total PnL: 95% CI [1,200 — 9,800] mean=5,400
+Profit Factor: 95% CI [1.15 — 2.80] mean=1.95
+Max Drawdown: 95% CI [500 — 12,000] mean=4,200
+Stability Score: 0.85
+```
+
+Fields: `test_name`, `iterations`, `confidence_intervals` (PnL, PF, MaxDD), `stability_score`. Each CI line shows `ci_lower`, `ci_upper`, `ci_mean`.
+
+### 6.2 Markdown Report (`_format_markdown_validation()`)
+
+After MC line, add:
+
+```markdown
+- **Bootstrap MC** (200 iter): PnL 95% CI [1,200 — 9,800] mean=5,400
+  - PF CI [1.15 — 2.80] mean=1.95
+  - Max DD CI [500 — 12,000] mean=4,200
+  - Stability: 0.85
+```
+
+### 6.3 HTML Report (`_format_html_validation()`)
+
+After MC paragraph, add:
+
+```html
+<p><b>Bootstrap MC</b> (200 iter): PnL 95% CI [1,200 — 9,800] mean=5,400</p>
+<div class="stress-detail">PF CI [1.15 — 2.80] mean=1.95</div>
+<div class="stress-detail">Max DD CI [500 — 12,000] mean=4,200</div>
+<div class="stress-detail">Stability: 0.85</div>
+```
+
+Numeric values from `confidence_intervals` dict; all other text is static. No HTML escaping needed for numeric values (all are float). `stability_score` uses existing rendering convention.
+
+### 6.4 Implementation Surface (Future Display Task)
+
+| File | Change |
+|---|---|
+| `app/widgets/validation_summary.py` | Bootstrap MC card after existing MC card |
+| `reports/generator.py` | Bootstrap lines in both formatters |
+| `tests/test_validation_summary.py` | Widget test |
+| `tests/test_report_export.py` | Report tests |
+
+All display implementation deferred to a separate task.
 
 ## 7. Non-Goals
 

@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-06-06 - Batch 057C-Fix + 057D-Impl Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-057c-fix_057d-impl_bootstrap-surface-design-and-pipeline-wiring_codex-review.md` accepting the bootstrap surface design and pipeline wiring with score 9.1 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 057E-Impl + 057F-Design.
+- Updated `docs/task_board.md` to queue bootstrap display surfaces and UI controls design.
+
+### Verification
+- Reviewed bootstrap pipeline wiring, tests, display-surface design, and latest agent report.
+- Ran focused pipeline tests: 35 passed.
+- Ran full suite: 1060 passed, 1 warning.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Batch 057C-Fix + 057D-Impl: Bootstrap Surface Design Hardening and Pipeline Wiring
+
+### Fixed (057C-Fix)
+- `docs/bootstrap_pipeline_report_surface_design_057C.md`: Added concrete widget/markdown/HTML wording proposals for the bootstrap display surface.
+
+### Added (057D-Impl)
+- `app/services/validation_pipeline_service.py`: Added `PipelineConfig` fields (`run_bootstrap_monte_carlo`, `bootstrap_iterations`, `bootstrap_confidence_level`), `PipelineResult.bootstrap_monte_carlo_result`, `_bootstrap_mc_to_dict()` serialization helper.
+- Wired `run_bootstrap_monte_carlo()` after existing MC step (4.5).
+- `tests/test_validation_pipeline_service.py`: 3 new tests (default off, enabled with CI, config snapshot).
+
+### Verification
+- Focused pipeline tests: 35 passed.
+- Full suite: 1060 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+- Default off, existing MC unchanged.
+
 ## 2026-06-06 - Batch 057A-Impl + 057C-Design Codex Acceptance
 
 ### Added

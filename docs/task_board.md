@@ -8,10 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Batch 057C-Fix + 057D-Impl - Bootstrap Surface Design Hardening and Pipeline Wiring
+- [ ] Batch 057E-Impl + 057F-Design - Bootstrap Display Surfaces and UI Controls Design
 
 ## Done
 
+- [x] Batch 057C-Fix + 057D-Impl - Bootstrap Surface Design Hardening and Pipeline Wiring
+- [x] Batch 057C-Fix + 057D-Impl-Codex Review - Bootstrap Surface Design and Pipeline Wiring Acceptance
 - [x] Batch 057A-Impl + 057C-Design - Monte Carlo Bootstrap Engine and Surface Design
 - [x] Batch 057A-Impl + 057C-Design-Codex Review - Bootstrap Engine and Surface Design Acceptance
 - [x] Batch 057A-Fix + 057B-Impl - Validation Gap Hardening Batch

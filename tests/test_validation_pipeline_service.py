@@ -604,3 +604,51 @@ def test_wf_store_equity_default_omits_windows():
     result = run_validation_pipeline(df, strat, commission=2.0)
     assert result.walk_forward_summary is not None
     assert "windows" not in result.walk_forward_summary
+
+
+# ---------------------------------------------------------------------------
+# Bootstrap Monte Carlo pipeline integration (Task 057D-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_bootstrap_mc_not_included_by_default():
+    """Default PipelineConfig must not include bootstrap MC."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    result = run_validation_pipeline(df, strat, commission=2.0)
+    assert result.bootstrap_monte_carlo_result is None
+    assert result.config_snapshot["run_bootstrap_monte_carlo"] is False
+
+
+def test_bootstrap_mc_included_when_enabled():
+    """Enabled bootstrap must produce a serialized result with confidence_intervals."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    cfg = PipelineConfig(run_bootstrap_monte_carlo=True, bootstrap_iterations=50)
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+
+    assert result.bootstrap_monte_carlo_result is not None
+    br = result.bootstrap_monte_carlo_result
+    assert br["test_name"] == "bootstrap"
+    assert br["iterations"] == 50
+    assert "confidence_intervals" in br
+    assert "total_pnl" in br["confidence_intervals"]
+    assert "stability_score" in br
+    # Existing MC still present.
+    assert result.monte_carlo_summary is not None
+
+
+def test_bootstrap_mc_config_fields_in_snapshot():
+    """Config snapshot must record bootstrap fields."""
+    cfg = PipelineConfig(
+        run_bootstrap_monte_carlo=True,
+        bootstrap_iterations=100,
+        bootstrap_confidence_level=0.90,
+    )
+    df = _make_df(200)
+    strat = _make_strategy()
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+
+    assert result.config_snapshot["run_bootstrap_monte_carlo"] is True
+    assert result.config_snapshot["bootstrap_iterations"] == 100
+    assert result.config_snapshot["bootstrap_confidence_level"] == 0.90
