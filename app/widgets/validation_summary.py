@@ -57,6 +57,13 @@ class ValidationSummary(QWidget):
         src = source_label or ("Mock data" if self._get(result, "_is_mock", False) else "Loaded data")
         self._add_section("Data Source", f"{src}  —  {self._get(result, 'split_metadata', {}).get('train_rows', '?')} train bars")
 
+        # --- Precheck ---
+        if self._get(result, "precheck_failed", False):
+            elim = self._get(result, "elimination_result", {}) or {}
+            rules = elim.get("failed_rules", [])
+            reason = rules[0] if rules else "Precheck failed for an unknown reason."
+            self._add_section("Precheck", f"FAILED — {reason}", passed=False)
+
         # --- Split ---
         sm = self._get(result, "split_metadata", {})
         self._add_section("Split", (

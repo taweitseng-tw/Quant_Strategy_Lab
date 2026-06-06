@@ -758,6 +758,11 @@ def _format_markdown_validation(vr: dict) -> str:
     ds = vr.get("data_source", "")
     if ds:
         lines.append(f"- **Data Source**: {ds}")
+    if vr.get("precheck_failed"):
+        elim = vr.get("elimination_result", {}) or {}
+        reason = (elim.get("failed_rules", []) or ["Unknown"])[0]
+        lines.append(f"- **Precheck**: FAILED — {reason}")
+
     sm = vr.get("split_metadata", {})
     lines.append(f"- **Split**: Train={sm.get('train_rows','?')}, "
                  f"Val={sm.get('validation_rows','?')}, OOS={sm.get('oos_rows','?')}")
@@ -839,6 +844,12 @@ def _format_html_validation(vr: dict) -> str:
     ds = vr.get("data_source", "")
     if ds:
         parts.append(f'<p><b>Data Source:</b> {html.escape(ds)}</p>')
+    if vr.get("precheck_failed"):
+        elim = vr.get("elimination_result", {}) or {}
+        reason = (elim.get("failed_rules", []) or ["Unknown"])[0]
+        parts.append(f'<p><b>Precheck:</b> <span style="color:#ef5350;font-weight:bold;">'
+                     f'FAILED</span> — {html.escape(reason)}</p>')
+
     sm = vr.get("split_metadata", {})
     parts.append(f'<p><b>Split:</b> Train={sm.get("train_rows","?")}, '
                  f'Val={sm.get("validation_rows","?")}, OOS={sm.get("oos_rows","?")}</p>')

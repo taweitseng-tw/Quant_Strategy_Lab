@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-06-06 - Task 056K-Impl Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056k-impl_is-baseline-precheck-visibility-surfaces_codex-review.md` accepting the precheck visibility surfaces with score 9.1 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056L.
+- Updated `docs/task_board.md` to queue validation expansion series acceptance and next-scope triage.
+
+### Verification
+- Ran focused widget/report tests: 47 passed.
+- Ran the full test suite: 1038 passed, 1 pre-existing warning.
+- Ran `git diff --check`.
+- Manually confirmed HTML precheck false case is clean and malicious reason text is escaped.
+
+## 2026-06-06 - Task 056K-Impl: IS Baseline Precheck Visibility Surfaces
+
+### Added
+- `app/widgets/validation_summary.py`: Precheck section card shown when `precheck_failed=True` (after Data Source, before Split). Shows reason from `elimination_result.failed_rules[0]`.
+- `reports/generator.py`: Precheck line in both `_format_markdown_validation()` and `_format_html_validation()` when `precheck_failed=True`. HTML reason is escaped.
+- `tests/test_validation_summary.py`: 2 new tests (precheck card shown, absent when false).
+- `tests/test_report_export.py`: 4 new tests (markdown present/absent, HTML present + escaping).
+
+### Verification
+- Focused tests: 47 passed (widget + report).
+- Full suite: 1038 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+- No pipeline/engine/layout changes.
+
 ## 2026-06-06 - Task 056K Codex Acceptance
 
 ### Added

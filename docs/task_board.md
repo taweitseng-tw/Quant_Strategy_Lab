@@ -8,10 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056K-Impl - IS Baseline Precheck Visibility Surfaces
+- [ ] Task 056L - Validation Expansion Series Acceptance and Next-Scope Triage
 
 ## Done
 
+- [x] Task 056K-Impl-Codex Review - IS Baseline Precheck Visibility Surfaces Acceptance
+- [x] Task 056K-Impl - IS Baseline Precheck Visibility Surfaces
 - [x] Task 056K-Codex Review - IS Baseline Precheck Visibility Surface Design Acceptance
 - [x] Task 056K - IS Baseline Precheck Visibility Surface Design Only
 - [x] Task 056J-Impl-Fix-Codex Review - Opt-in IS Baseline Quality Precheck Acceptance

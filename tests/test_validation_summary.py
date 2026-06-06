@@ -341,3 +341,45 @@ def test_stress_no_sub_lines_for_basic_tests(qapp):
     assert "commission_2.0x:" in text
     assert "slippage_2.0x:" in text
     assert "→" not in text  # No sub-lines for basic tests
+
+
+# ---------------------------------------------------------------------------
+# Precheck visibility (Task 056K-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_precheck_card_shown_when_failed(qapp):
+    """Precheck section must appear when precheck_failed=True."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 0.0, "total_trades": 0},
+        "stress_results": [],
+        "precheck_failed": True,
+        "elimination_result": {
+            "passed": False,
+            "failed_rules": ["Validation precheck failed: strategy has zero baseline trades."],
+        },
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+
+    assert "Precheck" in text
+    assert "FAILED" in text
+    assert "zero baseline trades" in text
+
+
+def test_precheck_card_absent_when_false(qapp):
+    """Precheck section must NOT appear when precheck_failed=False."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0, "total_trades": 5},
+        "stress_results": [],
+        "precheck_failed": False,
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+
+    assert "Precheck" not in text

@@ -720,3 +720,50 @@ def test_html_stress_detail_values_escaped(mock_strategy, mock_backtest_result):
     assert "&lt;script&gt;x&lt;/script&gt;" in html_out
     assert "&lt;b&gt;bad&lt;/b&gt;" in html_out
     assert "&lt;img src=x&gt;" in html_out
+
+
+# ---------------------------------------------------------------------------
+# Precheck visibility in reports (Task 056K-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_markdown_includes_precheck_line(mock_strategy, mock_backtest_result):
+    """Markdown report must include precheck line when precheck_failed=True."""
+    vr = _make_validation_dict(precheck_failed=True, elimination_result={
+        "passed": False,
+        "failed_rules": ["Precheck: zero trades."],
+    })
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "**Precheck**:" in md
+    assert "FAILED" in md
+    assert "zero trades" in md
+
+
+def test_markdown_omits_precheck_when_false(mock_strategy, mock_backtest_result):
+    """Markdown report must NOT include precheck line when precheck_failed=False."""
+    vr = _make_validation_dict(precheck_failed=False)
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "**Precheck**:" not in md
+
+
+def test_html_includes_precheck_line(mock_strategy, mock_backtest_result):
+    """HTML report must include precheck line when precheck_failed=True."""
+    vr = _make_validation_dict(precheck_failed=True, elimination_result={
+        "passed": False,
+        "failed_rules": ["Precheck: zero trades."],
+    })
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "<b>Precheck:</b>" in html_out
+    assert "FAILED" in html_out
+    assert "zero trades" in html_out
+
+
+def test_html_precheck_reason_escaped(mock_strategy, mock_backtest_result):
+    """HTML precheck reason must be escaped."""
+    vr = _make_validation_dict(precheck_failed=True, elimination_result={
+        "passed": False,
+        "failed_rules": ["Precheck: <script>x</script>"],
+    })
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "<script>x</script>" not in html_out
+    assert "&lt;script&gt;x&lt;/script&gt;" in html_out

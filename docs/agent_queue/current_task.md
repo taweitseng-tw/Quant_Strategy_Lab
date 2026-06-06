@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Task 056K-Impl - IS Baseline Precheck Visibility Surfaces.
+Task 056L - Validation Expansion Series Acceptance and Next-Scope Triage.
 
 ## Required Reading
 
@@ -24,92 +24,80 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/is_baseline_precheck_visibility_design_056K.md`
-8. `docs/review_notes/2026-06-06_task-056k_is-baseline-precheck-visibility-surface-design_codex-review.md`
-9. `app/widgets/validation_summary.py`
-10. `reports/generator.py`
-11. `tests/test_validation_summary.py`
-12. `tests/test_report_export.py`
-13. This task file
+7. `docs/review_notes/2026-06-06_task-056k-impl_is-baseline-precheck-visibility-surfaces_codex-review.md`
+8. 056-series review notes and agent reports
+9. This task file
 
 ## Context
 
-Task 056K confirmed that `precheck_failed=True` is currently not obvious enough in ValidationSummary or reports. Users see empty/skipped validation sections and an elimination reason, but not a direct precheck failure indicator. Add the smallest display-only visibility improvement.
+The 056 validation expansion series now includes OOS stability, remove-best-N stress, stress detail display, UI config, acceptance smoke coverage, opt-in IS baseline precheck, and precheck visibility surfaces. Before adding more features, do a design-only acceptance/triage pass to decide whether the 056 series is complete enough to checkpoint, and what next scope should be.
 
 ## Scope
 
 ### Do
 
-- In `app/widgets/validation_summary.py`:
-  - When `precheck_failed` is true, add one existing-style section/card near the top, after Data Source and before Split.
-  - Title should be concise, e.g. `Precheck`.
-  - Body should include `FAILED` and the reason from `elimination_result.failed_rules[0]` when present.
-  - Fall back safely to a generic reason when missing.
-  - Do not change non-precheck rendering.
-- In `reports/generator.py`:
-  - In `_format_markdown_validation()`, add one precheck line before the Split line when `precheck_failed` is true.
-  - In `_format_html_validation()`, add one precheck paragraph before the Split paragraph when `precheck_failed` is true.
-  - Escape dynamic HTML reason text.
-  - Do not change non-precheck rendering.
-- In tests:
-  - `tests/test_validation_summary.py`: assert precheck section appears when true and is absent when false.
-  - `tests/test_report_export.py`: assert Markdown and HTML precheck lines appear when true; assert HTML escapes malicious reason text; assert absent when false.
+- Inspect 056-series changes through docs/reports/review notes and current tests.
+- Write an acceptance/triage note:
+  - `docs/validation_expansion_series_acceptance_056L.md`
+- The note must answer:
+  - What capabilities the 056 series added.
+  - What tests currently protect those capabilities.
+  - Remaining risks or gaps.
+  - Whether 056 should be considered accepted as a validation expansion checkpoint.
+  - Recommended next scope:
+    - continue validation expansion,
+    - switch to release/readiness checkpoint,
+    - switch to another PRD area,
+    - or pause for user decision.
+  - One recommended next task.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-056k-impl_is-baseline-precheck-visibility-surfaces_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-056l_validation-expansion-series-acceptance-and-next-scope-triage_deepseek.md`
 
 ### Do Not
 
-- Do not change pipeline behavior.
-- Do not change `PipelineConfig` or `PipelineResult`.
-- Do not add UI controls.
-- Do not redesign validation summary layout.
-- Do not add a broad warnings display system.
+- Do not change production code.
+- Do not add tests.
+- Do not implement new validation logic.
+- Do not modify UI/report behavior.
 - Do not add dependencies.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `app/widgets/validation_summary.py`
-- `reports/generator.py`
-- `tests/test_validation_summary.py`
-- `tests/test_report_export.py`
+- `docs/validation_expansion_series_acceptance_056L.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-056k-impl_is-baseline-precheck-visibility-surfaces_deepseek.md`
+- `docs/agent_reports/2026-06-06_task-056l_validation-expansion-series-acceptance-and-next-scope-triage_deepseek.md`
 
 ## Acceptance Criteria
 
-1. Widget shows precheck failure section when `precheck_failed=True`.
-2. Widget section includes the precheck failure reason when available.
-3. Widget does not show precheck section when `precheck_failed=False` or absent.
-4. Markdown report includes one precheck line when `precheck_failed=True`.
-5. HTML report includes one precheck line when `precheck_failed=True`.
-6. HTML precheck reason text is escaped.
-7. Non-precheck report/widget output remains unchanged.
-8. Focused widget/report tests pass.
-9. Full suite passes.
-10. `git diff --check` passes.
+1. Acceptance note summarizes 056-series capabilities accurately.
+2. Acceptance note names the tests that protect the major features.
+3. Acceptance note lists residual risks/gaps.
+4. Acceptance note recommends whether to checkpoint 056.
+5. Acceptance note recommends exactly one next task.
+6. No production code or tests are changed.
+7. Changelog and task board are updated.
+8. Completion report is created.
+9. `git diff --check` passes.
 
 ## Verification
 
 Run exactly:
 
 ```powershell
-.venv\Scripts\python.exe -m pytest tests/test_validation_summary.py tests/test_report_export.py -v
-.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
 
 Expected:
 
-- Focused widget/report tests pass.
-- Full suite passes without ignored tests.
 - `git diff --check` passes.
-- Agent status shows Task 056K-Impl completion report as the latest report.
+- Agent status shows Task 056L completion report as the latest report.
+- No tests are required because this is design-only.
 
 ## After Completion
 
