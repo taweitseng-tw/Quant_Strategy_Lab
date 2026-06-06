@@ -346,6 +346,47 @@ class MainWindow(QMainWindow):
                 stress_opts_layout.addWidget(self.remove_best_n_threshold_spin)
                 stress_opts_layout.addStretch()
                 layout.addLayout(stress_opts_layout)
+
+                # Bootstrap MC controls.
+                self.bootstrap_checkbox = QCheckBox("Bootstrap Monte Carlo")
+                self.bootstrap_checkbox.setToolTip(
+                    "Resamples trades with replacement to compute 95% confidence intervals. "
+                    "Heavier (200 iterations). Off by default."
+                )
+                self.bootstrap_checkbox.setChecked(False)
+
+                self.bootstrap_iter_spin = QSpinBox()
+                self.bootstrap_iter_spin.setMinimum(50)
+                self.bootstrap_iter_spin.setMaximum(2000)
+                self.bootstrap_iter_spin.setSingleStep(50)
+                self.bootstrap_iter_spin.setValue(200)
+                self.bootstrap_iter_spin.setToolTip("Number of bootstrap iterations (50-2000).")
+                self.bootstrap_iter_spin.setEnabled(False)
+
+                self.bootstrap_conf_spin = QDoubleSpinBox()
+                self.bootstrap_conf_spin.setMinimum(0.80)
+                self.bootstrap_conf_spin.setMaximum(0.99)
+                self.bootstrap_conf_spin.setSingleStep(0.01)
+                self.bootstrap_conf_spin.setDecimals(2)
+                self.bootstrap_conf_spin.setValue(0.95)
+                self.bootstrap_conf_spin.setToolTip("Confidence level for CI computation (0.80-0.99).")
+                self.bootstrap_conf_spin.setEnabled(False)
+
+                def _toggle_bootstrap_spins(checked):
+                    self.bootstrap_iter_spin.setEnabled(checked)
+                    self.bootstrap_conf_spin.setEnabled(checked)
+
+                self.bootstrap_checkbox.toggled.connect(_toggle_bootstrap_spins)
+
+                bootstrap_layout = QHBoxLayout()
+                bootstrap_layout.addWidget(self.bootstrap_checkbox)
+                bootstrap_layout.addWidget(QLabel("Iterations:"))
+                bootstrap_layout.addWidget(self.bootstrap_iter_spin)
+                bootstrap_layout.addWidget(QLabel("Confidence:"))
+                bootstrap_layout.addWidget(self.bootstrap_conf_spin)
+                bootstrap_layout.addStretch()
+                layout.addLayout(bootstrap_layout)
+
                 layout.addWidget(self.validation_summary)
                 self.workspace.addWidget(page)
             elif page_name == "Settings":
@@ -1136,6 +1177,14 @@ class MainWindow(QMainWindow):
             remove_best_n_n = self.remove_best_n_n_spin.value()
             remove_best_n_threshold = self.remove_best_n_threshold_spin.value()
 
+        run_bootstrap = False
+        bootstrap_iterations = 200
+        bootstrap_confidence = 0.95
+        if hasattr(self, "bootstrap_checkbox"):
+            run_bootstrap = self.bootstrap_checkbox.isChecked()
+            bootstrap_iterations = self.bootstrap_iter_spin.value()
+            bootstrap_confidence = self.bootstrap_conf_spin.value()
+
         try:
             result = run_validation_pipeline(
                 df, strategy,
@@ -1144,6 +1193,9 @@ class MainWindow(QMainWindow):
                     run_remove_best_n_trades_stress=run_remove_best_n,
                     remove_best_n_trades_n=remove_best_n_n,
                     remove_best_n_trades_degradation_threshold=remove_best_n_threshold,
+                    run_bootstrap_monte_carlo=run_bootstrap,
+                    bootstrap_iterations=bootstrap_iterations,
+                    bootstrap_confidence_level=bootstrap_confidence,
                 ),
                 instrument=active_profile,
                 data_source=source_label,

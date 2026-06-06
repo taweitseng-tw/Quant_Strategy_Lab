@@ -767,3 +767,74 @@ def test_html_precheck_reason_escaped(mock_strategy, mock_backtest_result):
     html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
     assert "<script>x</script>" not in html_out
     assert "&lt;script&gt;x&lt;/script&gt;" in html_out
+
+
+# ---------------------------------------------------------------------------
+# Bootstrap MC display in reports (Task 057E-Impl)
+# ---------------------------------------------------------------------------
+
+
+def _make_bootstrap_validation_dict():
+    return _make_validation_dict(bootstrap_monte_carlo_result={
+        "test_name": "bootstrap",
+        "iterations": 200,
+        "stability_score": 0.85,
+        "confidence_intervals": {
+            "total_pnl": {"ci_lower": 1200.0, "ci_upper": 9800.0, "ci_mean": 5400.0},
+            "profit_factor": {"ci_lower": 1.15, "ci_upper": 2.80, "ci_mean": 1.95},
+            "max_drawdown_pnl": {"ci_lower": 500.0, "ci_upper": 12000.0, "ci_mean": 4200.0},
+        },
+    })
+
+
+def test_markdown_includes_bootstrap_mc(mock_strategy, mock_backtest_result):
+    """Markdown report must include Bootstrap MC section when data is present."""
+    vr = _make_bootstrap_validation_dict()
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "**Bootstrap MC**" in md
+    assert "200 iter" in md
+    assert "0.85" in md
+    assert "1,200" in md
+    assert "9,800" in md
+
+
+def test_markdown_omits_bootstrap_when_absent(mock_strategy, mock_backtest_result):
+    """Markdown report must NOT include Bootstrap MC when data is missing."""
+    vr = _make_validation_dict()
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "Bootstrap MC" not in md
+
+
+def test_html_includes_bootstrap_mc(mock_strategy, mock_backtest_result):
+    """HTML report must include Bootstrap MC section when data is present."""
+    vr = _make_bootstrap_validation_dict()
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "<b>Bootstrap MC</b>" in html_out
+    assert "200 iter" in html_out
+    assert "0.85" in html_out
+    assert "1,200" in html_out
+
+
+def test_html_omits_bootstrap_when_absent(mock_strategy, mock_backtest_result):
+    """HTML report must NOT include Bootstrap MC when data is missing."""
+    vr = _make_validation_dict()
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "Bootstrap MC" not in html_out
+
+
+def test_markdown_omits_bootstrap_when_ci_empty(mock_strategy, mock_backtest_result):
+    """Markdown must omit Bootstrap MC when CI is empty."""
+    vr = _make_validation_dict(bootstrap_monte_carlo_result={
+        "test_name": "bootstrap", "iterations": 200, "confidence_intervals": {},
+    })
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "Bootstrap MC" not in md
+
+
+def test_html_omits_bootstrap_when_ci_empty(mock_strategy, mock_backtest_result):
+    """HTML must omit Bootstrap MC when CI is empty."""
+    vr = _make_validation_dict(bootstrap_monte_carlo_result={
+        "test_name": "bootstrap", "iterations": 200, "confidence_intervals": {},
+    })
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "Bootstrap MC" not in html_out

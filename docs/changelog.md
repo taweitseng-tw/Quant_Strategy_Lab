@@ -1,5 +1,68 @@
 # Changelog
 
+## 2026-06-06 - Batch 057E-Fix + 057F-Impl Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-057e-fix_057f-impl_bootstrap-display-hardening-and-ui-controls_codex-review.md` accepting bootstrap display hardening and UI controls with score 9.0 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 057G-Impl + 057H-Design.
+- Updated `docs/task_board.md` to queue bootstrap acceptance smoke and remaining validation gap triage.
+
+### Verification
+- Reviewed bootstrap display hardening, UI controls, report/widget tests, and latest agent report.
+- Ran focused tests: 68 passed.
+- Manually confirmed markdown/HTML PF CI decimals.
+- Ran full suite: 1074 passed, 1 warning.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Batch 057E-Fix + 057F-Impl: Bootstrap Display Hardening and UI Controls
+
+### Fixed (057E-Fix)
+- Bootstrap MC no longer renders when `confidence_intervals` is missing or empty.
+- Profit factor CI formatted with 2 decimal places throughout.
+- Added 3 widget tests + 2 report tests for empty-CI behavior and PF decimal formatting.
+
+### Added (057F-Impl)
+- `app/ui/main_window.py`: Bootstrap controls on Validate page (checkbox + iterations spinbox + confidence spinbox). Default off, spinboxes disabled until checked.
+- Wired into `PipelineConfig` in `_handle_run()`.
+- `tests/test_wfe_ui_wiring.py`: 4 new tests (controls exist + defaults, spinbox toggle, unchecked passes False, checked passes custom values).
+
+### Verification
+- Focused tests: 68 passed (widget + report + UI wiring).
+- Full suite: 1074 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+
+## 2026-06-06 - Batch 057E-Impl + 057F-Design Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-057e-impl_057f-design_bootstrap-display-and-ui-controls-design_codex-review.md` marking the batch as needing display hardening before acceptance, with score 7.8 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 057E-Fix + 057F-Impl.
+- Updated `docs/task_board.md` to queue bootstrap display hardening and UI controls implementation.
+
+### Verification
+- Reviewed bootstrap widget/report display implementation, UI controls design, and latest agent report.
+- Ran focused widget/report tests: 53 passed.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Batch 057E-Impl + 057F-Design: Bootstrap Display Surfaces and UI Controls Design
+
+### Added (057E-Impl)
+- `app/widgets/validation_summary.py`: Bootstrap MC card after existing MC card — shows iterations, stability score, and 3 CI metric lines.
+- `reports/generator.py`: Bootstrap MC lines in both markdown and HTML validation formatters.
+- `tests/test_validation_summary.py`: 2 new tests (card shown, absent).
+- `tests/test_report_export.py`: 4 new tests (markdown present/absent, HTML present/absent).
+
+### Added (057F-Design)
+- `docs/bootstrap_ui_config_controls_design_057F.md` — UI controls design (checkbox + spinboxes, same pattern as remove-best-N).
+
+### Verification
+- Focused widget + report tests: 53 passed.
+- Full suite: 1066 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+
 ## 2026-06-06 - Batch 057C-Fix + 057D-Impl Codex Acceptance
 
 ### Added

@@ -129,3 +129,60 @@ def test_remove_best_n_checked_passes_custom_values(mock_run, main_window):
     assert config.run_remove_best_n_trades_stress is True
     assert config.remove_best_n_trades_n == 5
     assert config.remove_best_n_trades_degradation_threshold == 0.25
+
+
+# ---------------------------------------------------------------------------
+# Bootstrap MC UI controls (Task 057F-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_bootstrap_controls_exist_and_defaults(main_window):
+    """Bootstrap controls must exist with correct defaults."""
+    assert hasattr(main_window, "bootstrap_checkbox")
+    assert hasattr(main_window, "bootstrap_iter_spin")
+    assert hasattr(main_window, "bootstrap_conf_spin")
+
+    assert not main_window.bootstrap_checkbox.isChecked()
+    assert main_window.bootstrap_iter_spin.value() == 200
+    assert main_window.bootstrap_conf_spin.value() == 0.95
+    assert not main_window.bootstrap_iter_spin.isEnabled()
+    assert not main_window.bootstrap_conf_spin.isEnabled()
+
+
+def test_bootstrap_spins_enabled_when_checked(main_window):
+    """Spinboxes must enable when checkbox is checked."""
+    main_window.bootstrap_checkbox.setChecked(True)
+    assert main_window.bootstrap_iter_spin.isEnabled()
+    assert main_window.bootstrap_conf_spin.isEnabled()
+
+    main_window.bootstrap_checkbox.setChecked(False)
+    assert not main_window.bootstrap_iter_spin.isEnabled()
+    assert not main_window.bootstrap_conf_spin.isEnabled()
+
+
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_bootstrap_unchecked_passes_false(mock_run, main_window):
+    """Unchecked checkbox must pass run_bootstrap_monte_carlo=False."""
+    main_window.bootstrap_checkbox.setChecked(False)
+    main_window._handle_run()
+
+    mock_run.assert_called_once()
+    config = mock_run.call_args.kwargs["config"]
+    assert config.run_bootstrap_monte_carlo is False
+    assert config.bootstrap_iterations == 200
+    assert config.bootstrap_confidence_level == 0.95
+
+
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_bootstrap_checked_passes_custom_values(mock_run, main_window):
+    """Checked checkbox must pass custom values."""
+    main_window.bootstrap_checkbox.setChecked(True)
+    main_window.bootstrap_iter_spin.setValue(500)
+    main_window.bootstrap_conf_spin.setValue(0.90)
+    main_window._handle_run()
+
+    mock_run.assert_called_once()
+    config = mock_run.call_args.kwargs["config"]
+    assert config.run_bootstrap_monte_carlo is True
+    assert config.bootstrap_iterations == 500
+    assert config.bootstrap_confidence_level == 0.90

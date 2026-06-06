@@ -383,3 +383,104 @@ def test_precheck_card_absent_when_false(qapp):
     text = _widget_text(widget)
 
     assert "Precheck" not in text
+
+
+# ---------------------------------------------------------------------------
+# Bootstrap MC display (Task 057E-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_bootstrap_mc_card_shown_when_present(qapp):
+    """Bootstrap MC card must appear when data is present."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "monte_carlo_summary": {
+            "iterations": 15,
+            "percentile_summary": {"total_pnl": {"p5": 1000.0, "p50": 5000.0, "p95": 9000.0}},
+            "worst_case": {"total_pnl": 1000.0},
+        },
+        "bootstrap_monte_carlo_result": {
+            "test_name": "bootstrap",
+            "iterations": 200,
+            "stability_score": 0.85,
+            "confidence_intervals": {
+                "total_pnl": {"ci_lower": 1200.0, "ci_upper": 9800.0, "ci_mean": 5400.0},
+                "profit_factor": {"ci_lower": 1.15, "ci_upper": 2.80, "ci_mean": 1.95},
+                "max_drawdown_pnl": {"ci_lower": 500.0, "ci_upper": 12000.0, "ci_mean": 4200.0},
+            },
+        },
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+
+    assert "Bootstrap MC" in text
+    assert "200" in text
+    assert "0.85" in text
+    assert "1,200" in text
+    assert "9,800" in text
+    assert "5,400" in text
+
+
+def test_bootstrap_mc_card_absent_when_missing(qapp):
+    """Bootstrap MC card must NOT appear when data is missing."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "monte_carlo_summary": {"iterations": 15, "percentile_summary": {"total_pnl": {"p5": 1000.0, "p50": 5000.0, "p95": 9000.0}}, "worst_case": {"total_pnl": 1000.0}},
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+
+    assert "Bootstrap MC" not in text
+
+
+def test_bootstrap_mc_card_absent_when_ci_empty(qapp):
+    """Bootstrap MC card must NOT appear when CI data is empty."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "monte_carlo_summary": {"iterations": 15, "percentile_summary": {"total_pnl": {"p5": 1000.0, "p50": 5000.0, "p95": 9000.0}}, "worst_case": {"total_pnl": 1000.0}},
+        "bootstrap_monte_carlo_result": {
+            "test_name": "bootstrap",
+            "iterations": 200,
+            "confidence_intervals": {},  # empty
+        },
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+    assert "Bootstrap MC" not in text
+
+
+def test_bootstrap_mc_pf_formatted_two_decimals(qapp):
+    """Profit factor CI must render with two decimal places."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "monte_carlo_summary": {"iterations": 15, "percentile_summary": {"total_pnl": {"p5": 1000.0, "p50": 5000.0, "p95": 9000.0}}, "worst_case": {"total_pnl": 1000.0}},
+        "bootstrap_monte_carlo_result": {
+            "test_name": "bootstrap",
+            "iterations": 200,
+            "stability_score": 0.85,
+            "confidence_intervals": {
+                "profit_factor": {"ci_lower": 1.156, "ci_upper": 2.803, "ci_mean": 1.951},
+            },
+        },
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _widget_text(widget)
+    assert "1.16" in text
+    assert "2.80" in text
+    assert "1.95" in text

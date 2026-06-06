@@ -803,6 +803,20 @@ def _format_markdown_validation(vr: dict) -> str:
     if ps:
         lines.append(f"- **MC** ({mc.get('iterations','?')} iter): "
                      f"p05={ps.get('p5','?'):,.0f} p50={ps.get('p50','?'):,.0f} p95={ps.get('p95','?'):,.0f}")
+    bootstrap_md = vr.get("bootstrap_monte_carlo_result", {}) or {}
+    if bootstrap_md:
+        ci = bootstrap_md.get("confidence_intervals", {}) or {}
+        if ci:  # only show when CI data is non-empty
+            stability = bootstrap_md.get("stability_score", "?")
+            if isinstance(stability, float):
+                stability = f"{stability:.2f}"
+            lines.append(f"- **Bootstrap MC** ({bootstrap_md.get('iterations','?')} iter): "
+                         f"Stability={stability}")
+            for key, label, fmt in [("total_pnl", "PnL", ",.0f"), ("profit_factor", "PF", ".2f"), ("max_drawdown_pnl", "Max DD", ",.0f")]:
+                d = ci.get(key, {})
+                if d:
+                    lines.append(f"  - {label} 95% CI [{d.get('ci_lower',0):{fmt}} — {d.get('ci_upper',0):{fmt}}] "
+                                 f"mean={d.get('ci_mean',0):{fmt}}")
     wf = vr.get("walk_forward_summary", {}) or {}
     if wf:
         lines.append(f"- **WF**: {wf.get('pass_count','?')}/{wf.get('window_count','?')} "
@@ -892,6 +906,21 @@ def _format_html_validation(vr: dict) -> str:
     if ps:
         parts.append(f'<p><b>MC</b> ({mc.get("iterations","?")} iter): '
                      f'p05={ps.get("p5","?"):,.0f} p50={ps.get("p50","?"):,.0f} p95={ps.get("p95","?"):,.0f}</p>')
+    bootstrap_html = vr.get("bootstrap_monte_carlo_result", {}) or {}
+    if bootstrap_html:
+        ci = bootstrap_html.get("confidence_intervals", {}) or {}
+        if ci:  # only show when CI data is non-empty
+            stability = bootstrap_html.get("stability_score", "?")
+            if isinstance(stability, float):
+                stability = f"{stability:.2f}"
+            parts.append(f'<p><b>Bootstrap MC</b> ({bootstrap_html.get("iterations","?")} iter): '
+                         f'Stability={stability}</p>')
+            for key, label, fmt in [("total_pnl", "PnL", ",.0f"), ("profit_factor", "PF", ".2f"), ("max_drawdown_pnl", "Max DD", ",.0f")]:
+                d = ci.get(key, {})
+                if d:
+                    parts.append(f'<div class="stress-detail">'
+                                 f'{label} 95% CI [{d.get("ci_lower",0):{fmt}} — {d.get("ci_upper",0):{fmt}}] '
+                                 f'mean={d.get("ci_mean",0):{fmt}}</div>')
     wf = vr.get("walk_forward_summary", {}) or {}
     if wf:
         parts.append(f'<p><b>WF:</b> {wf.get("pass_count","?")}/{wf.get("window_count","?")} '

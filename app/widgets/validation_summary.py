@@ -127,6 +127,24 @@ class ValidationSummary(QWidget):
             f"Worst-case PnL: {wc.get('total_pnl', '?'):,.0f}"
         ) if pnl_ps else "No MC data.")
 
+        # --- Bootstrap MC ---
+        bootstrap = self._get(result, "bootstrap_monte_carlo_result", {}) or {}
+        if bootstrap:
+            ci = bootstrap.get("confidence_intervals", {}) or {}
+            if ci:  # only show when CI data is non-empty
+                lines = [
+                    f"Iterations: {bootstrap.get('iterations', '?')}  |  "
+                    f"Stability: {bootstrap.get('stability_score', '?')}"
+                ]
+                for key, label, fmt in [("total_pnl", "PnL", ",.0f"), ("profit_factor", "PF", ".2f"), ("max_drawdown_pnl", "Max DD", ",.0f")]:
+                    d = ci.get(key, {})
+                    if d:
+                        lines.append(
+                            f"{label} 95% CI [{d.get('ci_lower', 0):{fmt}} — {d.get('ci_upper', 0):{fmt}}] "
+                            f"mean={d.get('ci_mean', 0):{fmt}}"
+                        )
+                self._add_section("Bootstrap MC", "\n".join(lines))
+
         # --- Walk-forward ---
         wf = self._get(result, "walk_forward_summary", {}) or {}
         self._add_section("Walk-Forward", (

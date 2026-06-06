@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 057E-Impl + 057F-Design - Bootstrap Display Surfaces and UI Controls Design.
+Batch 057G-Impl + 057H-Design - Bootstrap Feature Acceptance Smoke and Remaining Validation Gap Triage.
 
 ## Required Reading
 
@@ -24,84 +24,81 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-06_task-057c-fix_057d-impl_bootstrap-surface-design-and-pipeline-wiring_codex-review.md`
-8. `docs/bootstrap_pipeline_report_surface_design_057C.md`
-9. `docs/monte_carlo_bootstrap_ci_design_057A.md`
-10. `docs/milestone_direction_056N.md`
+7. `docs/review_notes/2026-06-06_task-057e-fix_057f-impl_bootstrap-display-hardening-and-ui-controls_codex-review.md`
+8. `docs/bootstrap_ui_config_controls_design_057F.md`
+9. `docs/bootstrap_pipeline_report_surface_design_057C.md`
+10. `docs/monte_carlo_bootstrap_ci_design_057A.md`
 11. `docs/v0.2_validation_expansion_readiness.md`
 12. This task file
 
 ## Context
 
-Batch 057C-Fix + 057D-Impl was accepted. Bootstrap is now wired into the validation pipeline behind a default-off config flag, but it is not yet visible in the validation summary widget or exported reports. This batch pairs one display implementation task with one design-only UI controls task.
+Batch 057E-Fix + 057F-Impl was accepted. Bootstrap Monte Carlo now has engine, pipeline, display, and UI controls. Before adding more features, add a focused acceptance smoke and then produce a design-only triage of any remaining validation gaps.
 
 ## Scope
 
 ### Do
 
 - Complete two sequential tasks:
-  - Task 057E-Impl - Bootstrap Display Surfaces
-  - Task 057F-Design - Bootstrap UI Config Controls Design
-- For Task 057E-Impl:
-  - Implement display-only surfaces for `bootstrap_monte_carlo_result`.
-  - In `app/widgets/validation_summary.py`, add a "Bootstrap MC" card after the existing Monte Carlo card only when bootstrap data is present.
-  - In `reports/generator.py`, add bootstrap lines to both markdown and HTML validation formatting.
-  - Render known numeric CI fields only:
-    - `total_pnl`
-    - `profit_factor`
-    - `max_drawdown_pnl`
-    - `stability_score`
-  - Keep output absent when `bootstrap_monte_carlo_result` is missing or has no CI data.
-  - Add focused tests in `tests/test_validation_summary.py` and `tests/test_report_export.py`.
-- For Task 057F-Design:
-  - Write `docs/bootstrap_ui_config_controls_design_057F.md`.
-  - Design only; do not implement controls.
-  - Cover Validate page controls, default-off behavior, PipelineConfig mapping, numeric bounds, validation rules, UI wiring tests, and non-goals.
+  - Task 057G-Impl - Bootstrap Feature Acceptance Smoke
+  - Task 057H-Design - Remaining Validation Gap Triage
+- For Task 057G-Impl:
+  - Add test-only acceptance smoke coverage for the bootstrap feature chain.
+  - Prefer one new focused test file:
+    - `tests/test_bootstrap_monte_carlo_acceptance.py`
+  - Cover:
+    - default PipelineConfig does not run bootstrap,
+    - opt-in PipelineConfig produces `bootstrap_monte_carlo_result` with `confidence_intervals`,
+    - UI controls pass enabled/custom values into `PipelineConfig`,
+    - widget displays Bootstrap MC when CI data is present,
+    - markdown and HTML reports display Bootstrap MC when CI data is present,
+    - widget/markdown/HTML omit Bootstrap MC when CI data is empty.
+  - Do not change production code unless a test exposes a real bug; if production code must change, keep it minimal and explain why.
+- For Task 057H-Design:
+  - Write `docs/validation_gap_triage_057H.md`.
+  - Design-only triage: summarize what 057 completed, list remaining PRD validation gaps, and recommend exactly one next task.
+  - Include whether price-noise stress, WF equity display, or broader validation acceptance should come next.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-057e-impl_057f-design_bootstrap-display-and-ui-controls-design_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-057g-impl_057h-design_bootstrap-acceptance-and-validation-gap-triage_deepseek.md`
 
 ### Do Not
 
-- Do not modify validation pipeline or Monte Carlo engine code.
-- Do not add UI controls.
-- Do not wire UI controls into `PipelineConfig`.
+- Do not modify Monte Carlo engine code unless acceptance smoke exposes a real bug.
 - Do not add `worst_case_equity`.
 - Do not change walk-forward production code.
+- Do not add new UI controls.
+- Do not change report layout beyond bug fixes required by acceptance smoke.
 - Do not add dependencies.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `docs/bootstrap_pipeline_report_surface_design_057C.md`
-- `app/widgets/validation_summary.py`
-- `reports/generator.py`
-- `tests/test_validation_summary.py`
-- `tests/test_report_export.py`
-- `docs/bootstrap_ui_config_controls_design_057F.md`
+- `tests/test_bootstrap_monte_carlo_acceptance.py`
+- `docs/validation_gap_triage_057H.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-057e-impl_057f-design_bootstrap-display-and-ui-controls-design_deepseek.md`
+- `docs/agent_reports/2026-06-06_task-057g-impl_057h-design_bootstrap-acceptance-and-validation-gap-triage_deepseek.md`
 
 ## Acceptance Criteria
 
-1. Widget shows Bootstrap MC only when bootstrap CI data is present.
-2. Markdown and HTML reports show Bootstrap MC only when bootstrap CI data is present.
-3. Missing bootstrap data does not change existing validation summary/report output.
-4. HTML output escapes or strictly formats any dynamic non-numeric values; numeric CI values are formatted consistently.
-5. 057F design covers UI controls without implementation.
+1. Acceptance tests cover the bootstrap feature chain from pipeline/UI config to widget/report display.
+2. Default-off behavior is covered.
+3. Empty-CI omission behavior is covered across widget/markdown/HTML.
+4. 057H triage note summarizes completed 057 bootstrap work and remaining validation gaps.
+5. 057H recommends exactly one next task.
 6. Changelog and task board are updated.
 7. Completion report is created.
-8. Focused display/report tests and `git diff --check` pass.
+8. Focused acceptance tests and `git diff --check` pass.
 
 ## Verification
 
 Run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/test_validation_summary.py tests/test_report_export.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_bootstrap_monte_carlo_acceptance.py -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
@@ -110,8 +107,8 @@ Expected:
 
 - Focused tests pass.
 - `git diff --check` passes.
-- Agent status shows Batch 057E-Impl + 057F-Design completion report as the latest report.
-- Bootstrap UI controls are designed only, not implemented.
+- Agent status shows Batch 057G-Impl + 057H-Design completion report as the latest report.
+- No new feature implementation beyond test-only acceptance smoke unless fixing a real bug exposed by the smoke.
 
 ## After Completion
 
