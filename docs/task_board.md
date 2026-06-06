@@ -8,10 +8,14 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Batch 057Q-Docs + 057R-ReleaseNotes - README Milestone Sync and v0.2 Release Notes
+- [ ] Batch 057T-Signoff + 057U-Decision - v0.2 Final Sign-off and Tag Decision
 
 ## Done
 
+- [x] Batch 057Q-Fix + 057S-TagPrep-Codex Review - Generated Artifact Hygiene and v0.2 Tag Prep Acceptance
+- [x] Batch 057Q-Fix + 057S-TagPrep - Generated Artifact Hygiene Fix and v0.2 Baseline Tag Prep
+- [x] Batch 057Q-Docs + 057R-ReleaseNotes-Codex Review - Needs Generated Artifact Hygiene Fix
+- [x] Batch 057Q-Docs + 057R-ReleaseNotes - README Milestone Sync and v0.2 Release Notes
 - [x] Batch 057M-Fix + 057P-Audit-Codex Review - Acceptance Smoke Hardening and v0.2 Release Readiness Acceptance
 - [x] Batch 057M-Fix + 057P-Audit - Acceptance Smoke Omission Hardening and v0.2 Release Readiness Audit
 - [x] Batch 057M-Impl + 057N-Design-Codex Review - Needs Acceptance Smoke Hardening

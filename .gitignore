@@ -48,3 +48,8 @@ app/test1/
 
 # Binaries
 *.exe
+
+# Generated project brief artifacts (Task 057Q-Fix) — prefix-based, no broad rules
+docs/project_brief_2026-06-06*
+docs/_v2_project_brief.pptx
+docs/~$project_brief_2026-06-06*

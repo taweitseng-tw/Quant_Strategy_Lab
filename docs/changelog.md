@@ -1,5 +1,65 @@
 # Changelog
 
+## 2026-06-06 - Batch 057Q-Fix + 057S-TagPrep Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-057q-fix_057s-tag-prep_generated-artifact-hygiene-and-v0.2-tag-prep_codex-review.md` accepting generated artifact hygiene hardening and v0.2 baseline tag prep with score 9.1 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 057T-Signoff + 057U-Decision.
+- Updated `docs/task_board.md` to queue final v0.2 sign-off and user tag decision.
+
+### Verification
+- Reviewed latest DeepSeek report, `.gitignore` behavior, and v0.2 tag prep notes.
+- Verified no tracked project brief artifacts are hidden.
+- Verified generated project brief artifacts are ignored by targeted rules.
+- Ran full suite: 1101 passed, 1 warning.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Batch 057Q-Fix + 057S-TagPrep: Generated Artifact Hygiene Fix and v0.2 Baseline Tag Prep
+
+### Fixed (057Q-Fix)
+- `.gitignore`: Replaced per-extension rules with a single prefix-based rule `docs/project_brief_2026-06-06*` that covers `.md`, `.pdf`, `.pptx`, and `.bak` artifacts. No broad `*.pdf`/`*.pptx`/`*.md`/`*.bak` rules. Added `docs/_v2_project_brief.pptx`.
+
+### Added (057S-TagPrep)
+- `docs/v0.2_baseline_tag_prep_057S.md` — recommended tag name `v0.2-alpha-validation-expansion`, remaining caveats, and next batch suggestion. Tag NOT created.
+
+### Verification
+- `git ls-files`: 0 tracked project brief files.
+- `git check-ignore`: All 4 test artifacts match the prefix rule.
+- `git status --short --untracked-files=all`: 0 project brief entries.
+- Full suite: 1101 passed, 1 warning.
+- `git diff --check` passes.
+
+## 2026-06-06 - Batch 057Q-Docs + 057R-ReleaseNotes Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-057q-docs_057r-release-notes_readme-sync-and-v0.2-release-notes_codex-review.md` with a needs-fix verdict and score 8.6 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 057Q-Fix + 057S-TagPrep.
+- Updated `docs/task_board.md` to queue generated artifact hygiene hardening and v0.2 baseline/tag preparation notes.
+
+### Verification
+- Reviewed latest DeepSeek report, README diff, `.gitignore` behavior, and release notes.
+- Ran full suite: 1101 passed, 1 warning.
+- Ran `git diff --check`.
+- Confirmed current project brief ignore rules do not cover all generated local artifacts.
+
+## 2026-06-06 - Batch 057Q-Docs + 057R-ReleaseNotes: README Sync and v0.2 Release Notes
+
+### Changed (057Q-Docs)
+- `README.md`: Updated milestone from "Prototype v0.0.1" to "v0.2 Alpha — validation expansion release-ready" with capability summary.
+- `.gitignore`: Added targeted rules for generated project brief artifacts (`*.pdf`, `*.pptx`, `~$*`).
+
+### Added (057R-ReleaseNotes)
+- `docs/v0.2_alpha_validation_expansion_release_notes_057R.md` — v0.2 alpha release notes covering capabilities, verification, deferred items, and caveats.
+
+### Verification
+- `git check-ignore` confirms generated brief artifacts are ignored.
+- Full suite: 1101 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+
 ## 2026-06-06 - Batch 057M-Fix + 057P-Audit Codex Acceptance
 
 ### Added
