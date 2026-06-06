@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Task 056M - v0.2 Validation Expansion Release Readiness Audit.
+Task 056N - Milestone Direction Decision Brief.
 
 ## Required Reading
 
@@ -24,79 +24,82 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-06_task-056l_validation-expansion-series-acceptance-and-next-scope-triage_codex-review.md`
-8. `docs/validation_expansion_series_acceptance_056L.md`
-9. 056-series review notes and agent reports
-10. This task file
+7. `docs/review_notes/2026-06-06_task-056m_v0.2-validation-expansion-release-readiness-audit_codex-review.md`
+8. `docs/v0.2_validation_expansion_readiness.md`
+9. `docs/validation_expansion_series_acceptance_056L.md`
+10. Latest 056-series review notes and agent reports
+11. This task file
 
 ## Context
 
-Task 056L accepted the 056 validation expansion series as a checkpoint and recommended pausing feature expansion. Before adding more validation, UI, strategy, or backtest features, perform a broad release readiness audit across the current v0.2 validation expansion state.
+Task 056M accepted the v0.2 validation expansion checkpoint as GO. Before implementing the next feature, prepare a decision brief for the user that compares the next milestone directions across the remaining v0.2 backlog.
 
 ## Scope
 
 ### Do
 
-- Run the full test suite.
-- Run repository hygiene checks.
-- Review task board, changelog, latest agent reports, latest Codex review notes, and 056L acceptance note for release-readiness consistency.
-- Write a release readiness audit:
-  - `docs/v0.2_validation_expansion_readiness.md`
-- The audit must answer:
-  - Whether the current v0.2 validation expansion state is ready to checkpoint.
-  - Which areas are acceptable now.
-  - Which risks remain before the next milestone.
-  - Whether the next milestone should continue validation, return to PRD prototype gaps, or pause for user decision.
-  - Exactly one recommended next task.
+- Review remaining v0.2 PRD/task-board gaps across:
+  - data/import/resampling/instrument profile,
+  - backtest/execution assumptions,
+  - strategy generation/ranking,
+  - validation/anti-overfitting,
+  - reports/export,
+  - UI workflow readiness.
+- Write a user-facing decision brief:
+  - `docs/milestone_direction_056N.md`
+- The brief must include:
+  - 3 to 5 candidate next directions.
+  - For each direction: goal, why now, likely files/modules, risk level, verification approach, and recommended agent owner.
+  - A clear recommended default direction.
+  - Exactly one concrete next implementation/design task after the user chooses.
+- Keep it concise enough for the user to make a decision quickly.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-056m_v0.2-validation-expansion-release-readiness-audit_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-056n_milestone-direction-decision-brief_deepseek.md`
 
 ### Do Not
 
 - Do not change production code.
 - Do not add tests.
 - Do not implement new validation, backtest, strategy, data, UI, or report behavior.
-- Do not fix issues discovered during the audit; list them instead.
+- Do not decide the milestone on behalf of the user; recommend a default, but preserve options.
+- Do not fix issues discovered during the review; list them instead.
 - Do not add dependencies.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `docs/v0.2_validation_expansion_readiness.md`
+- `docs/milestone_direction_056N.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-056m_v0.2-validation-expansion-release-readiness-audit_deepseek.md`
+- `docs/agent_reports/2026-06-06_task-056n_milestone-direction-decision-brief_deepseek.md`
 
 ## Acceptance Criteria
 
-1. Full test suite result is recorded.
-2. `git diff --check` result is recorded.
-3. Agent status output is reviewed and summarized.
-4. Release readiness note gives a clear go/no-go recommendation.
-5. Release readiness note lists remaining risks and next milestone direction.
-6. Release readiness note recommends exactly one next task.
-7. No production code or tests are changed.
-8. Changelog and task board are updated.
-9. Completion report is created.
+1. Decision brief covers 3 to 5 realistic next directions.
+2. Each direction includes goal, why now, likely files/modules, risk level, verification approach, and recommended agent owner.
+3. Brief recommends one default direction without hiding alternatives.
+4. Brief lists exactly one concrete next task after user selection.
+5. No production code or tests are changed.
+6. Changelog and task board are updated.
+7. Completion report is created.
+8. `git diff --check` passes.
 
 ## Verification
 
 Run:
 
 ```powershell
-.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
 
 Expected:
 
-- Full test suite passes, or any failure is reported as a release-readiness blocker with exact failing tests.
 - `git diff --check` passes.
-- Agent status shows Task 056M completion report as the latest report.
+- Agent status shows Task 056N completion report as the latest report.
 - No production code or tests are changed.
 
 ## After Completion

@@ -8,10 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056M - v0.2 Validation Expansion Release Readiness Audit
+- [ ] Task 056N - Milestone Direction Decision Brief
 
 ## Done
 
+- [x] Task 056M - v0.2 Validation Expansion Release Readiness Audit
+- [x] Task 056M-Codex Review - v0.2 Validation Expansion Release Readiness Acceptance
 - [x] Task 056L - Validation Expansion Series Acceptance and Next-Scope Triage
 - [x] Task 056L-Codex Review - Validation Expansion Series Acceptance
 - [x] Task 056K-Impl-Codex Review - IS Baseline Precheck Visibility Surfaces Acceptance

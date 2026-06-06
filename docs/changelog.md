@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-06-06 - Task 056M Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056m_v0.2-validation-expansion-release-readiness-audit_codex-review.md` accepting the v0.2 validation expansion release readiness audit with score 9.2 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056N.
+- Updated `docs/task_board.md` to queue milestone direction decision brief.
+
+### Verification
+- Reviewed the Task 056M report and release readiness note.
+- Ran `.venv\Scripts\python.exe -m pytest -q`: 1038 passed, 1 warning.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Task 056M: v0.2 Validation Expansion Release Readiness Audit
+
+### Completed
+- Full test suite: 1038 passed, 1 pre-existing warning, 0 failures.
+- `git diff --check`: passed (no trailing whitespace).
+- Working tree: clean.
+- Created `docs/v0.2_validation_expansion_readiness.md` — comprehensive audit.
+- **Verdict: GO** — v0.2 validation expansion ready to checkpoint.
+- Recommended next: Task 056N — User Milestone Direction Decision.
+
+### Changed
+- Updated `docs/task_board.md` (Task 056M -> Done).
+
 ## 2026-06-06 - Task 056L Codex Acceptance
 
 ### Added
