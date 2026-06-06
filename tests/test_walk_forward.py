@@ -506,3 +506,76 @@ def test_wf_wfe_missing_metrics():
         
         assert result.windows[0].wfe is None
         assert result.windows[1].wfe is None
+
+
+# ---------------------------------------------------------------------------
+# Per-window equity persistence (Task 057B-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_wf_equity_disabled_default():
+    """store_equity=False (default) -> equity_curve is None."""
+    df = _make_test_df(1000)
+    strat = _make_sma_strategy(10)
+    result = walk_forward(strat, df, train_bars=200, test_bars=100)
+
+    for w in result.windows:
+        assert w.equity_curve is None
+
+
+def test_wf_equity_enabled():
+    """store_equity=True -> equity_curve is a non-empty list of floats."""
+    df = _make_test_df(1000)
+    strat = _make_sma_strategy(10)
+    result = walk_forward(strat, df, train_bars=200, test_bars=100, store_equity=True)
+
+    for w in result.windows:
+        assert isinstance(w.equity_curve, list)
+        assert len(w.equity_curve) > 0
+        assert all(isinstance(v, float) for v in w.equity_curve)
+
+
+def test_wf_equity_length_matches_test_bars():
+    """equity_curve length must match test_bars."""
+    df = _make_test_df(1000)
+    strat = _make_sma_strategy(10)
+    result = walk_forward(strat, df, train_bars=200, test_bars=100, store_equity=True)
+
+    for w in result.windows:
+        assert len(w.equity_curve) == w.test_bars
+
+
+def test_wf_equity_does_not_mutate_baseline():
+    """Source DataFrame must be unchanged."""
+    df = _make_test_df(1000)
+    df_copy = df.copy()
+    strat = _make_sma_strategy(10)
+    walk_forward(strat, df, train_bars=200, test_bars=100, store_equity=True)
+    pd.testing.assert_frame_equal(df, df_copy)
+
+
+def test_wf_equity_wf_to_dict_includes_windows():
+    """_wf_to_dict must include windows when equity is present."""
+    from app.services.validation_pipeline_service import _wf_to_dict
+
+    df = _make_test_df(1000)
+    strat = _make_sma_strategy(10)
+    wf = walk_forward(strat, df, train_bars=200, test_bars=100, store_equity=True)
+
+    d = _wf_to_dict(wf)
+    assert "windows" in d
+    assert len(d["windows"]) == wf.window_count
+    for wd in d["windows"]:
+        assert isinstance(wd["equity_curve"], list)
+
+
+def test_wf_equity_wf_to_dict_omits_windows_when_disabled():
+    """_wf_to_dict must NOT include windows when store_equity=False."""
+    from app.services.validation_pipeline_service import _wf_to_dict
+
+    df = _make_test_df(1000)
+    strat = _make_sma_strategy(10)
+    wf = walk_forward(strat, df, train_bars=200, test_bars=100, store_equity=False)
+
+    d = _wf_to_dict(wf)
+    assert "windows" not in d

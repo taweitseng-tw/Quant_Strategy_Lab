@@ -8,10 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Batch 057A-Fix + 057B-Impl - Validation Gap Hardening Batch
+- [ ] Batch 057A-Impl + 057C-Design - Monte Carlo Bootstrap Engine and Surface Design
 
 ## Done
 
+- [x] Batch 057A-Fix + 057B-Impl - Validation Gap Hardening Batch
+- [x] Batch 057A-Fix + 057B-Impl-Codex Review - Validation Gap Hardening Acceptance
 - [x] Batch 057A-057B - Validation Gap Design Batch
 - [x] Batch 057A-057B-Codex Review - Validation Gap Design Batch Acceptance
 - [x] Task 056N - Milestone Direction Decision Brief

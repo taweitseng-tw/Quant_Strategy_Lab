@@ -49,7 +49,7 @@ def run_bootstrap_monte_carlo(
 |---|---|---|---|
 | `baseline` | `BacktestResult` | Required | Source trade list |
 | `iterations` | `int` | 200 | More than existing (100) — bootstrap needs higher N for stable CI |
-| `base_seed` | `int` | 42 | Deterministic; iteration i uses `random.seed(base_seed + i)` |
+| `base_seed` | `int` | 42 | Deterministic; iteration i uses local `random.Random(base_seed + i)` |
 | `confidence_level` | `float` | 0.95 | For CI computation |
 | `percentiles` | `tuple[float, ...]` | (5, 25, 50, 75, 95) | Existing convention |
 
@@ -59,8 +59,8 @@ def run_bootstrap_monte_carlo(
 1. Validate inputs: baseline.trades must exist, iterations > 0, confidence_level in (0,1).
 2. Guard: 0 trades -> return early with warning (same as existing MC).
 3. For each iteration i in 0..N-1:
-   a. Set random.seed(base_seed + i).
-   b. Draw len(trades) samples WITH replacement from baseline.trades.
+   a. Create local RNG: rng = random.Random(base_seed + i).
+   b. Draw len(trades) samples WITH replacement from baseline.trades using rng.choices().
       (Bootstrap: each original trade can appear 0, 1, or multiple times.)
    c. Recompute metrics on resampled trade list via compute_metrics().
    d. Store raw metrics dict.
@@ -75,7 +75,7 @@ def run_bootstrap_monte_carlo(
 
 ### 2.4 Deterministic Behavior
 
-Same pattern as existing MC: each iteration uses `random.seed(base_seed + i)`. Results are reproducible for a given baseline + seed.
+Uses local `random.Random(base_seed + i)` per iteration — no global state mutation. Results are reproducible for a given baseline + seed.
 
 ### 2.5 Edge Cases
 
@@ -112,10 +112,7 @@ MonteCarloResult(
 # Optional CI fields — None when bootstrap is not used.
 confidence_intervals: dict[str, dict[str, float]] | None = None
 # Example: {"total_pnl": {"ci_lower": 1000.0, "ci_upper": 5000.0, "ci_mean": 3000.0}}
-
-worst_case_equity: list[float] | None = None
-# Example: [100000.0, 99800.0, 99600.0, ...] — worst-case equity path.
-# Only computed when `project_worst_case_equity=True` (opt-in).
+# NOTE: worst_case_equity is deferred to v0.3 — NOT included in v0.2 schema.
 ```
 
 ### 3.3 CI Dict Shape
@@ -167,13 +164,14 @@ CI values can appear in the existing MC section or a separate Bootstrap section.
 |---|---|---|
 | 1 | `test_bootstrap_deterministic` | Same seed = same result |
 | 2 | `test_bootstrap_does_not_mutate_trades` | Original trades unchanged |
-| 3 | `test_bootstrap_reduces_stability` | Bootstrap PnL is more conservative |
-| 4 | `test_bootstrap_ci_within_bounds` | CI lower < CI upper |
-| 5 | `test_bootstrap_ci_level_respected` | ~95% of means fall within CI |
+| 3 | `test_bootstrap_stressed_metrics_differ_from_baseline` | Resampled metrics are not identical to baseline (bootstrap changes distribution) |
+| 4 | `test_bootstrap_ci_within_bounds` | CI lower < CI upper for each metric |
+| 5 | `test_bootstrap_ci_output_shape` | CI dict has ci_lower, ci_upper, ci_mean for each key |
 | 6 | `test_bootstrap_zero_trades` | Returns early with warning |
 | 7 | `test_bootstrap_single_trade` | Handles single trade |
-| 8 | `test_bootstrap_invalid_inputs` | Negative iterations -> ValueError |
+| 8 | `test_bootstrap_invalid_inputs` | Negative iterations / invalid confidence_level -> ValueError |
 | 9 | `test_bootstrap_structured_output` | All required fields present |
+| 10 | `test_bootstrap_local_rng_no_global_mutation` | Global random state unchanged after bootstrap run |
 
 ## 7. Design Decisions
 

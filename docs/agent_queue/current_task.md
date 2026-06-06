@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 057A-Fix + 057B-Impl - Validation Gap Hardening Batch.
+Batch 057A-Impl + 057C-Design - Monte Carlo Bootstrap Engine and Surface Design.
 
 ## Required Reading
 
@@ -24,7 +24,7 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-06_task-057ab_validation-gap-design-batch_codex-review.md`
+7. `docs/review_notes/2026-06-06_task-057a-fix_057b-impl_validation-gap-hardening-batch_codex-review.md`
 8. `docs/monte_carlo_bootstrap_ci_design_057A.md`
 9. `docs/walk_forward_equity_persistence_design_057B.md`
 10. `docs/milestone_direction_056N.md`
@@ -33,67 +33,62 @@ Before doing anything, read:
 
 ## Context
 
-Batch 057A-057B produced two design documents. Codex accepted the batch, but Task 057A needs design hardening before implementation. Task 057B is small and implementation-ready. This batch intentionally pairs one design-fix task with one narrow implementation task.
+Batch 057A-Fix + 057B-Impl was accepted. Walk-forward equity persistence is now implemented. The Monte Carlo bootstrap design is hardened enough for an engine-only implementation. This batch pairs one engine-only implementation task with one design-only surface planning task.
 
 ## Scope
 
 ### Do
 
 - Complete two sequential tasks:
-  - Task 057A-Fix - Monte Carlo Bootstrap + CI Design Hardening
-  - Task 057B-Impl - Walk-forward Per-window Equity Persistence Implementation
-- For Task 057A-Fix:
-  - Update only `docs/monte_carlo_bootstrap_ci_design_057A.md`.
-  - Remove v0.2 `worst_case_equity` output from the proposed schema if worst-case equity projection remains deferred.
-  - Clarify that bootstrap output adds `confidence_intervals` only, unless a field is already implemented by this task's scope.
-  - Replace unsafe test claims:
-    - Do not assert bootstrap is always more conservative.
-    - Do not assert one deterministic run proves confidence interval statistical coverage.
-  - Specify local deterministic RNG (`random.Random(base_seed + i)` or equivalent), not global `random.seed(...)`.
-  - Make the implementation plan small enough for a later engine-only task.
-- For Task 057B-Impl:
-  - Implement `WalkForwardWindow.equity_curve: list[float] | None = None`.
-  - Add `store_equity: bool = False` to `walk_forward()`.
-  - When enabled, populate each window from the test backtest equity curve as a plain list of floats.
-  - Add `wf_store_equity: bool = False` to `PipelineConfig`.
-  - Pass `wf_store_equity` into `walk_forward()` from `run_validation_pipeline()`.
-  - Update `_wf_to_dict()` to include `windows` only when at least one window has `equity_curve is not None`.
-  - Add focused tests for enabled/disabled behavior, pipeline config serialization, and backward compatibility.
+  - Task 057A-Impl - Monte Carlo Bootstrap + Confidence Interval Engine Implementation
+  - Task 057C-Design - Bootstrap Pipeline and Report Surface Design
+- For Task 057A-Impl:
+  - Implement `run_bootstrap_monte_carlo()` in `validation_engine/monte_carlo.py`.
+  - Add additive `confidence_intervals: dict[str, dict[str, float]] | None = None` to `MonteCarloResult`.
+  - Do not add `worst_case_equity`.
+  - Use local deterministic RNG only (`random.Random(base_seed + i)` or equivalent); do not mutate global random state.
+  - Resample trades with replacement and recompute metrics in the smallest reasonable way consistent with existing `BacktestResult`/metrics conventions.
+  - Preserve existing MC function behavior and schema.
+  - Add focused deterministic tests in `tests/test_monte_carlo.py`.
+  - Tests must avoid unsafe assumptions that bootstrap always worsens metrics. If checking changed distribution, use deliberately heterogeneous synthetic trades and deterministic seed/iteration expectations.
+- For Task 057C-Design:
+  - Write `docs/bootstrap_pipeline_report_surface_design_057C.md`.
+  - Design only; do not implement pipeline/report/UI changes.
+  - Cover `PipelineConfig` flags, `PipelineResult` field shape, `_mc_to_dict()`/serialization strategy, validation summary/report display wording, default-off behavior, acceptance tests, and non-goals.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-06_task-057a-fix_057b-impl_validation-gap-hardening-batch_deepseek.md`
+  - `docs/agent_reports/2026-06-06_task-057a-impl_057c-design_bootstrap-engine-and-surface-design_deepseek.md`
 
 ### Do Not
 
-- Do not implement Monte Carlo bootstrap in 057A-Fix.
-- Do not change Monte Carlo production code in this batch.
+- Do not wire bootstrap into `run_validation_pipeline()` in this batch.
 - Do not modify UI widgets or reports.
-- Do not add walk-forward equity charts.
-- Do not add SQLite/Parquet persistence.
+- Do not add report display code.
+- Do not add UI controls.
+- Do not add `worst_case_equity`.
+- Do not change walk-forward production code in this batch.
 - Do not add dependencies.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `docs/monte_carlo_bootstrap_ci_design_057A.md`
-- `validation_engine/walk_forward.py`
-- `app/services/validation_pipeline_service.py`
-- `tests/test_walk_forward.py`
-- `tests/test_validation_pipeline_service.py`
+- `validation_engine/monte_carlo.py`
+- `tests/test_monte_carlo.py`
+- `docs/bootstrap_pipeline_report_surface_design_057C.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-06_task-057a-fix_057b-impl_validation-gap-hardening-batch_deepseek.md`
+- `docs/agent_reports/2026-06-06_task-057a-impl_057c-design_bootstrap-engine-and-surface-design_deepseek.md`
 
 ## Acceptance Criteria
 
-1. 057A design no longer has conflicting v0.2/deferred output fields.
-2. 057A test plan avoids statistically invalid assertions.
-3. 057A specifies local deterministic RNG and a narrow later implementation path.
-4. 057B keeps default behavior unchanged when `store_equity=False`.
-5. 057B returns serialized window equity only when `wf_store_equity=True`.
-6. Focused tests cover 057B enabled/disabled pipeline and engine behavior.
+1. Existing missed-trade/slippage/combined MC tests still pass unchanged.
+2. `run_bootstrap_monte_carlo()` returns deterministic structured `MonteCarloResult`.
+3. `confidence_intervals` are present for bootstrap and absent/None for existing MC functions.
+4. Bootstrap implementation does not mutate baseline trades or global random state.
+5. Zero-trade, single-trade, invalid-iteration, and invalid-confidence-level cases are tested.
+6. 057C design covers pipeline/report surfaces without implementation.
 7. Changelog and task board are updated.
 8. Completion report is created.
 9. Focused tests and `git diff --check` pass.
@@ -103,7 +98,7 @@ Batch 057A-057B produced two design documents. Codex accepted the batch, but Tas
 Run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/test_walk_forward.py tests/test_validation_pipeline_service.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_monte_carlo.py -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 ```
@@ -112,8 +107,8 @@ Expected:
 
 - Focused tests pass.
 - `git diff --check` passes.
-- Agent status shows Batch 057A-Fix + 057B-Impl completion report as the latest report.
-- No Monte Carlo production code is changed.
+- Agent status shows Batch 057A-Impl + 057C-Design completion report as the latest report.
+- Bootstrap is not wired into pipeline/UI/reports yet.
 
 ## After Completion
 

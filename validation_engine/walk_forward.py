@@ -40,6 +40,7 @@ class WalkForwardWindow:
     passed: bool = False
     train_metrics: dict = field(default_factory=dict)
     wfe: float | None = None
+    equity_curve: list[float] | None = None
 
 
 @dataclass
@@ -74,6 +75,7 @@ def walk_forward(
     step_bars: int | None = None,
     pass_criteria: dict[str, float] | None = None,
     calc_wfe: bool = False,
+    store_equity: bool = False,
     instrument=None,
     **backtest_kwargs,
 ) -> WalkForwardResult:
@@ -163,6 +165,10 @@ def walk_forward(
 
         passed = _evaluate_pass_criteria(bt.metrics, pass_criteria)
 
+        equity_list = None
+        if store_equity and bt.equity_curve is not None and "equity" in bt.equity_curve.columns:
+            equity_list = bt.equity_curve["equity"].tolist()
+
         windows.append(WalkForwardWindow(
             index=len(windows),
             train_start=str(train_seg["datetime"].iloc[0]),
@@ -175,6 +181,7 @@ def walk_forward(
             passed=passed,
             train_metrics=train_metrics,
             wfe=wfe,
+            equity_curve=equity_list,
         ))
 
         start += step

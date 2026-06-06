@@ -575,3 +575,32 @@ def test_precheck_preserves_metadata_on_early_return():
     assert result.split_metadata["train_rows"] > 0
     assert result.baseline_metrics["total_trades"] == 0
     assert result.config_snapshot["run_is_baseline_quality_precheck"] is True
+
+
+# ---------------------------------------------------------------------------
+# Walk-forward equity persistence (Task 057B-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_wf_store_equity_default_config():
+    """Default PipelineConfig must have wf_store_equity=False."""
+    cfg = PipelineConfig()
+    assert cfg.wf_store_equity is False
+
+
+def test_wf_store_equity_config_snapshot():
+    """Config snapshot must include wf_store_equity."""
+    cfg = PipelineConfig(wf_store_equity=True)
+    df = _make_df(400)
+    strat = _make_strategy()
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+    assert result.config_snapshot["wf_store_equity"] is True
+
+
+def test_wf_store_equity_default_omits_windows():
+    """Default (wf_store_equity=False) must not include windows in WF summary."""
+    df = _make_df(400)
+    strat = _make_strategy()
+    result = run_validation_pipeline(df, strat, commission=2.0)
+    assert result.walk_forward_summary is not None
+    assert "windows" not in result.walk_forward_summary

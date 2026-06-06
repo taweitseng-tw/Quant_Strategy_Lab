@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-06-06 - Batch 057A-Fix + 057B-Impl Codex Acceptance
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-057a-fix_057b-impl_validation-gap-hardening-batch_codex-review.md` accepting the validation gap hardening batch with score 9.0 / 10.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 057A-Impl + 057C-Design.
+- Updated `docs/task_board.md` to queue Monte Carlo bootstrap engine implementation and pipeline/report surface design.
+
+### Verification
+- Reviewed walk-forward equity implementation, pipeline wiring, Monte Carlo design fixes, and latest agent report.
+- Ran focused tests: 69 passed.
+- Ran full suite: 1047 passed, 1 warning.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Batch 057A-Fix + 057B-Impl: Validation Gap Hardening Batch
+
+### Fixed (057A-Fix)
+- `docs/monte_carlo_bootstrap_ci_design_057A.md`: Removed confusing `worst_case_equity` field from v0.2 schema. Replaced unsafe test claims (bootstrap always conservative, single-run CI coverage proof) with structural assertions. Specified local `random.Random()` per iteration.
+
+### Added (057B-Impl)
+- `validation_engine/walk_forward.py`: Added `WalkForwardWindow.equity_curve: list[float] | None = None` and `store_equity: bool = False` param to `walk_forward()`.
+- `app/services/validation_pipeline_service.py`: Added `PipelineConfig.wf_store_equity: bool = False`; pass to `walk_forward()`; updated `_wf_to_dict()` to include `windows` when equity is present.
+- `tests/test_walk_forward.py`: 6 new tests (disabled default, enabled, length matches, no mutation, dict includes, dict omits).
+- `tests/test_validation_pipeline_service.py`: 3 new pipeline tests.
+
+### Verification
+- Focused tests: 69 passed.
+- Full suite: 1047 passed, 1 pre-existing warning.
+- `git diff --check` passes.
+
 ## 2026-06-06 - Batch 057A-057B Codex Acceptance
 
 ### Added

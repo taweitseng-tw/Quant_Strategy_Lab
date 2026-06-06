@@ -57,6 +57,7 @@ class PipelineConfig:
     wf_train_bars: int | None = None
     wf_test_bars: int | None = None
     calc_wfe: bool = False
+    wf_store_equity: bool = False
 
     # Walk-forward Matrix (disabled by default)
     run_matrix: bool = False
@@ -242,7 +243,7 @@ def run_validation_pipeline(
         )
         wf_summary = None
     else:
-        wf = walk_forward(strategy, df, train_bars=wf_train, test_bars=wf_test, calc_wfe=cfg.calc_wfe)
+        wf = walk_forward(strategy, df, train_bars=wf_train, test_bars=wf_test, calc_wfe=cfg.calc_wfe, store_equity=cfg.wf_store_equity)
         wf_summary = _wf_to_dict(wf)
 
     # ── 5.5 Walk-forward Matrix ─────────────────────────────────────────────
@@ -329,7 +330,8 @@ def _mc_to_dict(mc) -> dict:
 
 
 def _wf_to_dict(wf) -> dict:
-    return {
+    from dataclasses import asdict
+    result = {
         "window_count": wf.window_count,
         "pass_count": wf.pass_count,
         "pass_rate": wf.pass_rate,
@@ -339,6 +341,11 @@ def _wf_to_dict(wf) -> dict:
         "defined_wfe_count": getattr(wf, "defined_wfe_count", 0),
         "undefined_wfe_count": getattr(wf, "undefined_wfe_count", 0),
     }
+    # Include windows only when equity curves are present.
+    if hasattr(wf, "windows") and wf.windows:
+        if any(w.equity_curve is not None for w in wf.windows):
+            result["windows"] = [asdict(w) for w in wf.windows]
+    return result
 
 
 def _matrix_to_dict(matrix) -> dict:
