@@ -1,5 +1,63 @@
 # Changelog
 
+## 2026-06-06 - Task 056A-Fix-Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056a-fix_oos-stability-data-path-correction_codex-review.md` accepting the corrected OOS stability triage.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056B.
+- Updated `docs/task_board.md` to queue IS/OOS stability gate implementation.
+
+### Verification
+- Reviewed corrected triage against validation pipeline and elimination code paths.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Task 056A-Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-056a_next-validation-expansion-triage_codex-review.md` marking the triage as needing data-path correction before implementation.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 056A-Fix.
+- Updated `docs/task_board.md` to queue the OOS stability triage correction.
+
+### Verification
+- Reviewed the triage note against `app/services/validation_pipeline_service.py` and `validation_engine/elimination.py`.
+- Ran `git diff --check`.
+
+## 2026-06-06 - Task 056A-Fix: OOS Stability Triage Data Path Correction
+
+### Changed
+- Revised `docs/next_validation_expansion_triage_056A.md` with explicit OOS data path trace:
+  - Pipeline diagram showing `split.oos` exists but is never backtested.
+  - Confirmed `evaluate_elimination()` already accepts `oos_metrics` but is never called with it.
+  - Corrected scope for Task 056B to include OOS backtest + pipeline wiring + stability rules in one task.
+- Corrected file references: `EliminationConfig` lives in `validation_engine/elimination.py`, not `core/models/validation.py`.
+
+### Verification
+- No production code changed (design-only correction).
+- `git diff --check` passes.
+- Only `docs/next_validation_expansion_triage_056A.md` and this changelog touched.
+
+## 2026-06-06 - Task 056A: Next Validation Expansion Triage Design Only
+
+### Added
+- Created `docs/next_validation_expansion_triage_056A.md` reviewing current validation state and identifying 4 candidate gaps.
+- Candidate A: IS/OOS Stability Checks (OOS max drawdown ratio, IS/OOS metric gap stability).
+- Candidate B: Remove Best N Trades Stress Test.
+- Candidate C: Monte Carlo Bootstrap + Confidence Intervals.
+- Candidate D: IS Baseline Quality Gate.
+
+### Changed
+- Recommended **Task 056B — IS/OOS Stability Gate Implementation** as the next validation expansion task.
+- Updated `docs/task_board.md` (Task 056A → Done, Task 056B → In Progress).
+
+### Verification
+- No production code changed (design-only triage).
+- `git diff --check` passes.
+- Working tree clean except for docs and report files.
+
 ## 2026-06-06 - Task 053K: Hosted Rounds Hygiene and Guardrail Fix
 
 ### Changed

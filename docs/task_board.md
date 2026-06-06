@@ -8,9 +8,12 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 056A - Next Validation Expansion Triage Design Only
+- [ ] Task 056B - IS/OOS Stability Gate Implementation
 
 ## Done
+
+- [x] Task 056A-Fix - OOS Stability Triage Data Path Correction
+- [x] Task 056A - Next Validation Expansion Triage Design Only
 
 - [x] Task Codex-Reentry-053-Series-Audit - DeepSeek Hosted Rounds Audit
 - [x] Task 053K - Hosted Rounds Hygiene and Guardrail Fix
