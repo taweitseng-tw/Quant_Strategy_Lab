@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Task 053F - One-Bar Execution Delay Stress Test Design Only.
+Task 056A - Next Validation Expansion Triage Design Only.
 
 ## Required Reading
 
@@ -24,73 +24,64 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-05_task-053e-fix2_session-end-time-serializer-range-validation_codex-review.md`
-8. `backtest_engine/runner.py`
-9. `validation_engine/`
-10. `tests/test_stress_test.py`
-11. `tests/test_backtest_engine.py`
-12. This task file
+7. `docs/review_notes/2026-06-06_task-053k_codex-reentry-audit.md`
+8. This task file
+
+## Context
+
+The 053-series backtest execution enhancement batch has been accepted after Codex re-entry audit. The validation pipeline now includes commission, slippage, one-bar delay, and parameter perturbation stress tests. The next step should be a design-only triage for the next validation expansion, not immediate implementation.
 
 ## Scope
 
 ### Do
 
-- Produce a design-only implementation plan for a one-bar execution delay stress test.
-- Inspect current backtest execution timing and existing stress/validation modules.
-- Define where the stress test should live, expected public API, inputs, outputs, warnings, and assumptions.
-- Explain how the design avoids future leak and preserves current baseline backtest behavior.
-- Specify deterministic test cases required before implementation.
-- Identify UI/report wiring, if any, as future work only.
+- Review the remaining v0.2 validation-related gaps in `docs/PRD.md`, `docs/task_board.md`, and current validation modules.
+- Propose the next 2-4 candidate tasks for validation expansion.
+- Recommend exactly one next task to implement after this triage.
+- Keep the recommendation small and reviewable.
+- Create one design/triage note under `docs/`.
 - Update `docs/changelog.md` and `docs/task_board.md`.
-- Write one design note under `docs/`.
-- Write one completion report in `docs/agent_reports/`.
+- Write completion report:
+  - `docs/agent_reports/2026-06-06_task-056a_next-validation-expansion-triage_deepseek.md`
 
 ### Do Not
 
-- Do not implement full session templates.
-- Do not implement dynamic slippage.
-- Do not change same-bar ambiguity configuration.
-- Do not implement the one-bar delay stress test yet.
-- Do not change production engine code.
-- Do not add tests yet unless needed to document current behavior without changing it.
-- Do not change UI layout.
-- Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
+- Do not implement engine, UI, report, or validation code.
+- Do not add tests unless documenting current behavior requires a read-only smoke check.
 - Do not add dependencies.
-- Do not broaden this into Monte Carlo, walk-forward, or session template work.
+- Do not touch live trading, broker API, GA/GP expansion, portfolio backtest, or PDF polish.
+- Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `docs/one_bar_execution_delay_stress_design_053F.md`
-- `backtest_engine/runner.py`
-- `validation_engine/`
-- `tests/test_stress_test.py`
-- `tests/test_backtest_engine.py`
-- `docs/changelog.md`
+- `docs/next_validation_expansion_triage_056A.md`
+- `docs/PRD.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-05_task-053f_one-bar-execution-delay-stress-design_deepseek.md`
+- `docs/changelog.md`
+- `docs/agent_reports/2026-06-06_task-056a_next-validation-expansion-triage_deepseek.md`
 
 ## Acceptance Criteria
 
-1. Design note clearly defines one-bar delay stress behavior and scope.
-2. Design identifies exact modules/files likely to change in the future implementation task.
-3. Design preserves current baseline next-bar-open execution behavior.
-4. Design explains no-future-leak assumptions and edge cases.
-5. No production code is changed.
-6. Agent report exists.
+1. Triage note identifies concrete remaining validation gaps.
+2. Triage note compares 2-4 candidate next tasks.
+3. Exactly one next task is recommended with rationale.
+4. No production code is changed.
+5. Completion report exists.
 
 ## Verification
 
 Run:
 
 ```powershell
-python -m pytest tests/test_stress_test.py tests/test_backtest_engine.py -q
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
+git diff --check
 ```
 
 Expected:
 
-- Focused tests pass.
-- Version Control section shows dirty implementation/test/docs files only.
+- No production code changes.
+- `git diff --check` passes.
+- Agent status shows Task 056A and expected dirty docs/report files.
 
 ## After Completion
 

@@ -271,8 +271,7 @@ def test_one_bar_delay_structured_output():
     assert result.test_name
     assert isinstance(result.passed, bool)
     assert result.assumptions["delay_bars"] == 1
-    assert result.assumptions["method"] == "price_shift_forward"
-    assert result.assumptions["stressed_rows"] == result.assumptions["baseline_rows"] - 1
+    assert result.assumptions["method"] == "engine_native_delay"
 
 
 def test_one_bar_delay_does_not_mutate_baseline():

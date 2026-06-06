@@ -54,7 +54,7 @@ class ValidationSummary(QWidget):
         self._clear()
 
         # --- Source label ---
-        src = source_label or ("Mock data" if result.get("_is_mock", False) else "Loaded data")
+        src = source_label or ("Mock data" if self._get(result, "_is_mock", False) else "Loaded data")
         self._add_section("Data Source", f"{src}  —  {self._get(result, 'split_metadata', {}).get('train_rows', '?')} train bars")
 
         # --- Split ---

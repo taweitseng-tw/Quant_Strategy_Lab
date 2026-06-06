@@ -14,7 +14,7 @@ from core.models.strategy import Strategy
 from core.models.instrument import InstrumentProfile
 from backtest_engine.runner import run_backtest
 from validation_engine.splitter import split_by_ratio
-from validation_engine.stress_test import stress_commission_multiplier, stress_slippage_multiplier
+from validation_engine.stress_test import stress_commission_multiplier, stress_slippage_multiplier, stress_one_bar_delay, stress_parameter_perturbation
 from validation_engine.monte_carlo import run_missed_trade_monte_carlo
 from validation_engine.walk_forward import walk_forward
 from validation_engine.walk_forward_matrix import walk_forward_matrix
@@ -42,6 +42,8 @@ class PipelineConfig:
     # Stress-test multiplier.
     stress_commission_multiplier: float = 2.0
     stress_slippage_multiplier: float = 2.0
+    run_one_bar_delay_stress: bool = True
+    run_parameter_perturbation: bool = True
 
     # Monte Carlo.
     mc_iterations: int = 25
@@ -147,6 +149,22 @@ def run_validation_pipeline(
         instrument=instrument,
     )
     stress_results.append(_stress_to_dict(slip))
+
+    if cfg.run_one_bar_delay_stress:
+        delay_res = stress_one_bar_delay(
+            strategy, split.train, baseline, instrument=instrument
+        )
+        stress_results.append(_stress_to_dict(delay_res))
+
+    if cfg.run_parameter_perturbation:
+        import random
+        state = random.getstate()
+        random.seed(cfg.mc_base_seed)
+        param_res = stress_parameter_perturbation(
+            strategy, split.train, baseline, instrument=instrument
+        )
+        random.setstate(state)
+        stress_results.append(_stress_to_dict(param_res))
 
     # ── 4. Monte Carlo ──────────────────────────────────────────────────────
     mc = run_missed_trade_monte_carlo(

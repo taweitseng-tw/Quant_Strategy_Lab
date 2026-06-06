@@ -65,6 +65,7 @@ def run_backtest(
     point_value: float | None = None,
     instrument: InstrumentProfile | None = None,
     indicator_cache: IndicatorCache | None = None,
+    execution_delay_bars: int = 0,
 ) -> BacktestResult:
     """Run an event-driven backtest of *strategy* on *df*.
 
@@ -97,6 +98,17 @@ def run_backtest(
         Structured output with trades, equity curve, drawdown, metrics,
         assumptions, and warnings.
     """
+    # -- guard execution_delay_bars ------------------------------------------
+    if not isinstance(execution_delay_bars, int) or isinstance(execution_delay_bars, bool):
+        raise ValueError(
+            f"execution_delay_bars must be an int, got {type(execution_delay_bars).__name__} "
+            f"({execution_delay_bars!r})."
+        )
+    if execution_delay_bars < 0:
+        raise ValueError(
+            f"execution_delay_bars must be >= 0, got {execution_delay_bars}."
+        )
+
     # -- resolve parameters: explicit args > instrument > hard defaults -------
     _pv = point_value
     _ts = tick_size
@@ -171,8 +183,8 @@ def run_backtest(
         except Exception as e:
             raise ValueError(f"Invalid session_end_time format: {rm.session_end_time}. Expected 'HH:MM' or 'HH:MM:SS'.") from e
 
-    # Queued action for the NEXT bar open.  ("enter", direction) or ("exit",).
-    pending: tuple[str, str] | None = None
+    # Queued action for the NEXT bar open.  ("enter", direction, delay_rem) or ("exit", position, 0).
+    pending: tuple[str, str, int] | None = None
 
     trades: list[Trade] = []
     warnings: list[str] = []
@@ -185,14 +197,19 @@ def run_backtest(
         bar_datetime = datetime_arr[i]
 
         # --- 1. Execute queued actions at bar open ---
+        execute_now = False
         if pending is not None:
-            action, direction = pending
+            action, direction, delay_rem = pending
             if action == "enter" and has_session_end and bar_datetime.time() >= parsed_session_time:
                 warnings.append(f"Canceled pending {direction} entry at index {i} due to session end ({rm.session_end_time}).")
                 pending = None
+            elif delay_rem > 0:
+                pending = (action, direction, delay_rem - 1)
+            else:
+                execute_now = True
 
-        if pending is not None:
-            action, direction = pending
+        if execute_now:
+            action, direction, _ = pending
             if action == "enter":
                 # Apply slippage: for longs, we pay slightly more; for shorts, slightly less.
                 slip = slippage_ticks * tick_size
@@ -371,20 +388,20 @@ def run_backtest(
             # Check exit for current position.
             exit_acc = long_exit_acc if position == "long" else short_exit_acc
             if exit_acc(i):
-                pending = ("exit", position)
+                pending = ("exit", position, 0)
         else:
             # No position - check both entry blocks.
             # Long takes priority over short for MVP simplicity.
-            if not session_ended:
+            if not session_ended and pending is None:
                 if long_entry_acc(i):
-                    pending = ("enter", "long")
+                    pending = ("enter", "long", execution_delay_bars)
                 elif short_entry_acc(i):
-                    pending = ("enter", "short")
+                    pending = ("enter", "short", execution_delay_bars)
 
     # -- warn about unexecuted last-bar signal -------------------------------
     if pending is not None:
         warnings.append(
-            f"Signal ({pending[1]}) fired on last bar (index {n - 1}) "
+            f"Signal ({pending[1]}) pending at end of data (index {n - 1}) "
             f"but cannot execute - no next bar open available."
         )
 
@@ -439,6 +456,7 @@ def run_backtest(
         "signal_confirmation": "bar_close",
         "position_model": "single_position",
         "stop_take_profit_enabled": False,
+        "execution_delay_bars": execution_delay_bars,
     }
     
     from core.models.strategy import RiskManagement

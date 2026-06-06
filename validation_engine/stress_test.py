@@ -11,6 +11,7 @@ All stress tests are **read-only** with respect to the baseline result.
 
 from __future__ import annotations
 
+import copy
 import random
 from dataclasses import dataclass, field
 from typing import Callable
@@ -125,14 +126,11 @@ def stress_one_bar_delay(
     *,
     instrument=None,
 ) -> StressTestResult:
-    """Simulate one-bar execution delay by shifting price data forward.
+    """Simulate one-bar execution delay by instructing the engine to delay routing.
 
-    Each bar's OHLCV values are shifted down by one row (the bar at index *i*
-    sees the prices that were originally at index *i-1*).  The backtest is
-    re-run on the shifted data, which has one fewer row.
-
-    This is equivalent to the strategy observing prices one bar late —
-    a conservative model of execution/signal latency.
+    This uses the native `execution_delay_bars=1` parameter in `run_backtest`,
+    which delays the fill of an entry signal by 1 bar without shifting prices
+    or indicators. This prevents future leak.
     """
     if len(df) < 2:
         return StressTestResult(
@@ -146,15 +144,20 @@ def stress_one_bar_delay(
             threshold={"pnl_must_not_improve": True},
         )
 
-    # Shift OHLCV columns forward by 1 bar, drop the first row.
-    price_cols = ["open", "high", "low", "close", "volume"]
-    shifted = df.copy()
-    shifted[price_cols] = shifted[price_cols].shift(1)
-    shifted.dropna(subset=price_cols, inplace=True)
-    shifted.reset_index(drop=True, inplace=True)
+    if not baseline.trades:
+        return StressTestResult(
+            test_name="one_bar_delay",
+            passed=True,
+            baseline_metrics=baseline.metrics,
+            stressed_metrics=baseline.metrics,
+            degradation={},
+            assumptions={"delay_bars": 1},
+            warnings=["No trades to stress — baseline has zero trades."],
+            threshold={"pnl_must_not_improve": True},
+        )
 
-    # Re-run backtest on the delayed data.
-    stressed = run_backtest(strategy, shifted, instrument=instrument)
+    # Re-run backtest with native execution delay.
+    stressed = run_backtest(strategy, df, instrument=instrument, execution_delay_bars=1)
 
     return _build_result(
         test_name="one_bar_delay",
@@ -162,9 +165,7 @@ def stress_one_bar_delay(
         stressed_metrics=stressed.metrics,
         assumptions={
             "delay_bars": 1,
-            "baseline_rows": len(df),
-            "stressed_rows": len(shifted),
-            "method": "price_shift_forward",
+            "method": "engine_native_delay",
         },
         threshold={"pnl_must_not_improve": True},
         baseline_assumptions=baseline.assumptions,
@@ -211,6 +212,130 @@ def stress_random_missed_trades(
         },
         threshold={"pnl_must_not_improve": True},
         baseline_assumptions=baseline.assumptions,
+    )
+
+
+def stress_parameter_perturbation(
+    strategy: Strategy,
+    df: pd.DataFrame,
+    baseline: BacktestResult,
+    *,
+    instrument=None,
+    variants_count: int = 5,
+    int_shift_range: tuple[int, int] = (-2, 2),
+    float_shift_pct: float = 0.05,
+    degradation_threshold: float = 0.50,
+) -> StressTestResult:
+    """Stress test by slightly perturbing strategy parameters and checking degradation."""
+
+    if baseline.metrics.get("total_trades", 0) == 0:
+        return StressTestResult(
+            test_name="parameter_perturbation",
+            passed=True,
+            baseline_metrics=baseline.metrics,
+            stressed_metrics=baseline.metrics,
+            degradation={},
+            assumptions={"variants_count": variants_count},
+            warnings=["No baseline trades — stress test is vacuously passed."],
+            threshold={"max_degradation": degradation_threshold},
+        )
+
+    def _perturb_int(val: int) -> int:
+        shift = random.randint(int_shift_range[0], int_shift_range[1])
+        # Force non-zero shift if possible, but randint is random.
+        if shift == 0:
+            shift = 1 if random.random() > 0.5 else -1
+        return max(1, val + shift)
+
+    def _perturb_float(val: float) -> float:
+        sign = 1 if random.random() > 0.5 else -1
+        return val * (1.0 + sign * float_shift_pct)
+
+    has_params = False
+
+    def _perturb_strategy(orig: Strategy) -> Strategy:
+        nonlocal has_params
+        mutated = copy.deepcopy(orig)
+
+        # Perturb condition parameters
+        for block in (mutated.long_entry, mutated.long_exit, mutated.short_entry, mutated.short_exit):
+            for cond in block.conditions:
+                for k, v in cond.params.items():
+                    if isinstance(v, bool):
+                        continue
+                    if isinstance(v, int):
+                        cond.params[k] = _perturb_int(v)
+                        has_params = True
+                    elif isinstance(v, float):
+                        cond.params[k] = _perturb_float(v)
+                        has_params = True
+
+        # Perturb risk parameters
+        if mutated.risk_management:
+            rm = mutated.risk_management
+            for field_name in ("stop_loss_ticks", "take_profit_ticks", "stop_loss_pct", "take_profit_pct"):
+                v = getattr(rm, field_name)
+                if v is not None:
+                    if isinstance(v, int):
+                        setattr(rm, field_name, _perturb_int(v))
+                        has_params = True
+                    elif isinstance(v, float):
+                        setattr(rm, field_name, _perturb_float(v))
+                        has_params = True
+        return mutated
+
+    # Check if there are params to perturb
+    _perturb_strategy(strategy)
+    if not has_params:
+        return StressTestResult(
+            test_name="parameter_perturbation",
+            passed=True,
+            baseline_metrics=baseline.metrics,
+            stressed_metrics=baseline.metrics,
+            degradation={},
+            assumptions={"variants_count": variants_count},
+            warnings=["No perturbable parameters found — automatic pass."],
+            threshold={"max_degradation": degradation_threshold},
+        )
+
+    variant_pnls = []
+
+    for _ in range(variants_count):
+        variant_strat = _perturb_strategy(strategy)
+        res = run_backtest(variant_strat, df, instrument=instrument)
+        variant_pnls.append(res.metrics.get("total_pnl", 0.0))
+
+    avg_variant_pnl = sum(variant_pnls) / len(variant_pnls)
+    base_pnl = float(baseline.metrics.get("total_pnl", 0.0))
+
+    if base_pnl > 1e-9:
+        avg_degradation = (avg_variant_pnl - base_pnl) / base_pnl
+    else:
+        avg_degradation = 0.0
+
+    passed = True
+    if avg_variant_pnl < 0:
+        passed = False
+    elif avg_variant_pnl < base_pnl * (1.0 - degradation_threshold):
+        passed = False
+
+    stressed_metrics = dict(baseline.metrics)
+    stressed_metrics["total_pnl"] = avg_variant_pnl
+
+    return StressTestResult(
+        test_name="parameter_perturbation",
+        passed=passed,
+        baseline_metrics=baseline.metrics,
+        stressed_metrics=stressed_metrics,
+        degradation={"total_pnl": round(avg_degradation, 6)},
+        assumptions={
+            "variants_count": variants_count,
+            "int_shift_range": int_shift_range,
+            "float_shift_pct": float_shift_pct,
+            "avg_variant_pnl": avg_variant_pnl,
+        },
+        warnings=[],
+        threshold={"max_degradation": degradation_threshold},
     )
 
 

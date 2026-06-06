@@ -82,8 +82,8 @@ def test_split_metadata_present():
     assert sm["oos_rows"] > 0
 
 
-def test_stress_results_contain_both_tests():
-    """Stress results must include commission and slippage multipliers."""
+def test_stress_results_contain_all_four_tests():
+    """Stress results must include commission, slippage, delay, and parameter perturbation by default."""
     df = _make_df(200)
     strat = _make_strategy()
     result = run_validation_pipeline(df, strat, commission=2.0)
@@ -91,6 +91,33 @@ def test_stress_results_contain_both_tests():
     test_names = [s["test_name"] for s in result.stress_results]
     assert any("commission" in t for t in test_names)
     assert any("slippage" in t for t in test_names)
+    assert any("one_bar_delay" in t for t in test_names)
+    assert any("parameter_perturbation" in t for t in test_names)
+    assert len(test_names) == 4
+
+
+def test_one_bar_delay_can_be_disabled():
+    """Setting run_one_bar_delay_stress=False removes it from the results."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    cfg = PipelineConfig(run_one_bar_delay_stress=False)
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+
+    test_names = [s["test_name"] for s in result.stress_results]
+    assert not any("one_bar_delay" in t for t in test_names)
+    assert len(test_names) == 3
+
+
+def test_parameter_perturbation_can_be_disabled():
+    """Setting run_parameter_perturbation=False removes it from the results."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    cfg = PipelineConfig(run_parameter_perturbation=False)
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+
+    test_names = [s["test_name"] for s in result.stress_results]
+    assert not any("parameter_perturbation" in t for t in test_names)
+    assert len(test_names) == 3
 
 
 def test_elimination_result_included():

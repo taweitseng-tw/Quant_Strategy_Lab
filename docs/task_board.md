@@ -8,9 +8,21 @@ v0.2 - Alpha validation expansion
 
 ## In Progress
 
-- [ ] Task 053F - One-Bar Execution Delay Stress Test Design Only
+- [ ] Task 056A - Next Validation Expansion Triage Design Only
 
 ## Done
+
+- [x] Task Codex-Reentry-053-Series-Audit - DeepSeek Hosted Rounds Audit
+- [x] Task 053K - Hosted Rounds Hygiene and Guardrail Fix
+- [x] Task 053J - Parameter Perturbation Acceptance Smoke
+- [x] Task 053I - Validation Pipeline Parameter Perturbation Integration
+- [x] Task 053H-Impl - Parameter Perturbation Stress Test Implementation
+- [x] Task 053H - Parameter Perturbation Stress Test Design Only
+- [x] Task 054E - Fix ValidationSummary Dataclass Compatibility
+- [x] Task 053-Acceptance - Backtest Execution Enhancements Acceptance Smoke
+- [x] Task 053G - Validation Pipeline Integration for One-Bar Delay Stress
+- [x] Task 053F-Impl - One-Bar Execution Delay Stress Test Implementation
+- [x] Task 053F - One-Bar Execution Delay Stress Test Design Only
 
 - [x] Task 053E-Fix2 - Strict Session-End Time Serializer Range Validation
 - [x] Task 053E-Fix - Session-End Exit Validation and Pending Entry Hardening

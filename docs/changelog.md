@@ -1,5 +1,236 @@
 # Changelog
 
+## 2026-06-06 - Task 053K: Hosted Rounds Hygiene and Guardrail Fix
+
+### Changed
+- Stripped trailing whitespace from `validation_engine/stress_test.py` (11 lines in `stress_parameter_perturbation`).
+- Added `execution_delay_bars` input guard in `backtest_engine/runner.py` (`run_backtest`): rejects non-int and negative values with `ValueError`.
+- Added 5 focused guardrail tests in `tests/test_execution_delay.py` for invalid `execution_delay_bars` (negative, float, bool, str, None).
+
+### Verification
+- `git diff --check` passes (no trailing whitespace).
+- Focused `test_execution_delay.py` tests: 9 passed (4 existing + 5 new).
+- Full test suite: 965 passed, 1 warning.
+
+## 2026-06-06 - Task 053K-Codex Re-entry Audit
+
+### Added
+- Created `docs/review_notes/2026-06-06_task-053k_codex-reentry-audit.md` accepting the hosted Tasks 053F through 053K and 054E batch.
+
+### Changed
+- Routed `docs/agent_queue/current_task.md` to Task 056A for the next validation expansion triage.
+
+### Verification
+- Ran focused execution-delay, stress-test, and validation-pipeline tests: 38 passed.
+- Ran full test suite: 965 passed, 1 warning.
+- Ran `git diff --check`; no whitespace errors.
+
+## 2026-06-05 - Task 053J-Codex Sleep Check
+
+### Added
+- Created `docs/review_notes/2026-06-05_task-053j_sleep-check_codex-review.md` provisionally accepting the Task 053J acceptance smoke pending a full Codex re-entry audit.
+
+### Changed
+- Routed `docs/agent_queue/current_task.md` to `Task Codex-Reentry-053-Series-Audit`.
+
+### Verification
+- Ran full test suite: 960 passed, 1 warning.
+- Ran `git diff --check`; trailing whitespace remains queued for the re-entry audit cleanup.
+
+## 2026-06-05 - Task 053J: Parameter Perturbation Acceptance Smoke
+
+### Verification
+- Verified end-to-end parameter perturbation execution yielding 4 results by default (`commission_2.0x`, `slippage_2.0x`, `one_bar_delay`, `parameter_perturbation`).
+- Confirmed configuration toggles disable the stress tests exactly as expected (shrinking test results count sequentially to 3 then 2).
+- Validated UI components render successfully without crashes using `asdict(PipelineResult)` parsing workaround.
+- Markdown HTML report exporter functions correctly, capturing `parameter_perturbation` tables successfully.
+- All 960 system unit tests passed seamlessly (`pytest -q`).
+
+## 2026-06-05 - Task 053I-Codex Review
+
+### Added
+- Created docs/review_notes/2026-06-05_task-053i_parameter-perturbation-wiring_codex-review.md accepting the wiring.
+
+### Changed
+- Updated docs/agent_queue/current_task.md with Task 053J for acceptance smoke.
+- Updated docs/task_board.md with Task 053J in progress.
+
+### Verification
+- Full test suite: 960 passed, 0 failed.
+- Confirmed seed determinism fix applied (random.seed + setstate restore).
+- Pipeline now runs 4 stress tests by default.
+
+## 2026-06-05 - Task 053I: Parameter Perturbation Stress Test Validation Pipeline Wiring
+
+### Added
+- Wired `stress_parameter_perturbation` into `app/services/validation_pipeline_service.py`.
+- Exposed `run_parameter_perturbation: bool = True` in `PipelineConfig`.
+- Ensured parameter perturbation execution is completely deterministic within the pipeline by tying it to `mc_base_seed`.
+
+## 2026-06-05 - Task 053H-Impl-Codex Review
+
+### Added
+- Created docs/review_notes/2026-06-05_task-053h-impl_parameter-perturbation_codex-review.md accepting the implementation.
+
+### Changed
+- Updated docs/agent_queue/current_task.md with Task 053I for validation pipeline integration.
+- Updated docs/task_board.md with Task 053I in progress.
+
+### Verification
+- Full test suite: 959 passed, 0 failed.
+- Focused tests: 23 passed.
+- Confirmed implementation matches design: deep-copy, additive/multiplicative perturbation, 4 tests.
+
+## 2026-06-05 - Task 053H-Impl: Parameter Perturbation Stress Test Implementation
+
+### Added
+- Implemented `stress_parameter_perturbation` in `validation_engine/stress_test.py`.
+- Added dynamic perturbation using additive shifts for integers and multiplicative shifts for floats, clamped to logical boundaries.
+- Designed 4 fully automated tests covering no-leak mutability checks, generation constraints, pass logic, and fail logic (`test_parameter_perturbation.py`).
+- Added a vacuous passing edge case when baseline contains zero trades.
+
+## 2026-06-05 - Task 053H-Codex Review
+
+### Added
+- Created docs/review_notes/2026-06-05_task-053h_parameter-perturbation-design_codex-review.md accepting the design.
+
+### Changed
+- Updated docs/agent_queue/current_task.md with Task 053H-Impl for implementation.
+- Updated docs/task_board.md with Task 053H-Impl in progress.
+
+### Verification
+- Full test suite: 955 passed, 0 failed.
+- Confirmed no production code changed by design task.
+
+## 2026-06-05 - Task 053H: Parameter Perturbation Stress Test Design Only
+
+### Added
+- Created `docs/parameter_perturbation_stress_design_053H.md`.
+- Outlined API signatures, inputs, outputs, thresholds, and variant sampling methodology for parameter perturbation testing.
+- Specified integer vs. float logic handling and no-leak policies.
+
+## 2026-06-05 - Task 054E-Codex Review
+
+### Added
+- Created docs/review_notes/2026-06-05_task-054e_fix-validationsummary-dataclass_codex-review.md accepting the fix.
+
+### Changed
+- Updated docs/agent_queue/current_task.md with Task 053H for parameter perturbation stress test design.
+
+### Verification
+- Full test suite: 955 passed, 0 failed.
+- Confirmed diff: exactly 1 line changed (validation_summary.py:57).
+- Confirmed no other raw .get() calls remain in update_from_result().
+
+## 2026-06-05 - Task 054E: Fix ValidationSummary Dataclass Compatibility
+
+### Fixed
+- Fixed an `AttributeError` in `app/widgets/validation_summary.py` where `.get("_is_mock")` was called directly on the `PipelineResult` dataclass object instead of routed through the internal `self._get()` compatibility helper.
+
+## 2026-06-05 - Task 053-Acceptance-Codex Review
+
+### Added
+- Created docs/review_notes/2026-06-05_task-053-acceptance_backtest-execution-enhancements_codex-review.md accepting the acceptance smoke.
+
+### Changed
+- Updated docs/agent_queue/current_task.md with Task 054E for ValidationSummary dataclass compatibility fix.
+- Updated docs/task_board.md with Task 054E in progress.
+
+### Verification
+- Full test suite: 955 passed, 0 failed.
+- Confirmed acceptance verified: pipeline, UI, reports, config override all correct.
+- Confirmed UI quirk root cause: ValidationSummary line 57 uses raw .get() instead of self._get().
+
+## 2026-06-05 - Task 053-Acceptance: Backtest Execution Enhancements Acceptance Smoke
+
+### Verification
+- Ran headless end-to-end acceptance checks.
+- Verified `stress_results` outputs 3 stress tests by default.
+- Verified Markdown and HTML export generators correctly render `one_bar_delay` tests when enabled.
+- Verified `ValidationSummary` widget successfully renders `one_bar_delay` test status.
+- Validated disabling pipeline stress via `PipelineConfig` hides the one-bar delay output across data, UI, and reports.
+- All 955 automated tests passed.
+- **Known Quirks Documented**: `ValidationSummary` expects a dictionary format (`asdict()`) due to a bug natively calling `.get("_is_mock")` on `PipelineResult` dataclasses, but UI rendering behavior acts correctly otherwise.
+
+## 2026-06-05 - Task 053G-Codex Review
+
+### Added
+- Created docs/review_notes/2026-06-05_task-053g_validation-pipeline-one-bar-delay_codex-review.md accepting the pipeline integration.
+
+### Changed
+- Updated docs/agent_queue/current_task.md with Task 053-Acceptance for backtest execution enhancements acceptance smoke.
+- Updated docs/task_board.md with Task 053-Acceptance in progress.
+
+### Verification
+- Full test suite: 955 passed, 0 failed.
+- Pipeline tests: 18 passed.
+- Stress/delay tests: 19 passed.
+
+## 2026-06-05 - Task 053G: Validation Pipeline Integration for One-Bar Delay Stress
+
+### Added
+- Imported `stress_one_bar_delay` in `app/services/validation_pipeline_service.py`.
+- Added `run_one_bar_delay_stress: bool = True` to `PipelineConfig`.
+- Added focused test `test_one_bar_delay_can_be_disabled` to verify pipeline handles the new stress test correctly.
+
+### Changed
+- Integrated `stress_one_bar_delay` into `run_validation_pipeline()`.
+- Pipeline now runs 3 stress tests by default (commission, slippage, and one-bar delay).
+
+### Verification
+- Focused test added and passed.
+- All 955 tests passing.
+
+## 2026-06-05 - Task 053F-Impl-Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-05_task-053f-impl_one-bar-execution-delay-stress_codex-review.md` accepting the implementation.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 053G for validation pipeline integration.
+- Updated `docs/task_board.md` with Task 053G in progress.
+
+### Verification
+- Full test suite: 954 passed, 0 failed.
+- `agent_status.ps1`: 6 modified + 5 untracked (all docs/source, no unexpected files).
+- Confirmed runner.py diff: clean, backward-compatible, no future-leak.
+- Confirmed all 4 deterministic delay tests pass.
+
+## 2026-06-05 - Task 053F-Impl: One-Bar Execution Delay Stress Test Implementation
+
+### Added
+- Added `execution_delay_bars` parameter to `run_backtest` to enable native execution delay without shifting price data.
+- Added 4 deterministic execution delay tests.
+
+### Changed
+- Refactored `stress_one_bar_delay` to use `execution_delay_bars=1` rather than artificially shifting price data, preserving indicator accuracy and avoiding future leaks.
+- Modified `pending` state variable from 2-tuple to 3-tuple to track delay countdown.
+- Suppressed new entry signals while a pending entry is actively counting down in-flight.
+- Updated backtest result `assumptions` to record `execution_delay_bars`.
+
+### Verification
+- 4 deterministic tests passing (`tests/test_execution_delay.py`).
+- Full test suite passed (954 tests).
+
+## 2026-06-05 - Task 053F-Codex Review
+
+### Added
+- Created `docs/review_notes/2026-06-05_task-053f_one-bar-execution-delay-stress-design_codex-review.md` accepting the design.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Task 053F-Impl for implementation.
+- Updated `docs/task_board.md` with Task 053F-Impl in progress.
+
+### Verification
+- Ran focused pytest: 70 passed, 0 failed.
+- Ran `agent_status.ps1`: clean working tree, only docs dirty.
+- Confirmed no production code was changed by design task.
+
+## 2026-06-05 - Task 053F: One-Bar Execution Delay Stress Test Design Only
+
+### Added
+- Created design document `docs/one_bar_execution_delay_stress_design_053F.md` detailing how to implement a native execution delay in the backtest engine to properly replace the naive data-shift approach.
+
 ## 2026-06-05 - Task 053E-Fix2-Codex Review
 
 ### Added
