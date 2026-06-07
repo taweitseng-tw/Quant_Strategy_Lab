@@ -12,11 +12,11 @@ DeepSeek V4 Flash or Gemini 3.5 Flash
 
 ## Current Task
 
-Batch 059Q-Impl + 059R-Design - ArchiveImporter Read-Only Import Plan Builder and Import Transaction Sequence Design.
+Batch 059S-Design + 059T-Design - ImportAuditLog Migration Plan and Repository Adapter Test Contract Design.
 
 ## Context Level
 
-Level 2 for 059Q implementation, Level 3 for 059R design.
+Level 3 design.
 
 ## Required Reading
 
@@ -33,101 +33,75 @@ Before doing anything, read:
 9. `docs/archive_import_conflict_policy_design_059N.md`
 10. `docs/archive_import_repository_contract_design_059O.md`
 11. `docs/archive_import_audit_schema_design_059P.md`
-12. `docs/review_notes/2026-06-07_task-059o-design_059p-design_archive-importer-repository-contract-and-audit-schema_codex-review.md`
-13. This task file
+12. `docs/archive_import_transaction_sequence_design_059R.md`
+13. `docs/review_notes/2026-06-07_task-059q-impl_059r-design_archive-importer-read-only-plan-and-transaction-sequence_codex-review.md`
+14. This task file
 
 ## Context
 
-059M added a side-effect-free `ArchiveImporter` verification skeleton. 059N defined conflict policies with "Reject Duplicate" as the MVP default. 059O and 059P designed future repository contracts, audit schema, collision boundaries, and transaction sequence.
+059Q added a read-only `ArchiveImporter.build_preview()` that verifies archives, reads JSON payloads, extracts immutable preview data, and reports collision status using a read-only detector keyed by `strategy_uid`.
 
-Codex accepted those designs only on the condition that the next implementation remains read-only. Do not implement database writes, file copy, real repository adapters, UI, CLI, or zip handling.
+059R designed the future write transaction sequence. Codex accepted it only on the condition that the next batch remains design-only and does not implement migrations, DB writes, file copies, repository adapters, UI, CLI, service wiring, or zip behavior.
 
 ## Scope
 
 ### Do
 
-- Complete two sequential tasks:
-  - Task 059Q-Impl - ArchiveImporter read-only import plan builder
-  - Task 059R-Design - Import transaction sequence design hardening
-- For Task 059Q:
-  - Extend `archive/importer.py` with a read-only preview / plan-building method, such as `build_preview()` or `build_import_preview()`.
-  - The method may:
-    - call existing verification logic,
-    - read `strategy.json`,
-    - read `dataset_meta.json`,
-    - read `validation_result.json`,
-    - extract immutable DTO/summary objects,
-    - optionally use a fake/read-only collision source protocol in tests only to report strategy/dataset collision status.
-  - It must return an immutable preview/result object suitable for a future dry-run summary.
-  - Add focused tests using exported fake archive folders only.
-  - Tests should cover:
-    - valid archive preview,
-    - missing/corrupt archive payload file after manifest verification fails,
-    - strategy collision reported read-only,
-    - dataset collision reported read-only,
-    - no filesystem mutation and no database writes.
-- For Task 059R:
-  - Create `docs/archive_import_transaction_sequence_design_059R.md`.
-  - Define the future write sequence in precise phases:
-    - verification,
-    - read-only collision preview,
-    - user approval boundary,
-    - DB transaction begin,
-    - file copy staging,
-    - DB writes,
-    - commit,
-    - rollback,
-    - file cleanup,
-    - independent failed audit logging.
-  - Clearly mark what is implemented now versus future implementation.
+- Complete two sequential design tasks:
+  - Task 059S-Design - ImportAuditLog migration plan
+  - Task 059T-Design - Repository adapter test contract design
+- For Task 059S:
+  - Create `docs/archive_import_audit_migration_plan_059S.md`.
+  - Define the future migration plan for `ImportAuditLog`.
+  - Include proposed table columns, indexes, constraints, enum/check constraints, rollback plan, compatibility notes, and migration verification criteria.
+  - Explicitly state that this task does not execute or implement a migration.
+- For Task 059T:
+  - Create `docs/archive_import_repository_adapter_test_contract_059T.md`.
+  - Define test contracts for future repository/filesystem adapters.
+  - Include mock/spy behavior expectations, duplicate rejection tests, rollback acceptance criteria, failed audit logging acceptance criteria, read/write boundary tests, and edge-case error scenarios.
   - Recommend exactly one next two-task batch.
 - Update:
-  - `archive/__init__.py` if new public preview types are added.
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-07_task-059q-impl_059r-design_archive-importer-read-only-plan-and-transaction-sequence_deepseek.md`
+  - `docs/agent_reports/2026-06-07_task-059s-design_059t-design_import-audit-migration-and-adapter-test-contract_deepseek.md`
 
 ### Do Not
 
+- Do not modify production Python code.
+- Do not implement or run migrations.
 - Do not implement SQLite insertion.
-- Do not add or modify migrations.
 - Do not copy archive files into project folders.
 - Do not implement real repository adapters.
 - Do not wire importer into UI, services, CLI, or real repositories.
 - Do not implement zip extraction.
 - Do not add runtime dependencies.
 - Do not change existing engine behavior.
-- Do not use runtime `assert` for validation.
 - Do not create, delete, move, retarget, or push any git tag.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `archive/importer.py`
-- `archive/__init__.py`
-- `tests/test_archive_importer.py`
-- `docs/archive_import_transaction_sequence_design_059R.md`
+- `docs/archive_import_audit_migration_plan_059S.md`
+- `docs/archive_import_repository_adapter_test_contract_059T.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-07_task-059q-impl_059r-design_archive-importer-read-only-plan-and-transaction-sequence_deepseek.md`
+- `docs/agent_reports/2026-06-07_task-059s-design_059t-design_import-audit-migration-and-adapter-test-contract_deepseek.md`
 
 ## Acceptance Criteria
 
-1. Import preview / plan builder is read-only.
-2. Preview result is immutable and contains enough strategy/dataset/validation summary data for a future dry run.
-3. Collision checks, if implemented, use fake/read-only test doubles only and do not touch SQLite directly.
-4. No DB writes, file copies, real repository adapters, UI/service/CLI wiring, zip extraction, schema/migration, dependency, or engine changes are made.
-5. Transaction sequence design exists and recommends exactly one next two-task batch.
-6. Changelog, task board, and completion report are updated.
-7. Focused tests, full suite, `git diff --check`, and agent status pass.
+1. 059S migration plan exists and is specific enough to guide future implementation.
+2. 059T adapter test contract exists and includes rollback, duplicate, failed audit, and read/write boundary acceptance criteria.
+3. The recommended next batch is exactly one two-task batch and does not skip into broad UI/CLI/service wiring or zip work.
+4. No production Python code, migrations, schema files, DB writes, file copies, repository adapter implementation, UI/service/CLI wiring, zip extraction, dependencies, or engine behavior are changed.
+5. Changelog, task board, and completion report are updated.
+6. Full suite, `git diff --check`, and agent status pass.
 
 ## Verification
 
 Run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/test_archive_importer.py tests/test_archive_exporter.py tests/test_archive_verifier.py tests/test_archive_manifest_json.py -q
 .\.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts\agent_status.ps1
@@ -136,10 +110,9 @@ git status --short
 
 Expected:
 
-- Focused archive importer/exporter/verifier/manifest tests pass.
 - Full suite passes.
 - `git diff --check` passes.
-- Agent status shows Batch 059Q-Impl + 059R-Design completion report as latest report.
+- Agent status shows Batch 059S-Design + 059T-Design completion report as latest report.
 - `git status --short` shows only files within this task scope.
 
 ## After Completion

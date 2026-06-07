@@ -27,6 +27,8 @@ __all__ = [
     "ArchiveImporterError",
     "IncompatibleSchemaError",
     "ArchiveImportPlan",
+    "IImportCollisionDetector",
+    "ArchiveImportPreview",
 ]
 
 from archive.manifest import ArchiveManifest, ArchiveIntegrityError
@@ -48,4 +50,6 @@ from archive.importer import (
     ArchiveImporterError,
     IncompatibleSchemaError,
     ArchiveImportPlan,
+    IImportCollisionDetector,
+    ArchiveImportPreview,
 )

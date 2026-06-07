@@ -12,6 +12,8 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Batch 059Q-Impl + 059R-Design-Codex Review - Read-Only Import Plan Builder and Transaction Sequence Acceptance
+- [x] Batch 059Q-Impl + 059R-Design - ArchiveImporter Read-Only Import Plan Builder and Import Transaction Sequence Design
 - [x] Batch 059O-Design + 059P-Design-Codex Review - ArchiveImporter Repository Contract and Audit Schema Acceptance
 - [x] Batch 059O-Design + 059P-Design - ArchiveImporter Repository Contract and Import Audit Schema Design
 - [x] Batch 059M-Impl + 059N-Design-Codex Review - ArchiveImporter Verification Skeleton and Conflict Policy Acceptance
@@ -233,7 +235,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next (v0.2)
 
-- Proposed Batch 059Q-Impl + 059R-Design - ArchiveImporter Read-Only Import Plan Builder and Import Transaction Sequence Design
+- Proposed Batch 059S-Design + 059T-Design - ImportAuditLog Migration Plan and Repository Adapter Test Contract Design
 
 
 *(Remaining v0.2 PRD items pending task prioritization)*

@@ -16,6 +16,8 @@ from archive.importer import (
     ArchiveImporterError,
     IncompatibleSchemaError,
     ArchiveImportPlan,
+    IImportCollisionDetector,
+    ArchiveImportPreview,
 )
 
 
@@ -43,7 +45,7 @@ def fake_source() -> FakeDataSource:
     src.strategies["strat-001"] = {
         "strategy_uid": "strat-001",
         "name": "test_strat",
-        "strategy_json": '{"conditions":[]}',
+        "strategy_json": '{"strategy_uid": "strat-001", "name": "test_strat", "conditions":[]}',
         "dataset_id": 42,
         "generator_version": "0.2.0",
         "build_task_id": 1,
@@ -231,3 +233,185 @@ def test_importer_missing_archive_version(fake_source: FakeDataSource, snapshot_
     with pytest.raises(IncompatibleSchemaError, match="Archive version is missing"):
         importer.verify()
 
+
+def test_importer_build_preview_success(fake_source: FakeDataSource, snapshot_file: str, tmp_path: Path):
+    """build_preview must verify the folder and return an ArchiveImportPreview with DTO data."""
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+
+    output_dir = tmp_path / "export_preview_success"
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+    )
+
+
+    importer = ArchiveImporter(output_dir)
+    preview = importer.build_preview()
+
+    assert isinstance(preview, ArchiveImportPreview)
+    assert isinstance(preview.plan, ArchiveImportPlan)
+    assert preview.strategy_name == "test_strat"
+    assert preview.dataset_id == 42
+    assert preview.dataset_symbol == "ES"
+    assert preview.dataset_timeframe == "1min"
+    assert preview.validation_passed is True
+    assert preview.strategy_collision is False
+    assert preview.dataset_collision is False
+
+
+def test_importer_build_preview_missing_payload_file(fake_source: FakeDataSource, snapshot_file: str, tmp_path: Path):
+    """build_preview must raise ArchiveIntegrityError if a required payload file is missing."""
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+
+    output_dir = tmp_path / "export_preview_missing_file"
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+    )
+
+    # Delete strategy.json to cause verification integrity failure
+    (output_dir / "strategy.json").unlink()
+
+    importer = ArchiveImporter(output_dir)
+    with pytest.raises(ArchiveIntegrityError, match="Missing files in archive"):
+        importer.build_preview()
+
+
+def test_importer_build_preview_corrupt_payload_file(fake_source: FakeDataSource, snapshot_file: str, tmp_path: Path):
+    """build_preview must raise ArchiveImporterError if a payload file contains invalid JSON."""
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+
+    output_dir = tmp_path / "export_preview_corrupt"
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+    )
+
+    # Write corrupt JSON to strategy.json
+    strategy_file = output_dir / "strategy.json"
+    strategy_file.write_text("{corrupt: json}", encoding="utf-8")
+
+    # Update manifest hash so verify() integrity check passes
+    manifest_path = output_dir / "manifest.json"
+    manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    import hashlib
+    new_hash = hashlib.sha256(b"{corrupt: json}").hexdigest()
+    manifest_data["content_hashes"]["strategy.json"] = new_hash
+    manifest_path.write_text(json.dumps(manifest_data), encoding="utf-8")
+
+    importer = ArchiveImporter(output_dir)
+    with pytest.raises(ArchiveImporterError, match="Failed to read or parse strategy payload"):
+        importer.build_preview()
+
+
+class FakeCollisionDetector:
+    """Read-only test double for collision detection."""
+
+    def __init__(self, strategy_exists_val: bool, dataset_exists_val: bool) -> None:
+        self._strat_exists = strategy_exists_val
+        self._ds_exists = dataset_exists_val
+        self.strategy_exists_called_with = None
+
+    def strategy_exists(self, strategy_uid: str) -> bool:
+        self.strategy_exists_called_with = strategy_uid
+        return self._strat_exists
+
+    def dataset_exists(self, dataset_id: int, symbol: str, timeframe: str) -> bool:
+        return self._ds_exists
+
+
+def test_importer_build_preview_strategy_collision(fake_source: FakeDataSource, snapshot_file: str, tmp_path: Path):
+    """build_preview must report strategy collision correctly using the detector double."""
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+
+    output_dir = tmp_path / "export_preview_strat_collision"
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+    )
+
+    detector = FakeCollisionDetector(strategy_exists_val=True, dataset_exists_val=False)
+    importer = ArchiveImporter(output_dir)
+    preview = importer.build_preview(detector)
+
+    assert preview.strategy_collision is True
+    assert preview.dataset_collision is False
+    assert preview.strategy_uid == "strat-001"
+    assert detector.strategy_exists_called_with == "strat-001"
+
+
+def test_importer_build_preview_dataset_collision(fake_source: FakeDataSource, snapshot_file: str, tmp_path: Path):
+    """build_preview must report dataset collision correctly using the detector double."""
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+
+    output_dir = tmp_path / "export_preview_ds_collision"
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+    )
+
+    detector = FakeCollisionDetector(strategy_exists_val=False, dataset_exists_val=True)
+    importer = ArchiveImporter(output_dir)
+    preview = importer.build_preview(detector)
+
+    assert preview.strategy_collision is False
+    assert preview.dataset_collision is True
+
+
+def test_importer_build_preview_read_only_boundary(fake_source: FakeDataSource, snapshot_file: str, tmp_path: Path):
+    """build_preview must only call read-only collision methods and never call mutation/write methods."""
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+
+    output_dir = tmp_path / "export_preview_boundary"
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+    )
+
+    class SpyDetector:
+        def __init__(self) -> None:
+            self.calls = []
+
+        def strategy_exists(self, strategy_uid: str) -> bool:
+            self.calls.append("strategy_exists")
+            return False
+
+        def dataset_exists(self, dataset_id: int, symbol: str, timeframe: str) -> bool:
+            self.calls.append("dataset_exists")
+            return False
+
+        def commit(self, *args, **kwargs):
+            raise AssertionError("commit() called on read-only detector")
+
+        def rollback(self, *args, **kwargs):
+            raise AssertionError("rollback() called on read-only detector")
+
+        def write(self, *args, **kwargs):
+            raise AssertionError("write() called on read-only detector")
+
+        def copy(self, *args, **kwargs):
+            raise AssertionError("copy() called on read-only detector")
+
+    detector = SpyDetector()
+    importer = ArchiveImporter(output_dir)
+    importer.build_preview(detector)
+
+    assert set(detector.calls) == {"strategy_exists", "dataset_exists"}

@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-06-07 — Batch 059Q-Impl + 059R-Design Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-059q-impl_059r-design_archive-importer-read-only-plan-and-transaction-sequence_codex-review.md` — Codex acceptance review for read-only import preview and transaction sequence design.
+
+### Changed
+- Prepared the next two-task batch for ImportAuditLog migration planning and repository adapter test contract design.
+
+### Verification
+- Focused archive importer/exporter/verifier/manifest tests: 37 passed.
+- Full suite: 1156 passed.
+- `git diff --check` passed with LF/CRLF normalization warnings only.
+
+## 2026-06-07 — Batch 059Q-Impl + 059R-Design: ArchiveImporter Read-Only Import Plan Builder and Import Transaction Sequence Design
+
+### Added (059Q-Impl)
+- `archive/importer.py`: Extended `ArchiveImporter` with `build_preview()`, `IImportCollisionDetector` protocol, and `ArchiveImportPreview` dataclass. Handles verifying payload JSON structures and reporting strategy/dataset collision status without DB edits.
+- `tests/test_archive_importer.py`: Added 5 tests covering valid preview, missing payload files, invalid payload JSON corruption, and strategy/dataset collision detection using a read-only test double.
+- Updated `archive/__init__.py` to export the new classes and interfaces.
+
+### Added (059R-Design)
+- `docs/archive_import_transaction_sequence_design_059R.md`: defined full transaction sequence (integrity check, read-only preview, user approval boundary, begin transaction, file copy staging, SQLite database writes, commit, rollback, file cleanup, and isolated audit logging) and recommended the next batch.
+
+### Verification
+- Focused archive importer/exporter/verifier/manifest tests: 37 passed.
+- Full suite: 1156 passed.
+- `git diff --check` passes.
+
 ## 2026-06-07 — Batch 059O-Design + 059P-Design Codex Acceptance
 
 ### Added
