@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-06-07 — Batch 059C-Impl + 059D-Design Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-059c-impl_059d-design_archive-manifest-verifier-and-dataset-snapshot-decision_codex-review.md` — Codex acceptance review for archive manifest verifier skeleton and dataset snapshot decision.
+
+### Changed
+- Hardened `ArchiveVerifier` so every manifest-listed file must have a content hash.
+- Added archive-root escape rejection for manifest paths such as `../outside.txt`.
+- Updated archive verifier tests to cover missing content hashes and path escape rejection.
+- Prepared the next two-task batch for deterministic CSV dataset snapshots and archive builder input-contract design.
+
+### Verification
+- Focused archive verifier tests: 7 passed.
+- Full suite: 1110 passed.
+- `git diff --check` passed with LF/CRLF normalization warnings only.
+
+## 2026-06-07 — Batch 059C-Impl + 059D-Design: Archive Manifest Verifier Skeleton and Dataset Snapshot Format Decision
+
+### Added (059C-Impl)
+- `archive/` package: `__init__.py`, `manifest.py` (`ArchiveManifest` dataclass, `ArchiveIntegrityError`), `verifier.py` (`ArchiveVerifier` with file existence, SHA-256 hash, and disclaimer checks).
+- `tests/test_archive_verifier.py`: 7 tests (success, missing file, hash mismatch, missing content hash, path escape rejection, missing disclaimer, empty disclaimer).
+
+### Added (059D-Design)
+- `docs/dataset_snapshot_format_decision_059D.md` — 4 format options compared. Recommends CSV with deterministic write-then-hash pipeline. No pyarrow. Next: CSV snapshot writer.
+
+### Verification
+- Focused tests: 7 passed.
+- Full suite: 1110 passed, 0 warnings.
+- `git diff --check` passes.
+
 ## 2026-06-07 — Batch 059A-Design + 059B-Design Codex Acceptance
 
 ### Added

@@ -8,10 +8,12 @@ Post-v0.2 - Reproducibility foundation design
 
 ## In Progress
 
-- [ ] Batch 059C-Impl + 059D-Design - Archive Manifest Verifier Skeleton and Dataset Snapshot Format Decision
+- [ ] Batch 059E-Impl + 059F-Design - Deterministic CSV Dataset Snapshot Writer and Archive Builder Input Contract
 
 ## Done
 
+- [x] Batch 059C-Impl + 059D-Design-Codex Review - Archive Manifest Verifier Skeleton and Dataset Snapshot Decision Acceptance
+- [x] Batch 059C-Impl + 059D-Design - Archive Manifest Verifier Skeleton and Dataset Snapshot Format Decision
 - [x] Batch 059A-Design + 059B-Design-Codex Review - Reproducible Experiment Archive Architecture and Provenance Integrity Acceptance
 - [x] Batch 059A-Design + 059B-Design - Reproducible Experiment Archive Architecture and Provenance Integrity Design
 - [x] Batch 058F-Signoff + 058G-Decision-Codex Review - v0.2 Cleanup Signoff and Next Milestone Decision Acceptance
