@@ -1,8 +1,10 @@
 """Quant Strategy Lab — Reproducible Experiment Archive
 
 Design-phase package. Contains manifest, verifier, integrity checking, a first-pass
-builder collector, and a folder exporter. Importer not yet implemented.
+builder collector, folder exporter, and importer verification skeleton. Database
+import is not yet implemented.
 """
+
 
 __all__ = [
     "ArchiveIntegrityError",
@@ -21,6 +23,10 @@ __all__ = [
     "ArchiveExporter",
     "ArchiveExporterError",
     "ExportDataUnavailableError",
+    "ArchiveImporter",
+    "ArchiveImporterError",
+    "IncompatibleSchemaError",
+    "ArchiveImportPlan",
 ]
 
 from archive.manifest import ArchiveManifest, ArchiveIntegrityError
@@ -37,3 +43,9 @@ from archive.builder import (
     MissingDisclaimerError,
 )
 from archive.exporter import ArchiveExporter, ArchiveExporterError, ExportDataUnavailableError
+from archive.importer import (
+    ArchiveImporter,
+    ArchiveImporterError,
+    IncompatibleSchemaError,
+    ArchiveImportPlan,
+)

@@ -12,6 +12,8 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Batch 059M-Impl + 059N-Design-Codex Review - ArchiveImporter Verification Skeleton and Conflict Policy Acceptance
+- [x] Batch 059M-Impl + 059N-Design - ArchiveImporter Verification Skeleton and Archive Import Conflict Policy Design
 - [x] Batch 059K-Impl + 059L-Design-Codex Review - ArchiveExporter Folder Writer and Importer Boundary Design Acceptance
 - [x] Batch 059K-Impl + 059L-Design - ArchiveExporter Folder Writer First Pass and Importer Boundary Design
 - [x] Batch 059I-Impl + 059J-Design-Codex Review - ArchiveBuilder First-Pass Collector and Folder Manifest Integration Acceptance
@@ -229,7 +231,8 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next (v0.2)
 
-- Proposed Batch 059M-Impl + 059N-Design - ArchiveImporter Verification Skeleton and Archive Import Conflict Policy Design
+- Proposed Batch 059O-Design + 059P-Design - ArchiveImporter Repository Contract and Import Audit Schema Design
+
 
 *(Remaining v0.2 PRD items pending task prioritization)*
 - Proposed Task 055 - Agent Workflow Automation

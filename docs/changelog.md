@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-06-07 — Batch 059M-Impl + 059N-Design Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-059m-impl_059n-design_archive-importer-verification-and-conflict-policy_codex-review.md` — Codex acceptance review for ArchiveImporter verification skeleton and conflict policy design.
+
+### Changed
+- Prepared the next two-task batch for design-first repository contracts and import audit schema work.
+
+### Verification
+- Focused archive importer/exporter/verifier/manifest tests: 31 passed.
+- Full suite: 1150 passed.
+- `git diff --check` passed with LF/CRLF normalization warnings only.
+
+## 2026-06-07 — Batch 059M-Impl + 059N-Design: ArchiveImporter Verification Skeleton and Archive Import Conflict Policy Design
+
+### Added (059M-Impl)
+- `archive/importer.py`: `ArchiveImporter` verification skeleton and `ArchiveImportPlan` dataclass, raising `ArchiveImporterError` and `IncompatibleSchemaError`. Handles manifest loading, schema version validation (verifying major version is exactly 1), and delegates filesystem verification to `ArchiveVerifier`. Implemented tuple-based immutable `files` field.
+- `tests/test_archive_importer.py`: 11 tests covering successful verification (returns plan), missing manifest, malformed manifest JSON, incompatible schema version (empty, alphabetic, newer/older major versions), missing `archive_version` field, verifier integrity failure, and `ArchiveImportPlan.files` immutability.
+- Updated `archive/__init__.py` to export the new classes and exceptions, and corrected package docstring.
+
+### Added (059N-Design)
+- `docs/archive_import_conflict_policy_design_059N.md`: detailed design defining conflict scenarios, resolution policies (reject, overwrite, skip, rename), MVP default choice (reject duplicate), warning dialog schema, database audit trail schema (`ImportAuditLog`), and proposing the next batch `Batch 059O-Design + 059P-Design`.
+
+### Verification
+- Focused archive tests: 47 passed.
+- Full suite: 1150 passed.
+- `git diff --check` passes.
+
 ## 2026-06-07 — Batch 059K-Impl + 059L-Design Codex Acceptance
 
 ### Added
