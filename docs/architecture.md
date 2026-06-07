@@ -58,3 +58,22 @@ The initial PySide6 shell lives under `app/`:
 - `app/widgets/log_panel.py` owns the bottom read-only log widget.
 
 Task 001 placeholders do not import or execute data, strategy, backtest, validation, repository, or report logic. Future UI actions should call application/service APIs instead of placing engine logic inside widgets.
+
+## Archives and Reproducibility (Design Phase, v0.2+)
+
+A reproducible experiment archive packages strategy, build config, dataset snapshot, instrument profile, backtest, and validation results into a self-contained folder with a hash-verified manifest. This is a design-level feature targeting post-v0.2 milestones.
+
+### Archive Responsibilities
+
+- `archive/` (new, planned): `ArchiveBuilder`, `ArchiveExporter`, `ArchiveImporter`, `ArchiveVerifier`.
+- The archive module depends on the repository layer, not on engines directly.
+- Canonical format: folder + manifest JSON. Zip wrapping is an optional export step.
+
+### Archive rules
+
+- Archives are research artifacts, not live trading packages.
+- Every archive must include a non-financial-advice disclaimer.
+- Content hashes (SHA-256) and schema version checks protect integrity.
+- Archive import must verify provenance before loading into the current project.
+
+Design documents: `docs/archive_architecture_059A.md`, `docs/provenance_integrity_design_059B.md`.

@@ -8,10 +8,12 @@ Post-v0.2 - Reproducibility foundation design
 
 ## In Progress
 
-- [ ] Batch 059A-Design + 059B-Design - Reproducible Experiment Archive Architecture and Provenance Integrity Design
+- [ ] Batch 059C-Impl + 059D-Design - Archive Manifest Verifier Skeleton and Dataset Snapshot Format Decision
 
 ## Done
 
+- [x] Batch 059A-Design + 059B-Design-Codex Review - Reproducible Experiment Archive Architecture and Provenance Integrity Acceptance
+- [x] Batch 059A-Design + 059B-Design - Reproducible Experiment Archive Architecture and Provenance Integrity Design
 - [x] Batch 058F-Signoff + 058G-Decision-Codex Review - v0.2 Cleanup Signoff and Next Milestone Decision Acceptance
 - [x] Batch 058F-Signoff + 058G-Decision - v0.2 Cleanup Signoff and Next Milestone Decision
 - [x] Batch 058D-Fix + 058E-Verify-Codex Review - Normalizer Warning Suppression and Zero-warning Verification Acceptance

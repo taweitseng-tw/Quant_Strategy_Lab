@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-06-07 — Batch 059A-Design + 059B-Design Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-059a-design_059b-design_reproducible-experiment-archive-and-provenance-integrity_codex-review.md` — Codex acceptance review for archive architecture and provenance integrity design.
+
+### Changed
+- Corrected archive architecture wording from cryptographic signing to hash-verified manifests.
+- Aligned the next recommended batch as 059C-Impl + 059D-Design.
+- Prepared `docs/agent_queue/current_task.md` for the next two-task batch.
+
+### Verification
+- `git diff --check` passed with LF/CRLF normalization warnings only.
+- Agent status detected the latest 059A/059B report.
+- No production Python code, tests, schema migrations, or dependencies changed.
+
+## 2026-06-07 — Batch 059A-Design + 059B-Design: Experiment Archive Architecture and Provenance Integrity Design
+
+### Added (059A)
+- `docs/archive_architecture_059A.md` — defines archive purpose, non-goals, 11 provenance components, storage format comparison (folder + manifest JSON canonical, zip on export). Recommends Option C.
+
+### Added (059B)
+- `docs/provenance_integrity_design_059B.md` — defines 7 provenance field groups (archive meta, strategy, dataset, instrument, backtest, validation, results), content hashes (SHA-256), schema version handling, missing-file detection, and disclaimer requirements.
+
+### Changed
+- `docs/architecture.md`: Added "Archives and Reproducibility" design-phase section.
+
+### Verification
+- `git diff --check` passes.
+- No production code changed.
+
 ## 2026-06-07 — Batch 058F-Signoff + 058G-Decision Codex Acceptance
 
 ### Added
