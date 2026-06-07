@@ -1,5 +1,57 @@
 # Changelog
 
+## 2026-06-07 — Batch 060A-Design + 060B-Design Fix Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-060a-design_060b-design_fix_coordinator-ordering-and-transaction-boundary_codex-review.md` — Codex acceptance review for the coordinator ordering and transaction boundary correction.
+
+### Changed
+- Corrected the next task board assignment to design-only `060C-Design + 060D-Design`, preventing premature coordinator implementation.
+- Prepared the next current task for strategy import adapter transaction-boundary design and dataset repository adapter insert-only design.
+
+### Verification
+- Full suite: 1179 passed.
+- `git diff --check` passed with line-ending normalization warnings only.
+
+## 2026-06-07 — Batch 060A-Design + 060B-Design Fix: Coordinator Ordering and Transaction Boundary Correction
+
+### Changed (060A-Fix)
+- `docs/archive_import_coordinator_architecture_060A.md`:
+  - Reordered to 6-phase safe sequence (verify → preflight → stage → write → finalise → audit).
+  - Added explicit `StrategyRepoAdapter` auto-commit constraint section.
+  - Preflight steps (UID scan + DTO validation) now happen before any staging or durable write.
+  - Added coordinator-level handling for malformed legacy `strategy_json` during UID scan (warning + latent risk).
+  - Fixed duplicate step numbering.
+  - Failure audit write failure is now explicitly non-crashing (secondary failure preserves original reason).
+  - Dataset/validation writes moved to future adapter-refactor prerequisite.
+  - Next batch changed to 060C-Design + 060D-Design (transaction boundary design + DatasetRepoAdapter design).
+
+### Changed (060B-Fix)
+- `docs/archive_import_coordinator_acceptance_test_contract_060B.md`:
+  - Call ordering corrected to preflight → staging → durable insert (per 060A safe sequence).
+  - Staging failure path now asserts strategy insert NOT called.
+  - Added malformed legacy strategy_json acceptance scenario (5.7).
+  - Added explicit StrategyRepoAdapter auto-commit limitation section (7).
+  - Preflight-specific spy methods added (validate_preflight vs insert_strategy).
+  - No-call assertions updated for safe ordering.
+
+### Verification
+- Full suite: 1179 passed, 0 warnings (unchanged).
+- `git diff --check` passes.
+
+## 2026-06-07 — Batch 060A-Design + 060B-Design: Archive Import Coordinator Architecture and Acceptance Test Contract Design
+
+### Added (060A-Design)
+- `docs/archive_import_coordinator_architecture_060A.md` — precise 10-step coordinator sequence, error handling matrix (9 failure modes), duplicate UID handling, malformed legacy JSON handling, final-move-failure design risk. All implementation items clearly marked as future.
+
+### Added (060B-Design)
+- `docs/archive_import_coordinator_acceptance_test_contract_060B.md` — 7 test scenarios using spies/fakes: success, duplicate UID, staging failure, DB failure, move failure, audit failure, no-UI/no-CLI/no-engine boundary. Expected call ordering and no-call assertions defined.
+
+### Verification
+- Full suite: 1179 passed, 0 warnings.
+- `git diff --check` passes.
+- No production code changed.
+
 ## 2026-06-07 — Batch 059Y-Impl + 059Z-Design Fix Codex Acceptance
 
 ### Added

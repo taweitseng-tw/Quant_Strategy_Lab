@@ -12,7 +12,7 @@ DeepSeek V4 Flash or Gemini 3.5 Flash
 
 ## Current Task
 
-Batch 060A-Design + 060B-Design - Archive Import Coordinator Architecture and Acceptance Test Contract Design.
+Batch 060C-Design + 060D-Design - StrategyRepoAdapter Transaction Boundary Refactor Design and DatasetRepoAdapter Insert-Only Slice Design.
 
 ## Context Level
 
@@ -29,76 +29,70 @@ Before doing anything, read:
 5. `docs/task_board.md`
 6. `docs/changelog.md`
 7. `docs/context_brief.md`
-8. `docs/archive_import_audit_migration_plan_059S.md`
-9. `docs/archive_import_repository_adapter_test_contract_059T.md`
-10. `docs/archive_import_write_coordinator_design_059X.md`
-11. `docs/archive_import_filesystem_staging_design_059Z.md`
-12. `docs/review_notes/2026-06-07_task-059y-impl_059z-design_fix_strategy-uid-duplicate-guard_codex-review.md`
-13. This task file
+8. `repository/strategy_import_adapter.py`
+9. `repository/db.py`
+10. `repository/strategy_repo.py`
+11. `docs/archive_import_coordinator_architecture_060A.md`
+12. `docs/archive_import_coordinator_acceptance_test_contract_060B.md`
+13. `docs/review_notes/2026-06-07_task-060a-design_060b-design_fix_coordinator-ordering-and-transaction-boundary_codex-review.md`
+14. This task file
 
 ## Context
 
-The archive import path now has read-only preview, manifest verification, failure-only audit logging, UID-based duplicate-reject strategy insert, and filesystem staging design. The next step is not implementation. It is a stricter coordinator architecture and test contract so the future write coordinator does not mix UI, repository, file, and audit responsibilities.
+060A/060B fixed the coordinator ordering, but implementation remains deferred because `StrategyRepoAdapter.insert_strategy()` auto-commits and cannot participate in a unified coordinator transaction. The next safe step is design-only: define how to refactor transaction boundaries, and define the dataset repository insert-only slice before any coordinator implementation.
 
 ## Scope
 
 ### Do
 
 - Complete two design-only tasks:
-  - Task 060A-Design - archive import coordinator architecture design.
-  - Task 060B-Design - archive import coordinator acceptance test contract design.
-- For Task 060A:
-  - Create `docs/archive_import_coordinator_architecture_060A.md`.
-  - Define the future coordinator's responsibilities, collaborators, transaction boundaries, rollback/cleanup policy, and failure audit behavior.
-  - Explicitly describe how these existing pieces are sequenced:
-    - `ArchiveImporter.build_preview()`
-    - archive verifier / manifest hash checks
-    - future filesystem staging adapter
-    - `StrategyRepoAdapter.insert_strategy()`
-    - future dataset/validation adapters
-    - `AuditLogRepositoryAdapter.insert_failure_log()`
-  - Include specific handling for:
-    - duplicate strategy UID,
-    - malformed legacy `strategy_json` encountered during UID scanning,
-    - staged-file hash mismatch,
-    - DB failure before commit,
-    - final file move failure after DB commit,
-    - failure audit write failure.
-  - Clearly mark every implementation item as future work.
-- For Task 060B:
-  - Create `docs/archive_import_coordinator_acceptance_test_contract_060B.md`.
-  - Define acceptance tests using spies/fakes only; do not implement tests.
-  - Cover success path, duplicate UID failure path, filesystem staging failure path, DB insert failure path, final move failure path, failed audit logging path, and no-UI/no-CLI/no-engine boundary checks.
-  - Define expected call ordering and expected no-call assertions.
+  - Task 060C-Design - `StrategyRepoAdapter` transaction boundary refactor design.
+  - Task 060D-Design - `DatasetRepoAdapter` insert-only slice design.
+- For Task 060C:
+  - Create `docs/strategy_import_adapter_transaction_boundary_design_060C.md`.
+  - Design how `StrategyRepoAdapter.insert_strategy()` can support external transaction control without breaking existing tests/callers.
+  - Compare at least two options:
+    - add `commit: bool = True`,
+    - split into `insert_strategy_no_commit()` plus wrapper,
+    - or another local-pattern-compatible option.
+  - Recommend exactly one option.
+  - Define migration path, compatibility behavior, exception semantics, rollback expectations, and focused tests for the future implementation.
+  - Explicitly state that no code is changed in this design task.
+- For Task 060D:
+  - Create `docs/dataset_import_adapter_insert_only_design_060D.md`.
+  - Design a future `DatasetRepoAdapter.insert_dataset()` insert-only slice for imported dataset metadata.
+  - Define immutable DTO fields using current `datasets` schema from `repository/db.py`.
+  - Define duplicate-reject key, likely based on imported dataset identity/hash/path metadata available from archive manifest and snapshot design.
+  - Define behavior for missing dataset snapshot, hash mismatch, source path handling, project_id, row_count/start/end metadata, and no overwrite/update/upsert semantics.
+  - Define focused tests for future implementation.
   - Recommend exactly one next two-task batch.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-07_task-060a-design_060b-design_archive-import-coordinator-and-test-contract_gemini.md`
+  - `docs/agent_reports/2026-06-07_task-060c-design_060d-design_strategy-transaction-boundary-and-dataset-adapter_gemini.md`
 
 ### Do Not
 
-- Do not implement coordinator production code.
-- Do not implement coordinator tests.
+- Do not modify production code.
+- Do not implement tests.
+- Do not implement coordinator.
+- Do not implement dataset adapter.
 - Do not implement filesystem staging.
-- Do not implement dataset repository writes.
-- Do not implement validation repository writes.
 - Do not add audit success writes.
 - Do not change DB schema or migrations.
-- Do not modify `repository/strategy_import_adapter.py` unless documenting a discovered design blocker requires a tiny comment-free correction, and only with explicit explanation in the report.
-- Do not add dependencies.
 - Do not touch UI, CLI, backtest engine, validation engine, or strategy generator.
+- Do not add dependencies.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Acceptance Criteria
 
 1. Both deliverables are design-only Markdown files.
-2. Coordinator architecture keeps UI/service/repository/filesystem/audit boundaries explicit.
-3. Transaction and cleanup sequencing is precise enough to implement later without guessing.
-4. Test contract includes success, rollback, cleanup, duplicate, and failure-audit cases.
-5. Malformed legacy strategy JSON and final file move failure are explicitly handled as known design risks.
-6. No production code or test code is added or changed unless a tiny documented typo fix is unavoidable.
+2. 060C clearly resolves how future strategy inserts can participate in coordinator-controlled transactions.
+3. 060C preserves backward compatibility for existing direct adapter usage.
+4. 060D defines a narrow dataset insert-only repository slice using current schema and duplicate-reject semantics.
+5. No production code or test code changes are made.
+6. The next proposed batch remains narrow and reviewable.
 7. Full suite, `git diff --check`, and agent status pass.
 
 ## Verification
@@ -116,7 +110,7 @@ Expected:
 
 - Full suite passes.
 - `git diff --check` has no errors.
-- Agent status shows the 060A/060B completion report as latest report.
+- Agent status shows the 060C/060D completion report as latest report.
 - `git status --short` shows only docs/report files within this task scope.
 
 ## Completion Report Format

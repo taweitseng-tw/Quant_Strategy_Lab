@@ -12,9 +12,11 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Batch 060A-Design + 060B-Design-Fix-Codex Review - Coordinator Ordering and Transaction Boundary Acceptance
 - [x] Batch 059Y-Impl + 059Z-Design-Fix-Codex Review - Strategy UID Duplicate Guard Acceptance
 - [x] Batch 059W-Impl + 059X-Design-Fix-Codex Review - Failure-Only Audit Log Guard Acceptance
 - [x] Batch 059U-Impl + 059V-Design-Codex Review - ImportAuditLog Migration Skeleton and Adapter Slice Acceptance
+- [x] Batch 060A-Design + 060B-Design - Archive Import Coordinator Architecture and Acceptance Test Contract Design
 - [x] Batch 059Y-Impl + 059Z-Design - StrategyRepoAdapter Duplicate-Reject Insert-Only Slice and Filesystem Staging Design
 - [x] Batch 059W-Impl + 059X-Design - AuditLogRepositoryAdapter Failure Log Slice and Import Write Coordinator Design
 - [x] Batch 059U-Impl + 059V-Design - ImportAuditLog Migration Skeleton and Import Adapter Implementation Slice Design
@@ -243,7 +245,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next (v0.2)
 
-- Proposed Batch 060A-Design + 060B-Design - Archive Import Coordinator Architecture and Acceptance Test Contract Design
+- Proposed Batch 060C-Design + 060D-Design - StrategyRepoAdapter Transaction Boundary Refactor Design + DatasetRepoAdapter Insert-Only Slice Design
 
 
 *(Remaining v0.2 PRD items pending task prioritization)*
