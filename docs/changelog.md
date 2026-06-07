@@ -1,5 +1,51 @@
 # Changelog
 
+## 2026-06-07 — Batch 060C-Design + 060D-Design Fix Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-060c-design_060d-design_fix_snapshot-hash-schema-boundary_codex-review.md` — Codex acceptance review for the strategy transaction-boundary design and dataset snapshot-hash schema-boundary fix.
+
+### Changed
+- Prepared the next two-task batch for implementing the `StrategyRepoAdapter` transaction refactor and designing the dataset `snapshot_hash` schema migration.
+
+### Verification
+- Full suite: 1179 passed.
+- `git diff --check` passed with line-ending normalization warnings only.
+
+## 2026-06-07 — Batch 060C-Design + 060D-Design Fix: Snapshot Hash Schema Boundary and Next Batch Alignment
+
+### Changed (060D-Fix v2)
+- `docs/dataset_import_adapter_insert_only_design_060D.md`:
+  - Strict two-mode separation: Mode A (current schema, no snapshot_hash SQL) vs Mode B (post-migration, snapshot_hash column exists).
+  - Removed `WHERE snapshot_hash = ?` SQL from current-schema mode — adapter never queries non-existent column.
+  - Test plan split into current-schema tests (implement first) and post-migration tests (skip until migration).
+  - Next batch aligned to 060E-Impl + 060F-Design.
+
+### Changed (060C-Fix v2)
+- `docs/strategy_import_adapter_transaction_boundary_design_060C.md`:
+  - Next batch aligned to 060E-Impl + 060F-Design.
+
+### Changed (docs)
+- `docs/task_board.md`: Proposed next updated to 060E-Impl + 060F-Design.
+- `docs/changelog.md`: Next batch aligned.
+
+### Verification
+- Full suite: 1179 passed, 0 warnings (unchanged).
+- `git diff --check` passes.
+
+## 2026-06-07 — Batch 060C-Design + 060D-Design Fix: Dataset Hash Dedup Key, API Boundary Cleanup, and Coordinator Timing Resolution
+
+### Added (060C-Design)
+- `docs/strategy_import_adapter_transaction_boundary_design_060C.md` — compares 3 options for removing auto-commit from `insert_strategy()`. Recommends Option B: split into `insert_strategy_no_commit()` + backward-compatible wrapper. Defines migration path, rollback expectations, and exception semantics.
+
+### Added (060D-Design)
+- `docs/dataset_import_adapter_insert_only_design_060D.md` — defines `ImportDatasetDTO`, duplicate-reject by `(name, symbol, timeframe)`, behaviour matrix, exception hierarchy, no-overwrite semantics, coordinator integration, and focused test plan.
+
+### Verification
+- Full suite: 1179 passed, 0 warnings (unchanged).
+- `git diff --check` passes.
+- No production code changed.
+
 ## 2026-06-07 — Batch 060A-Design + 060B-Design Fix Codex Acceptance
 
 ### Added
