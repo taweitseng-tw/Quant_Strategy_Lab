@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-06-07 — Batch 058F-Signoff + 058G-Decision Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-058f-signoff_058g-decision_v0.2-cleanup-signoff-and-next-milestone-decision_codex-review.md` — Codex acceptance review for final v0.2 cleanup signoff and next milestone decision.
+
+### Changed
+- Updated `docs/agent_queue/current_task.md` with Batch 059A-Design + 059B-Design: reproducible experiment archive architecture and provenance integrity design.
+- Updated `docs/task_board.md` to move into the post-v0.2 reproducibility foundation design milestone.
+
+### Verification
+- `git diff --check` passed with LF/CRLF normalization warnings only.
+- Tag `v0.2-alpha-validation-expansion` still points to `1a9c533`.
+- No production Python code or tests changed.
+
+## 2026-06-07 — Batch 058F-Signoff + 058G-Decision: v0.2 Cleanup Signoff and Next Milestone Decision
+
+### Added (058F)
+- `docs/v0.2_cleanup_signoff_058F.md` — final 058 cleanup signoff. Verdict: zero blockers, zero warnings, 1103 passed. Ready for next milestone.
+
+### Added (058G)
+- `docs/next_milestone_options_058G.md` — three next directions: A (v0.3 validation), B (v1.0 archive foundation), C (UI polish). Recommends B — reproducible experiment archive design-first.
+
+### Verification
+- `git diff --check` passes.
+- Tag `v0.2-alpha-validation-expansion` → `1a9c533` unchanged.
+- No production code changed.
+
 ## 2026-06-07 — Batch 058D-Fix + 058E-Verify Codex Acceptance
 
 ### Added

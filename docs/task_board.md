@@ -2,16 +2,18 @@
 
 ## Current Milestone
 
-v0.2 - Alpha validation expansion
+Post-v0.2 - Reproducibility foundation design
 
 ---
 
 ## In Progress
 
-- [ ] Batch 058F-Signoff + 058G-Decision - v0.2 Cleanup Signoff and Next Milestone Decision
+- [ ] Batch 059A-Design + 059B-Design - Reproducible Experiment Archive Architecture and Provenance Integrity Design
 
 ## Done
 
+- [x] Batch 058F-Signoff + 058G-Decision-Codex Review - v0.2 Cleanup Signoff and Next Milestone Decision Acceptance
+- [x] Batch 058F-Signoff + 058G-Decision - v0.2 Cleanup Signoff and Next Milestone Decision
 - [x] Batch 058D-Fix + 058E-Verify-Codex Review - Normalizer Warning Suppression and Zero-warning Verification Acceptance
 - [x] Batch 058D-Fix + 058E-Verify - Normalizer Warning Suppression and Zero-warning Verification
 - [x] Batch 058B-Fix + 058C-Design-Codex Review - Widget MC Hardening and Normalizer Warning Triage Acceptance
