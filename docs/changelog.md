@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-06-07 — Batch 060O-Impl + 060P-Signoff: Coordinator Acceptance Tests and Reproducibility Foundation Signoff
+
+### Added (060O-Impl)
+- `tests/test_archive_import_coordinator_acceptance.py`: 6 integration-style acceptance tests using real temp archives + SQLite + repository adapters.
+  - Manifest/verifier failure returns success=False, no DB writes.
+  - Duplicate strategy UID returns skipped=True, preserves existing row, no staging/DB insert.
+  - Duplicate dataset hash during DB write rolls back strategy from same transaction + writes audit.
+  - Final move failure returns partial=True, keeps DB rows (no rollback).
+  - Audit failure sets audit_failed=True and preserves original "already exists" error.
+  - No UI/engine imports in coordinator module.
+- All 15 coordinator tests (9 unit + 6 acceptance) pass.
+
+### Changed (Codex Review Fix)
+- Tightened the duplicate dataset acceptance test so it now simulates a DB-write-time duplicate after read-only preflight and proves the strategy insert is rolled back from the same transaction.
+
+### Added (060P-Signoff)
+- `docs/reproducibility_foundation_signoff_060P.md` — summarizes 14 completed archive components, remaining risks (all low), verdict: reproducibility foundation functionally complete. Recommends UI archive export trigger next.
+
+### Verification
+- Coordinator tests: 15 passed.
+- Full suite: 1226 passed, 0 skipped.
+- `git diff --check` passes.
+
 ## 2026-06-07 — Batch 060M-Impl + 060N-Design: ArchiveImportCoordinator First-Pass Implementation and Coordinator Acceptance Tests Design
 
 ### Added (060M-Impl)
