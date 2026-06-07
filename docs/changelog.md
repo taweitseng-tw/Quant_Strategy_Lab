@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-06-07 - Batch 060I-Impl + 060J-Design Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-060i-impl_060j-design_dataset-adapter-and-archive-stager-design_codex-review.md` - Codex acceptance review for DatasetRepoAdapter implementation and ArchiveStager implementation design.
+
+### Verification
+- Dataset adapter tests: 11 passed.
+- Full suite: 1203 passed.
+- `git diff --check` passed with line-ending normalization warnings only.
+
 ## 2026-06-07 - Batch 060G-Impl + 060H-Design Codex Acceptance
 
 ### Added
@@ -9,6 +19,20 @@
 - Dataset snapshot migration tests: 6 passed.
 - Full suite: 1192 passed.
 - `git diff --check` passed with line-ending normalization warnings only.
+
+## 2026-06-07 — Batch 060I-Impl + 060J-Design: DatasetRepoAdapter Implementation and ArchiveStager Implementation Design
+
+### Added (060I-Impl)
+- `repository/dataset_import_adapter.py`: `ImportDatasetDTO` (frozen dataclass), `DatasetRepoAdapter` with schema probing at init, dual INSERT SQL (post-migration with `snapshot_hash` / old-DB without), `_dedup_where()` with hash/fallback, `insert_dataset()` auto-commit with SQLite-error-only rollback guard, `insert_dataset_no_commit()` coordinator-facing.
+- `tests/test_dataset_import_adapter.py`: 11 tests — post-migration insert, old-DB insert (no hash column), hash duplicate, empty hash fallback, old-DB fallback duplicate, no-commit commit, no-commit rollback, SQLite failure rollback, validation no-rollback, duplicate no-rollback, no other tables.
+
+### Added (060J-Design)
+- `docs/archive_stager_implementation_design_060J.md` — source validation, project-local `.staging/<experiment>_<run_id>/` staging, stage + hash verify, final move to `data/imported/<experiment>/ohlcv.csv` after DB commit, explicit cleanup policy (5 scenarios), transaction ordering aligned with 060A and 059Z, focused future tests (9).
+
+### Verification
+- Dataset adapter tests: 11 passed.
+- Full suite: 1203 passed, 0 warnings.
+- `git diff --check` passes.
 
 ## 2026-06-07 — Batch 060G-Impl + 060H-Design: Dataset Snapshot Hash Schema Migration and Post-Migration DatasetRepoAdapter Insert-Only Design
 

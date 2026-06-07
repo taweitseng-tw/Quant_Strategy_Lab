@@ -8,15 +8,15 @@ Ready for assignment
 
 ## Assigned Agent
 
-DeepSeek V4 Flash or Gemini 3.5 Flash
+DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 060I-Impl + 060J-Design - DatasetRepoAdapter Implementation and ArchiveStager Implementation Design.
+Batch 060K-Impl + 060L-Design - ArchiveStager Implementation and ArchiveImportCoordinator First-Pass Wiring Design.
 
 ## Context Level
 
-Level 3 for 060I implementation, Level 3 for 060J design.
+Level 3 for 060K implementation, Level 3 for 060L design.
 
 ## Required Reading
 
@@ -29,97 +29,116 @@ Before doing anything, read:
 5. `docs/task_board.md`
 6. `docs/changelog.md`
 7. `docs/context_brief.md`
-8. `repository/db.py`
-9. `repository/dataset_repo.py`
-10. `docs/dataset_repo_adapter_post_migration_insert_only_design_060H.md`
-11. `docs/archive_import_filesystem_staging_design_059Z.md`
-12. `docs/archive_import_coordinator_architecture_060A.md`
-13. `docs/review_notes/2026-06-07_task-060g-impl_060h-design_dataset-hash-migration-and-adapter-design_codex-review.md`
-14. This task file
+8. `archive/importer.py`
+9. `archive/verifier.py`
+10. `archive/manifest.py`
+11. `archive/__init__.py`
+12. `docs/archive_stager_implementation_design_060J.md`
+13. `docs/archive_import_filesystem_staging_design_059Z.md`
+14. `docs/archive_import_coordinator_architecture_060A.md`
+15. `docs/review_notes/2026-06-07_task-060i-impl_060j-design_dataset-adapter-and-archive-stager-design_codex-review.md`
+16. This task file
 
 ## Context
 
-060G added the additive `datasets.snapshot_hash` migration. 060H accepted a design for a repository-layer `DatasetRepoAdapter` that supports post-migration hash dedup and old-DB fallback. This batch may implement only the dataset repository adapter and design only the ArchiveStager. Do not implement coordinator or filesystem staging behavior.
+060J accepted a project-local ArchiveStager design. The implementation must copy `ohlcv_snapshot.csv` from a verified archive folder into `<project_root>/.staging/<experiment_name>_<run_id>/`, verify SHA-256, and move to `<project_root>/data/imported/<experiment_name>/ohlcv.csv` only after DB commit. This batch may implement ArchiveStager only and design the coordinator wiring only.
 
 ## Scope
 
 ### Do
 
 - Complete two sequential tasks:
-  - Task 060I-Impl - implement `DatasetRepoAdapter`.
-  - Task 060J-Design - design `ArchiveStager` implementation.
-- For Task 060I:
-  - Create a repository-layer adapter, suggested path `repository/dataset_import_adapter.py`.
-  - Add immutable `ImportDatasetDTO` with fields from the 060H design, including `snapshot_hash`.
-  - Add exceptions:
-    - `DatasetRepoAdapterError`
-    - `DuplicateDatasetError`
-  - On init, probe `PRAGMA table_info(datasets)` and set whether `snapshot_hash` exists.
-  - Implement insert-only behavior:
-    - no overwrite;
-    - no update;
-    - no upsert;
-    - duplicate raises `DuplicateDatasetError`.
-  - Implement duplicate-reject behavior:
-    - if `snapshot_hash` column exists and DTO hash is non-empty, dedup by `snapshot_hash`;
-    - otherwise fallback to `(symbol, timeframe, source_path)` when `source_path` is non-empty;
-    - otherwise fallback to `(symbol, timeframe)`.
-  - Implement dual INSERT SQL:
-    - post-migration insert includes `snapshot_hash`;
-    - old-DB insert omits `snapshot_hash`.
-  - Implement transaction methods aligned with `StrategyRepoAdapter`:
-    - `_insert_dataset_core(dto)` validates, dedups, and executes INSERT with no commit/rollback;
-    - `insert_dataset(dto)` auto-commits on success;
-    - `insert_dataset(dto)` rolls back only on SQLite write failure or commit failure;
-    - validation errors and `DuplicateDatasetError` must not rollback caller-owned uncommitted data;
-    - `insert_dataset_no_commit(dto)` performs no commit/rollback.
-  - Add focused tests for:
-    - insert succeeds on post-migration schema;
-    - duplicate by non-empty `snapshot_hash` rejected;
-    - empty hash falls back to fallback key on post-migration schema;
-    - old-DB schema insert omits `snapshot_hash` and succeeds;
-    - duplicate by fallback key rejected on old-DB schema;
-    - no-commit caller commit;
-    - no-commit caller rollback;
-    - SQLite INSERT failure triggers rollback;
-    - validation error does not rollback caller uncommitted data;
-    - duplicate error does not rollback caller uncommitted data;
-    - no other tables modified.
-- For Task 060J:
-  - Create `docs/archive_stager_implementation_design_060J.md`.
-  - Design only. Do not implement ArchiveStager.
-  - Base it on `docs/archive_import_filesystem_staging_design_059Z.md`.
-  - Specify source validation, deterministic temp directory, hash verification, cleanup, final move, and orphan-file handling.
-  - Explicitly separate staging from SQLite transactions:
-    - staging copies/verifies before durable DB write;
-    - final move happens only after DB commit;
-    - cleanup responsibilities for temp and final destination are documented.
-  - Include focused future tests for success, hash mismatch, missing file, temp cleanup, final move failure, and DB-failure cleanup handoff.
+  - Task 060K-Impl - implement `ArchiveStager`.
+  - Task 060L-Design - design `ArchiveImportCoordinator` first-pass wiring.
+- For Task 060K:
+  - Create `archive/stager.py`.
+  - Export the stager from `archive/__init__.py` only if that package already exports peer archive classes in the local style.
+  - Implement:
+    - `ArchiveStager`
+    - `HashMismatchError`
+    - any small stager-specific base exception if useful.
+  - Constructor must accept:
+    - `archive_root`
+    - `project_root`
+    - `experiment_name`
+    - `run_id`
+  - Use project-local staging:
+    - `<project_root>/.staging/<experiment_name>_<run_id>/`
+  - Use final destination:
+    - `<project_root>/data/imported/<experiment_name>/ohlcv.csv`
+  - Implement source validation:
+    - archive root is a directory;
+    - `manifest.json` exists;
+    - `ohlcv_snapshot.csv` exists;
+    - reject path traversal / symlink outside archive root.
+  - Implement `stage_dataset_snapshot(expected_hash)`:
+    - copy `ohlcv_snapshot.csv` to staging;
+    - verify SHA-256 of staged file;
+    - on hash mismatch, delete staged file and raise `HashMismatchError`;
+    - return staged path on success.
+  - Implement `move_to_final_destination()`:
+    - require a staged file;
+    - move staged file to final destination;
+    - clear tracked staged path only after successful move;
+    - if move fails, preserve staged file and tracked staged path for repair.
+  - Implement `cleanup_temp()`:
+    - remove the staging directory and its contents.
+  - Add focused tests in `tests/test_archive_stager.py` for:
+    - missing `ohlcv_snapshot.csv` raises;
+    - hash mismatch raises and staged file is deleted;
+    - hash match returns a path under project-local `.staging`;
+    - final move writes to `data/imported/<experiment_name>/ohlcv.csv`;
+    - cleanup removes staging dir;
+    - DB-failure cleanup scenario cleans temp only and creates no final files;
+    - final move failure preserves staged file and tracked path;
+    - path traversal or symlink outside archive is rejected.
+- For Task 060L:
+  - Create `docs/archive_import_coordinator_first_pass_wiring_design_060L.md`.
+  - Design only. Do not implement coordinator.
+  - Describe first-pass wiring across:
+    - archive preview / verifier;
+    - `ArchiveStager`;
+    - `StrategyRepoAdapter.insert_strategy_no_commit`;
+    - `DatasetRepoAdapter.insert_dataset_no_commit`;
+    - one shared SQLite transaction;
+    - final file move after DB commit;
+    - failure audit remains isolated.
+  - Specify ordering:
+    - verify archive;
+    - preflight duplicates;
+    - stage and verify file;
+    - begin/write DB rows with no-commit adapters;
+    - commit;
+    - final move;
+    - cleanup;
+    - audit failure path.
+  - Include focused future tests using fakes/spies for success, duplicate, staging failure, DB failure, commit failure, final move failure, and audit failure.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-07_task-060i-impl_060j-design_dataset-adapter-and-archive-stager-design_gemini.md`
+  - `docs/agent_reports/2026-06-07_task-060k-impl_060l-design_archive-stager-and-coordinator-wiring-design_deepseek.md`
 
 ### Do Not
 
-- Do not implement ArchiveStager.
-- Do not implement archive import coordinator.
-- Do not move, copy, or delete real project data files.
-- Do not add success audit writes.
+- Do not implement `ArchiveImportCoordinator`.
+- Do not alter repository adapters unless tests prove a bug directly blocks `ArchiveStager`.
+- Do not write success audit rows.
 - Do not touch UI, CLI, backtest engine, validation engine, strategy generator, or report exporters.
 - Do not add dependencies.
-- Do not create an index on `snapshot_hash`.
+- Do not move, copy, or delete files outside pytest temporary directories during tests.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Acceptance Criteria
 
-1. `DatasetRepoAdapter` is repository-layer only and imports no UI/engine modules.
-2. Post-migration schema uses `snapshot_hash` as the primary non-empty duplicate key.
-3. Old-DB fallback never queries or inserts into a missing `snapshot_hash` column.
-4. Transaction behavior is proven by tests, including rollback scope and no-commit behavior.
-5. 060J is design-only and creates no production stager code.
-6. Full suite, `git diff --check`, and agent status pass.
+1. `ArchiveStager` is implemented under the archive layer and imports no UI/engine modules.
+2. Staging is project-local under `.staging`.
+3. Hash mismatch deletes the staged file and raises a stager error.
+4. Final move happens only through explicit `move_to_final_destination()`.
+5. Final move failure preserves staged file for repair.
+6. `cleanup_temp()` removes the staging directory.
+7. 060L is design-only and creates no coordinator production code.
+8. Full suite, `git diff --check`, and agent status pass.
 
 ## Verification
 
@@ -136,7 +155,7 @@ Expected:
 
 - Full suite passes.
 - `git diff --check` has no errors.
-- Agent status shows the 060I/060J completion report as latest report.
+- Agent status shows the 060K/060L completion report as latest report.
 - `git status --short` shows only files within this task scope.
 
 ## Completion Report Format
