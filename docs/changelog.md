@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-06-07 — Batch 059I-Impl + 059J-Design Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-059i-impl_059j-design_archive-builder-first-pass-and-folder-manifest-integration_codex-review.md` — Codex acceptance review for ArchiveBuilder first-pass collector and folder manifest integration design.
+
+### Changed
+- Prepared the next two-task batch for a folder-only ArchiveExporter first pass and Importer boundary design.
+
+### Verification
+- Focused archive tests: 29 passed.
+- Full suite: 1132 passed.
+- `git diff --check` passed with LF/CRLF normalization warnings only.
+
+## 2026-06-07 — Batch 059I-Impl + 059J-Design: ArchiveBuilder First-Pass Collector and Folder Manifest Integration Design (Fix)
+
+### Added (059I-Impl)
+- `archive/builder.py`: `ArchiveBuilder` class + 6 exception types (added `StrategyValidationFailedError`). Builder collects metadata, validates required materials, and produces `ArchiveManifest` (which lists expected future relative file paths in `manifest.files`, with empty `content_hashes` to be filled by the exporter). Does NOT write folders or copy files.
+- `tests/test_archive_builder.py`: 11 tests (success, custom name, manifest files, validation failed hard-fail, and 7 missing material cases).
+- Updated `archive/__init__.py` exports and docstring.
+
+### Added (059J-Design)
+- `docs/folder_manifest_integration_design_059J.md` — defines folder layout, component responsibilities. Recommends `Batch 059K-Impl + 059L-Design - ArchiveExporter Folder Writer First Pass and Importer Boundary Design` as the next batch.
+
+### Verification
+- Focused tests: 29 passed (11 builder + 6 JSON + 5 snapshot + 7 verifier).
+- Full suite: 1132 passed, 0 warnings.
+- `git diff --check` passes.
+
 ## 2026-06-07 — Batch 059G-Impl + 059H-Design Codex Acceptance
 
 ### Added
