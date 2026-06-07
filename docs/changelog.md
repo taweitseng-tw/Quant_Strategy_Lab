@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-06-07 — Batch 060M-Impl + 060N-Design: ArchiveImportCoordinator First-Pass Implementation and Coordinator Acceptance Tests Design
+
+### Added (060M-Impl)
+- `archive/import_coordinator.py`: `ArchiveImportCoordinator` — dependency-injected orchestrator with `ImportResult` dataclass. 6-phase sequence: verify → preflight → stage → DB writes → final move → cleanup. Failure paths: duplicate skips staging/DB, staging failure cleans temp + audits, DB write/commit failure rolls back + cleans temp + audits, move failure returns partial (no rollback, staging preserved), audit failure non-crashing.
+- `tests/test_archive_import_coordinator.py`: 8 tests — success call ordering, duplicate skip, staging failure cleanup, DB failure rollback, commit failure rollback, move failure partial, audit non-crashing, no UI/engine imports.
+
+### Added (060N-Design)
+- `docs/archive_import_coordinator_acceptance_tests_design_060N.md` — 6 integration-style acceptance scenarios for future hardening: manifest mismatch, duplicate UID, duplicate dataset hash, final move partial state, audit isolation, no-UI boundary.
+
+### Changed (Codex Review Fix)
+- Replaced the coordinator's insert-and-rollback duplicate probe with read-only preflight duplicate checks so preflight does not mutate database state or rollback caller-owned work.
+- Made failure-audit write failures visible through `ImportResult.audit_failed=True` while preserving the original import error.
+- Tightened coordinator tests so success inserts the strategy only once and duplicate preflight paths perform no staging or DB writes.
+
+### Verification
+- Coordinator tests: 9 passed.
+- Full suite: 1220 passed.
+- `git diff --check` passes.
+
 ## 2026-06-07 - Batch 060K-Impl + 060L-Design Codex Acceptance
 
 ### Added

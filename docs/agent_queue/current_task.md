@@ -12,11 +12,11 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 060M-Impl + 060N-Design - ArchiveImportCoordinator First-Pass Implementation and Coordinator Acceptance Test Design.
+Batch 060O-Impl + 060P-Signoff - Coordinator Acceptance Tests and Reproducibility Foundation Signoff.
 
 ## Context Level
 
-Level 3 for 060M implementation, Level 3 for 060N design.
+Level 3 for both tasks.
 
 ## Required Reading
 
@@ -29,116 +29,93 @@ Before doing anything, read:
 5. `docs/task_board.md`
 6. `docs/changelog.md`
 7. `docs/context_brief.md`
-8. `archive/importer.py`
-9. `archive/verifier.py`
-10. `archive/stager.py`
-11. `repository/strategy_import_adapter.py`
-12. `repository/dataset_import_adapter.py`
-13. `repository/import_audit_repo.py`
-14. `docs/archive_import_coordinator_first_pass_wiring_design_060L.md`
-15. `docs/archive_import_coordinator_architecture_060A.md`
-16. `docs/review_notes/2026-06-07_task-060k-impl_060l-design_archive-stager-and-coordinator-wiring_codex-review.md`
-17. This task file
+8. `archive/import_coordinator.py`
+9. `archive/importer.py`
+10. `archive/verifier.py`
+11. `archive/stager.py`
+12. `archive/exporter.py`
+13. `archive/manifest.py`
+14. `repository/strategy_import_adapter.py`
+15. `repository/dataset_import_adapter.py`
+16. `repository/import_audit_repo.py`
+17. `tests/test_archive_import_coordinator.py`
+18. `docs/archive_import_coordinator_acceptance_tests_design_060N.md`
+19. `docs/review_notes/2026-06-07_task-060m-impl_060n-design_archive-import-coordinator-and-acceptance-tests_codex-review.md`
+20. This task file
 
 ## Context
 
-060K implemented `ArchiveStager`. 060L designed first-pass coordinator wiring. The next implementation should introduce a first-pass `ArchiveImportCoordinator` that orchestrates existing components without adding UI, engine, report, or success-audit behavior. Keep this slice small and test with fakes/spies.
+060M introduced `ArchiveImportCoordinator`. Codex corrected the first pass after review: preflight duplicate checks must be read-only, success must insert a strategy only once, and audit write failures must set `ImportResult.audit_failed=True` without masking the original import error.
+
+The next round must prove coordinator behavior with more realistic acceptance tests. Keep this focused on test coverage and signoff. Do not expand product scope.
 
 ## Scope
 
-### Do
+### Task 060O-Impl - Coordinator Acceptance Test Implementation
 
-- Complete two sequential tasks:
-  - Task 060M-Impl - implement first-pass `ArchiveImportCoordinator`.
-  - Task 060N-Design - design coordinator acceptance tests for the next hardening slice.
-- For Task 060M:
-  - Create a small coordinator module, suggested path `archive/import_coordinator.py`.
-  - Implement a minimal `ImportResult` dataclass with:
-    - `success: bool`
-    - `partial: bool = False`
-    - `skipped: bool = False`
-    - `strategy_id: int | None = None`
-    - `dataset_id: int | None = None`
-    - `error: str | None = None`
-    - `audit_failed: bool = False`
-  - Implement a first-pass coordinator class or function that wires existing collaborators in this order:
-    1. archive preview / manifest load;
-    2. archive verification;
-    3. construct DTOs;
-    4. stage dataset snapshot and verify hash;
-    5. call `StrategyRepoAdapter.insert_strategy_no_commit(...)`;
-    6. call `DatasetRepoAdapter.insert_dataset_no_commit(...)`;
-    7. `conn.commit()`;
-    8. final file move;
-    9. temp cleanup on success.
-  - Use dependency injection or constructor parameters so tests can pass fakes/spies for importer, verifier, stager, strategy adapter, dataset adapter, audit adapter, and connection.
-  - Failure behavior:
-    - duplicate strategy or dataset -> rollback if transaction started, cleanup temp if staged, write failure audit if possible, return skipped/failure result;
-    - staging/hash failure -> cleanup temp, write failure audit if possible, no DB writes;
-    - DB write/commit failure -> rollback connection, cleanup temp, write failure audit if possible;
-    - final move failure after DB commit -> return `ImportResult(success=False, partial=True, ...)`, preserve staged file, write failure audit if possible, do not rollback DB rows;
-    - audit write failure must not mask the original failure and should set `audit_failed=True`.
-  - Add focused tests with fakes/spies for:
-    - success path call order;
-    - duplicate strategy skips staging and DB writes;
-    - staging/hash failure cleans temp and writes audit;
-    - DB write failure rolls back and cleans temp;
-    - commit failure rolls back and cleans temp;
-    - final move failure returns partial and preserves staged file;
-    - audit failure does not mask original result;
-    - no UI/engine imports.
-- For Task 060N:
-  - Create `docs/archive_import_coordinator_acceptance_tests_design_060N.md`.
-  - Design only. Do not add a second production coordinator.
-  - Define the next acceptance-test hardening slice for real archive fixtures and integration-style coordinator tests.
-  - Include tests for manifest hash mismatch, duplicate dataset hash, duplicate strategy UID, final move partial state, audit failure isolation, and no UI/engine boundary.
-- Update:
-  - `docs/changelog.md`
-  - `docs/task_board.md`
-- Write completion report:
-  - `docs/agent_reports/2026-06-07_task-060m-impl_060n-design_archive-import-coordinator-and-acceptance-tests-design_deepseek.md`
+Create integration-style coordinator tests using real temporary archive/project folders and SQLite-backed repository adapters where practical.
 
-### Do Not
+Do:
 
-- Do not build UI or CLI flows.
-- Do not add report/export behavior.
-- Do not add success audit writes unless already isolated and explicitly needed by a test; failure audit only is enough for this slice.
-- Do not move, copy, or delete files outside pytest temporary directories during tests.
-- Do not add dependencies.
-- Do not change backtest, validation, strategy generator, or report exporters.
-- Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
+- Add a focused acceptance test file, suggested path `tests/test_archive_import_coordinator_acceptance.py`.
+- Implement realistic tests based on `docs/archive_import_coordinator_acceptance_tests_design_060N.md`:
+  1. manifest/hash verification failure returns `ImportResult(success=False)` with no staging and no DB writes;
+  2. duplicate strategy UID returns `skipped=True`, preserves the existing row, and performs no staging or DB insert;
+  3. duplicate dataset snapshot hash fails import, writes failure audit, and rolls back the strategy row;
+  4. final move failure returns `partial=True`, keeps committed DB rows, and preserves staged data for repair;
+  5. audit adapter failure preserves the original import error and sets `audit_failed=True`;
+  6. coordinator import boundary has no UI/engine dependency.
+- Use real `sqlite3.Connection` and real repository adapters for DB behavior where possible.
+- It is acceptable to use a tiny fake verifier/importer/stager only when the real component would make the test brittle or unrelated to the behavior being asserted.
+- Keep all new tests deterministic and temp-directory scoped.
+- Update `docs/changelog.md`.
+- Update `docs/task_board.md` if the next proposed task changes.
 
-## Acceptance Criteria
+Do not:
 
-1. Coordinator is small and dependency-injectable for tests.
-2. Success ordering is verified with fakes/spies.
-3. Failure paths preserve architecture boundaries and cleanup rules.
-4. Final move failure returns `partial=True` and does not delete DB rows or staged repair file.
-5. Audit failure does not mask the original failure.
-6. 060N is design-only.
-7. Full suite, `git diff --check`, and agent status pass.
+- Do not change UI, backtest, validation, strategy generation, or report surfaces.
+- Do not add success audit behavior.
+- Do not add overwrite/upsert/merge import semantics.
+- Do not weaken coordinator rollback or partial-failure semantics.
+- Do not use insert-and-rollback as a duplicate probe.
 
-## Verification
+Acceptance criteria:
 
-Run:
+1. New acceptance tests fail on the pre-Codex double-insert/rollback-probe design.
+2. Duplicate preflight paths do not stage files and do not insert strategy/dataset rows.
+3. Dataset duplicate during DB write rolls back any strategy insert from the same transaction.
+4. Final move failure is explicitly partial and does not roll back committed DB rows.
+5. Audit write failure is visible through `audit_failed=True`.
 
-```powershell
-.\.venv\Scripts\python.exe -m pytest tests -q
-git diff --check
-powershell -ExecutionPolicy Bypass -File scripts\agent_status.ps1
-git status --short
-```
+Verification:
 
-Expected:
+- Run:
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_archive_import_coordinator.py tests\test_archive_import_coordinator_acceptance.py -q`
+  - `.\.venv\Scripts\python.exe -m pytest -q`
+  - `git diff --check`
+  - `powershell -ExecutionPolicy Bypass -File scripts\agent_status.ps1`
 
-- Full suite passes.
-- `git diff --check` has no errors.
-- Agent status shows the 060M/060N completion report as latest report.
-- `git status --short` shows only files within this task scope.
+### Task 060P-Signoff - Reproducibility Foundation Signoff
 
-## Completion Report Format
+Do:
 
-Use:
+- Create a short signoff/triage document, suggested path `docs/reproducibility_foundation_signoff_060P.md`.
+- Summarize what is now covered across archive manifest, exporter/importer, stager, repository adapters, audit log, and coordinator.
+- List remaining risks before moving beyond the reproducibility foundation.
+- Recommend the next two-task batch after 060O/060P.
+
+Do not:
+
+- Do not declare the whole project complete.
+- Do not mark live trading, broker integration, GA/GP expansion, or portfolio backtest as in scope.
+
+## Completion Report
+
+After completion, create:
+
+`docs/agent_reports/2026-06-07_task-060o-impl_060p-signoff_coordinator-acceptance-tests-and-foundation-signoff_deepseek.md`
+
+Use this packet:
 
 ```text
 Completed:
