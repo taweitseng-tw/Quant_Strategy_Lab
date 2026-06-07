@@ -46,6 +46,35 @@ CREATE TABLE IF NOT EXISTS strategies (
 );
 """
 
+AUDIT_LOG_SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS ImportAuditLog (
+    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+    imported_at             TEXT NOT NULL,
+    archive_version         TEXT NOT NULL,
+    experiment_name         TEXT NOT NULL,
+    strategy_uid            TEXT NOT NULL,
+    archive_source          TEXT NOT NULL,
+    manifest_hash           TEXT NOT NULL,
+    original_filename       TEXT NOT NULL,
+    conflict_policy_applied  TEXT NOT NULL,
+    status                  TEXT NOT NULL,
+    error_message           TEXT,
+
+    CONSTRAINT chk_conflict_policy CHECK (conflict_policy_applied IN ('REJECT', 'OVERWRITE', 'SKIP', 'RENAME')),
+    CONSTRAINT chk_status CHECK (status IN ('SUCCESS', 'FAILED'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_import_audit_log_strategy_uid ON ImportAuditLog(strategy_uid);
+CREATE INDEX IF NOT EXISTS idx_import_audit_log_imported_at ON ImportAuditLog(imported_at DESC);
+"""
+
+
+def ensure_import_audit_log_schema(connection: sqlite3.Connection) -> None:
+    """Idempotently ensure the ImportAuditLog table and indexes exist in the connection."""
+    connection.executescript(AUDIT_LOG_SCHEMA_SQL)
+    connection.commit()
+
+
 
 class DatabaseManager:
     """Manages a single project SQLite database connection.
@@ -74,6 +103,7 @@ class DatabaseManager:
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(SCHEMA_SQL)
         self._conn.commit()
+        ensure_import_audit_log_schema(self._conn)
 
     @property
     def connection(self) -> sqlite3.Connection:

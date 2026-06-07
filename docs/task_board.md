@@ -12,6 +12,8 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Batch 059U-Impl + 059V-Design-Codex Review - ImportAuditLog Migration Skeleton and Adapter Slice Acceptance
+- [x] Batch 059U-Impl + 059V-Design - ImportAuditLog Migration Skeleton and Import Adapter Implementation Slice Design
 - [x] Batch 059S-Design + 059T-Design-Codex Review - ImportAuditLog Migration Plan and Adapter Test Contract Acceptance
 - [x] Batch 059S-Design + 059T-Design - ImportAuditLog Migration Plan and Repository Adapter Test Contract Design
 - [x] Batch 059Q-Impl + 059R-Design-Codex Review - Read-Only Import Plan Builder and Transaction Sequence Acceptance
@@ -237,7 +239,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next (v0.2)
 
-- Proposed Batch 059U-Impl + 059V-Design - ImportAuditLog Migration Skeleton and Import Adapter Implementation Slice Design
+- Proposed Batch 059W-Impl + 059X-Design - AuditLogRepositoryAdapter Failure Log Slice and Import Write Coordinator Design
 
 
 *(Remaining v0.2 PRD items pending task prioritization)*

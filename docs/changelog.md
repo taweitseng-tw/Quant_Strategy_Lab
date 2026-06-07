@@ -1,5 +1,37 @@
 # Changelog
 
+## 2026-06-07 — Batch 059U-Impl + 059V-Design Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-059u-impl_059v-design_import-audit-migration-skeleton-and-adapter-slice_codex-review.md` — Codex acceptance review for ImportAuditLog schema helper and first audit adapter slice design.
+
+### Changed
+- Prepared the next two-task batch for a narrowly scoped `AuditLogRepositoryAdapter.insert_failure_log()` implementation and import write coordinator design.
+
+### Verification
+- Audit schema tests: 4 passed.
+- Full suite: 1160 passed.
+- `git diff --check` passed with LF/CRLF normalization warnings only.
+
+## 2026-06-07 — Batch 059U-Impl + 059V-Design: ImportAuditLog Migration Skeleton and Import Adapter Implementation Slice Design
+
+### Added (059U-Impl)
+- `repository/db.py`: Added `AUDIT_LOG_SCHEMA_SQL` constant and `ensure_import_audit_log_schema(connection)` helper. Creates `ImportAuditLog` table (with `archive_source` and `manifest_hash` fields), `idx_import_audit_log_strategy_uid`, and `idx_import_audit_log_imported_at`. Idempotent, scoped to schema initialization only.
+- `tests/test_import_audit_log_schema.py`: 4 tests — table/index creation, idempotency, `status` CHECK constraint, `conflict_policy_applied` CHECK constraint, valid minimal failed row insert.
+- **No importer DB writes. No strategy/dataset/validation repository adapters. No file copies. No UI/service/CLI wiring.**
+
+### Added (059V-Design)
+- `docs/archive_import_adapter_slice_design_059V.md` — designs `AuditLogRepositoryAdapter.insert_failure_log()` as first minimal slice. Defines DTO fields, transaction boundary, failure behavior, and test plan.
+
+### Changed
+- `repository/db.py`: Fixed trailing whitespace on line 62.
+
+### Verification
+- Audit schema tests: 4 passed.
+- Full suite: 1160 passed, 0 warnings.
+- `git diff --check` passes.
+- No production code changed beyond schema helper and whitespace fix.
+
 ## 2026-06-07 — Batch 059S-Design + 059T-Design Codex Acceptance
 
 ### Added
