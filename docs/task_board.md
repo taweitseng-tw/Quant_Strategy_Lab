@@ -20,6 +20,8 @@ Post-v0.2 - Reproducibility foundation design
 - [x] Batch 060E-Impl + 060F-Design-Codex Review - Strategy Transaction Refactor and Dataset Snapshot Hash Migration Design Acceptance
 - [x] Batch 060G-Impl + 060H-Design-Codex Review - Dataset Snapshot Hash Migration and Adapter Design Acceptance
 - [x] Batch 060I-Impl + 060J-Design-Codex Review - DatasetRepoAdapter and ArchiveStager Design Acceptance
+- [x] Batch 060K-Impl + 060L-Design-Codex Review - ArchiveStager and Coordinator Wiring Design Acceptance
+- [x] Batch 060K-Impl + 060L-Design - ArchiveStager Implementation and ArchiveImportCoordinator First-Pass Wiring Design
 - [x] Batch 060I-Impl + 060J-Design - DatasetRepoAdapter Implementation and ArchiveStager Implementation Design
 - [x] Batch 060G-Impl + 060H-Design - Dataset Snapshot Hash Schema Migration and Post-Migration DatasetRepoAdapter Insert-Only Design
 - [x] Batch 060E-Impl + 060F-Design - StrategyRepoAdapter Transaction Refactor and Dataset Snapshot Hash Schema Migration Design
@@ -253,7 +255,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next (v0.2)
 
-- Proposed Batch 060K-Impl + 060L-Design - ArchiveStager Implementation + ArchiveImportCoordinator Implementation Design
+- Proposed Batch 060M-Impl + 060N-Design - ArchiveImportCoordinator First-Pass Implementation + Coordinator Acceptance Test Implementation
 
 
 *(Remaining v0.2 PRD items pending task prioritization)*

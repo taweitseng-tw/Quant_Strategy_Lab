@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-06-07 - Batch 060K-Impl + 060L-Design Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-060k-impl_060l-design_archive-stager-and-coordinator-wiring_codex-review.md` - Codex acceptance review for ArchiveStager implementation and ArchiveImportCoordinator first-pass wiring design.
+
+### Changed
+- `tests/test_archive_stager.py`: Codex tightened safety coverage so path traversal rejection is explicit and symlink-outside-archive validation no longer depends on Windows symlink privileges.
+
+### Verification
+- Archive stager tests: 8 passed.
+- Full suite: 1211 passed.
+- `git diff --check` passed with line-ending normalization warnings only.
+
+## 2026-06-07 — Batch 060K-Impl + 060L-Design: ArchiveStager Implementation and ArchiveImportCoordinator First-Pass Wiring Design
+
+### Added (060K-Impl)
+- `archive/stager.py`: `ArchiveStager` class with project-local `.staging/` staging, `HashMismatchError`, `StagerValidationError`, source validation (path traversal/symlink), `stage_dataset_snapshot(expected_hash)` with SHA-256 verification, `move_to_final_destination()` to `data/imported/<exp>/ohlcv.csv` (staged path preserved on failure), `cleanup_temp()`.
+- `tests/test_archive_stager.py`: 8 tests — success path, missing snapshot, hash mismatch deletes file, cleanup removes staging dir, DB failure cleanup no final files, move failure preserves staged path (monkeypatched), path traversal rejection, symlink validation without Windows symlink privileges.
+
+### Added (060L-Design)
+- `docs/archive_import_coordinator_first_pass_wiring_design_060L.md` — 6-phase coordinator sequence: verify, preflight, stage, DB write, file finalise, result. Failure audit matrix (6 failure points). `ImportResult` DTO. 7 focused test scenarios using spies/fakes.
+
+### Verification
+- Stager tests: 8 passed.
+- Full suite: 1211 passed.
+- `git diff --check` passes.
+
 ## 2026-06-07 - Batch 060I-Impl + 060J-Design Codex Acceptance
 
 ### Added
