@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-06-07 — Batch 059E-Impl + 059F-Design: Deterministic CSV Dataset Snapshot Writer and Archive Builder Input Contract
+
+### Added (059E-Impl)
+- `archive/dataset_snapshot.py`: `DatasetSnapshotResult` dataclass and `write_dataset_snapshot()` to generate a deterministic CSV representation of a DataFrame, computing a SHA-256 hash directly from the exact written bytes (with LF line endings and stable float formatting).
+- `archive/__init__.py`: Exports `DatasetSnapshotResult` and `write_dataset_snapshot`.
+- `tests/test_dataset_snapshot.py`: 5 tests ensuring hash stability, hash sensitivity to data changes, `\n` line endings, correct metadata handling, and `Path` output support.
+
+### Added (059F-Design)
+- `docs/archive_builder_input_contract_059F.md` — Defines input boundaries for the future `ArchiveBuilder`, specifying data sources (repository, file path, caller), and required failure modes. Codex revised the next recommendation to manifest JSON serialization plus repository adapter design.
+
+### Verification
+- Focused archive tests: 12 passed.
+- Full suite: 1115 passed.
+- `git diff --check` passes.
+
 ## 2026-06-07 — Batch 059C-Impl + 059D-Design Codex Acceptance
 
 ### Added

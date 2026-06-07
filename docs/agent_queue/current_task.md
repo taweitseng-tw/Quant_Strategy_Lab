@@ -12,11 +12,11 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 059E-Impl + 059F-Design - Deterministic CSV Dataset Snapshot Writer and Archive Builder Input Contract.
+Batch 059G-Impl + 059H-Design - Manifest JSON Serialization and Archive Builder Adapter Design.
 
 ## Context Level
 
-Level 2 for 059E implementation, Level 3 for 059F design.
+Level 2 for 059G implementation, Level 3 for 059H design.
 
 ## Required Reading
 
@@ -29,76 +29,67 @@ Before doing anything, read:
 5. `docs/task_board.md`
 6. `docs/changelog.md`
 7. `docs/context_brief.md`
-8. `docs/dataset_snapshot_format_decision_059D.md`
-9. `docs/review_notes/2026-06-07_task-059c-impl_059d-design_archive-manifest-verifier-and-dataset-snapshot-decision_codex-review.md`
+8. `docs/archive_builder_input_contract_059F.md`
+9. `docs/review_notes/2026-06-07_task-059e-impl_059f-design_csv-dataset-snapshot-and-archive-builder-contract_codex-review.md`
 10. This task file
 
 ## Context
 
-059C created the archive manifest/verifier skeleton. Codex accepted it after adding required-hash enforcement and archive-root path escape rejection. 059D chose deterministic CSV as the first dataset snapshot format, with no new dependency.
+059E added a standalone deterministic CSV dataset snapshot writer. 059F defined ArchiveBuilder input boundaries. Codex accepted the batch but rejected the proposed full Builder + Exporter + zip next step as too broad.
 
-The next implementation must stay standalone. Do not wire the snapshot writer into repository, ArchiveBuilder, UI, or full archive export yet.
+The next batch must stay small: implement manifest JSON serialization and design the repository adapter contract only. Do not build end-to-end archive export yet.
 
 ## Scope
 
 ### Do
 
 - Complete two sequential tasks:
-  - Task 059E-Impl - Deterministic CSV dataset snapshot writer
-  - Task 059F-Design - Archive builder input-contract design
-- For Task 059E:
-  - Add `archive/dataset_snapshot.py`.
-  - Implement a small `DatasetSnapshotResult` dataclass.
-  - Implement a deterministic CSV snapshot writer for a provided pandas `DataFrame` and output path.
-  - The writer must:
-    - write CSV with stable column order from the input DataFrame,
-    - use `index=False`,
-    - use deterministic float formatting,
-    - normalize line endings to `\n`,
-    - compute SHA-256 from the exact bytes written,
-    - return row count, column names, output filename, and hash.
-  - Add focused tests covering stable hash for same data, hash change when data changes, row/column metadata, and `\n` line endings.
-- For Task 059F:
-  - Create `docs/archive_builder_input_contract_059F.md`.
-  - Define the future `ArchiveBuilder` inputs and boundaries without implementation.
-  - Specify which data comes from repository, which data comes from file paths, and which data remains caller-provided.
-  - Identify failure modes and required errors for missing strategy, missing dataset snapshot, missing validation result, and missing disclaimer.
+  - Task 059G-Impl - Archive manifest JSON serialization
+  - Task 059H-Design - ArchiveBuilder repository adapter contract
+- For Task 059G:
+  - Add JSON serialization/deserialization helpers for `ArchiveManifest`.
+  - Preserve deterministic JSON key ordering and indentation.
+  - Add folder-level helpers that can write `manifest.json` and read it back.
+  - Add focused tests for round-trip serialization, deterministic bytes, and read/write from folder.
+- For Task 059H:
+  - Create `docs/archive_builder_repository_adapter_059H.md`.
+  - Define an adapter/protocol boundary for future ArchiveBuilder repository reads.
+  - Specify required methods, inputs, outputs, fake-test fixture shape, and failure behavior.
   - Recommend exactly one next two-task batch.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-07_task-059e-impl_059f-design_csv-dataset-snapshot-and-archive-builder-contract_deepseek.md`
+  - `docs/agent_reports/2026-06-07_task-059g-impl_059h-design_manifest-json-serialization-and-builder-adapter-contract_deepseek.md`
 
 ### Do Not
 
 - Do not implement ArchiveBuilder, ArchiveExporter, or ArchiveImporter.
-- Do not wire dataset snapshot writing into repository, UI, or services.
-- Do not change repository schema or migrations.
-- Do not add `pyarrow` or any other dependency.
-- Do not change existing engine behavior.
+- Do not wire archive export into repository, UI, services, or CLI.
 - Do not write zip export logic.
+- Do not change repository schema or migrations.
+- Do not add runtime dependencies.
+- Do not change existing engine behavior.
 - Do not create, delete, move, retarget, or push any git tag.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `archive/dataset_snapshot.py`
-- `archive/__init__.py`
-- `tests/test_dataset_snapshot.py`
-- `docs/archive_builder_input_contract_059F.md`
+- `archive/manifest.py`
+- `tests/test_archive_manifest_json.py`
+- `docs/archive_builder_repository_adapter_059H.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-07_task-059e-impl_059f-design_csv-dataset-snapshot-and-archive-builder-contract_deepseek.md`
+- `docs/agent_reports/2026-06-07_task-059g-impl_059h-design_manifest-json-serialization-and-builder-adapter-contract_deepseek.md`
 
 ## Acceptance Criteria
 
-1. CSV snapshot writer exists and is standalone.
-2. Snapshot writer returns deterministic metadata and SHA-256 hash from written bytes.
-3. Tests cover stable hash, changed-data hash change, metadata, and LF line endings.
+1. `ArchiveManifest` can serialize to deterministic JSON text and deserialize back.
+2. `manifest.json` folder write/read helpers exist and are tested.
+3. Tests cover round trip, deterministic bytes, and folder read/write.
 4. No ArchiveBuilder/Exporter/Importer is implemented.
 5. No repository, UI, schema, dependency, or engine changes are made.
-6. Archive builder input-contract design exists and recommends exactly one next two-task batch.
+6. Repository adapter design exists and recommends exactly one next two-task batch.
 7. Changelog, task board, and completion report are updated.
 8. Focused tests, full suite, `git diff --check`, and agent status pass.
 
@@ -107,7 +98,7 @@ The next implementation must stay standalone. Do not wire the snapshot writer in
 Run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/test_dataset_snapshot.py tests/test_archive_verifier.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_archive_manifest_json.py tests/test_dataset_snapshot.py tests/test_archive_verifier.py -q
 .\.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts\agent_status.ps1
@@ -116,10 +107,10 @@ git status --short
 
 Expected:
 
-- Focused archive dataset snapshot and verifier tests pass.
+- Focused archive manifest, dataset snapshot, and verifier tests pass.
 - Full suite passes.
 - `git diff --check` passes.
-- Agent status shows Batch 059E-Impl + 059F-Design completion report as latest report.
+- Agent status shows Batch 059G-Impl + 059H-Design completion report as latest report.
 - `git status --short` shows only files within this task scope.
 
 ## After Completion

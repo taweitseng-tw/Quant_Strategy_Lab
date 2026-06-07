@@ -8,10 +8,12 @@ Post-v0.2 - Reproducibility foundation design
 
 ## In Progress
 
-- [ ] Batch 059E-Impl + 059F-Design - Deterministic CSV Dataset Snapshot Writer and Archive Builder Input Contract
+- [ ] Batch 059G-Impl + 059H-Design - Manifest JSON Serialization and Archive Builder Adapter Design
 
 ## Done
 
+- [x] Batch 059E-Impl + 059F-Design-Codex Review - Deterministic CSV Dataset Snapshot Writer and Archive Builder Input Contract Acceptance
+- [x] Batch 059E-Impl + 059F-Design - Deterministic CSV Dataset Snapshot Writer and Archive Builder Input Contract
 - [x] Batch 059C-Impl + 059D-Design-Codex Review - Archive Manifest Verifier Skeleton and Dataset Snapshot Decision Acceptance
 - [x] Batch 059C-Impl + 059D-Design - Archive Manifest Verifier Skeleton and Dataset Snapshot Format Decision
 - [x] Batch 059A-Design + 059B-Design-Codex Review - Reproducible Experiment Archive Architecture and Provenance Integrity Acceptance
@@ -220,6 +222,8 @@ Post-v0.2 - Reproducibility foundation design
   - [x] Task 042B2 -Monte Carlo Combined Missed-Trade + Slippage Simulation
 
 ## Next (v0.2)
+
+- Proposed Batch 059G-Impl + 059H-Design - Manifest JSON Serialization and Archive Builder Adapter Design
 
 *(Remaining v0.2 PRD items pending task prioritization)*
 - Proposed Task 055 - Agent Workflow Automation
