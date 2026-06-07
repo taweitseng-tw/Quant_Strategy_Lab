@@ -1,16 +1,34 @@
 # Changelog
 
-## 2026-06-07 — Batch 060C-Design + 060D-Design Fix Codex Acceptance
+## 2026-06-07 - Batch 060E-Impl + 060F-Design Codex Acceptance
 
 ### Added
-- `docs/review_notes/2026-06-07_task-060c-design_060d-design_fix_snapshot-hash-schema-boundary_codex-review.md` — Codex acceptance review for the strategy transaction-boundary design and dataset snapshot-hash schema-boundary fix.
-
-### Changed
-- Prepared the next two-task batch for implementing the `StrategyRepoAdapter` transaction refactor and designing the dataset `snapshot_hash` schema migration.
+- `docs/review_notes/2026-06-07_task-060e-impl_060f-design_strategy-transaction-refactor-and-dataset-hash-migration_codex-review.md` - Codex acceptance review for the strategy transaction refactor and dataset snapshot-hash migration design.
 
 ### Verification
-- Full suite: 1179 passed.
+- Strategy import tests: 19 passed.
+- Full suite: 1186 passed.
 - `git diff --check` passed with line-ending normalization warnings only.
+
+## 2026-06-07 — Batch 060E-Impl + 060F-Design: StrategyRepoAdapter Transaction Refactor and Dataset Snapshot Hash Schema Migration Design
+
+### Added (060E-Impl)
+- `repository/strategy_import_adapter.py`: Extracted `_insert_strategy_core()` (shared private — validation + UID scan + INSERT, no commit/rollback). Refactored `insert_strategy()` to call core + explicit commit/rollback. Added `insert_strategy_no_commit()` (coordinator-facing, no commit/rollback). Rollback scope narrowed to SQLite write failures and commit failures only — validation, JSON, and DuplicateStrategyUIDError do not trigger rollback.
+- `tests/test_strategy_import_adapter.py`: 19 tests including:
+  - Existing 12 tests unchanged (backward-compatible auto-commit path).
+  - `insert_strategy_no_commit` caller rollback/commit.
+  - `insert_strategy_no_commit` duplicate UID raises without committing.
+  - SQLite INSERT execute failure rollback (staged prior row → broken SQL → verify prior row was rolled back).
+  - Validation error does NOT rollback caller's uncommitted data.
+  - Duplicate UID does NOT rollback caller's uncommitted data.
+
+### Added (060F-Design)
+- `docs/dataset_snapshot_hash_schema_migration_design_060F.md` — defines ALTER TABLE + SCHEMA_SQL update, idempotent `ensure_dataset_snapshot_hash_column()` helper, index decision (none), rollback/compatibility notes, and migration plan.
+
+### Verification
+- Strategy import tests: 19 passed.
+- Full suite: 1186 passed, 0 warnings.
+- `git diff --check` passes.
 
 ## 2026-06-07 — Batch 060C-Design + 060D-Design Fix: Snapshot Hash Schema Boundary and Next Batch Alignment
 

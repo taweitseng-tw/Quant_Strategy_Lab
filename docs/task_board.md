@@ -17,6 +17,8 @@ Post-v0.2 - Reproducibility foundation design
 - [x] Batch 059Y-Impl + 059Z-Design-Fix-Codex Review - Strategy UID Duplicate Guard Acceptance
 - [x] Batch 059W-Impl + 059X-Design-Fix-Codex Review - Failure-Only Audit Log Guard Acceptance
 - [x] Batch 059U-Impl + 059V-Design-Codex Review - ImportAuditLog Migration Skeleton and Adapter Slice Acceptance
+- [x] Batch 060E-Impl + 060F-Design-Codex Review - Strategy Transaction Refactor and Dataset Snapshot Hash Migration Design Acceptance
+- [x] Batch 060E-Impl + 060F-Design - StrategyRepoAdapter Transaction Refactor and Dataset Snapshot Hash Schema Migration Design
 - [x] Batch 060C-Design + 060D-Design - StrategyRepoAdapter Transaction Boundary Refactor and DatasetRepoAdapter Insert-Only Slice Design
 - [x] Batch 060A-Design + 060B-Design - Archive Import Coordinator Architecture and Acceptance Test Contract Design
 - [x] Batch 059Y-Impl + 059Z-Design - StrategyRepoAdapter Duplicate-Reject Insert-Only Slice and Filesystem Staging Design
@@ -247,7 +249,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next (v0.2)
 
-- Proposed Batch 060E-Impl + 060F-Design - StrategyRepoAdapter Transaction Refactor Implementation + Dataset Snapshot Hash Schema Migration Design
+- Proposed Batch 060G-Impl + 060H-Design - Dataset Snapshot Hash Schema Migration Implementation + Post-Migration DatasetRepoAdapter Insert-Only Design with Old-DB Fallback
 
 
 *(Remaining v0.2 PRD items pending task prioritization)*

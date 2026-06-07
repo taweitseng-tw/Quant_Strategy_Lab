@@ -86,8 +86,8 @@ class StrategyRepoAdapter:
     def __init__(self, connection: sqlite3.Connection) -> None:
         self._conn = connection
 
-    def insert_strategy(self, dto: ImportStrategyDTO) -> int:
-        """Insert a new strategy row.
+    def _insert_strategy_core(self, dto: ImportStrategyDTO) -> int:
+        """Shared private: validate, scan for duplicates, INSERT (no commit/rollback).
 
         Parameters
         ----------
@@ -96,16 +96,15 @@ class StrategyRepoAdapter:
         Returns
         -------
         int
-            The new row id.
+            The new row id (uncommitted).
 
         Raises
         ------
         StrategyRepoAdapterError
             If *dto* fields are invalid, *strategy_json* is malformed, or
-            the SQLite write fails.
+            the SQLite execution fails.
         DuplicateStrategyUIDError
-            If a strategy with the same *dto.strategy_uid* already exists
-            in the database.
+            If a strategy with the same *dto.strategy_uid* already exists.
         """
         # -- validate DTO fields -------------------------------------------
         if not dto.strategy_uid or not dto.strategy_uid.strip():
@@ -148,19 +147,84 @@ class StrategyRepoAdapter:
         # -- duplicate-reject by UID (scan existing strategy_json payloads) --
         self._reject_duplicate_uid(dto.strategy_uid)
 
-        # -- insert ---------------------------------------------------------
+        # -- insert (no commit) ---------------------------------------------
         now = datetime.now(timezone.utc).isoformat()
         try:
             cur = self._conn.execute(
                 self._INSERT_SQL,
                 (dto.project_id, dto.name, dto.strategy_json, now, now),
             )
-            self._conn.commit()
             return cur.lastrowid
         except sqlite3.Error as exc:
             raise StrategyRepoAdapterError(
                 f"Failed to insert strategy '{dto.name}': {exc}"
             ) from exc
+
+    def insert_strategy(self, dto: ImportStrategyDTO) -> int:
+        """Insert a new strategy row and commit.
+
+        Backward-compatible auto-commit wrapper.  Calls
+        ``_insert_strategy_core()``, then commits on success, rolls back
+        on SQLite write/commit failure.
+
+        Parameters
+        ----------
+        dto : ImportStrategyDTO
+
+        Returns
+        -------
+        int
+            The new row id (committed).
+
+        Raises
+        ------
+        StrategyRepoAdapterError
+            If validation, JSON parse, UID duplicate, or SQLite failure.
+        DuplicateStrategyUIDError
+            If a strategy with the same *dto.strategy_uid* already exists.
+        """
+        try:
+            row_id = self._insert_strategy_core(dto)
+        except StrategyRepoAdapterError as exc:
+            # Rollback only if the error was caused by a SQLite write failure
+            # (e.g. INSERT execution error wrapped from sqlite3.Error).
+            # Validation / JSON errors have no SQL to clean up.
+            if isinstance(exc.__cause__, sqlite3.Error):
+                self._conn.rollback()
+            raise
+        try:
+            self._conn.commit()
+            return row_id
+        except sqlite3.Error as exc:
+            self._conn.rollback()
+            raise StrategyRepoAdapterError(
+                f"Failed to commit strategy '{dto.name}': {exc}"
+            ) from exc
+
+    def insert_strategy_no_commit(self, dto: ImportStrategyDTO) -> int:
+        """Insert a new strategy row **without** committing.
+
+        Coordinator-facing method.  The caller owns the transaction and
+        must call ``commit()`` or ``rollback()`` on the connection.
+        No commit or rollback is performed inside this method.
+
+        Parameters
+        ----------
+        dto : ImportStrategyDTO
+
+        Returns
+        -------
+        int
+            The new row id (uncommitted).
+
+        Raises
+        ------
+        StrategyRepoAdapterError
+            If validation, JSON parse, UID duplicate, or SQLite failure.
+        DuplicateStrategyUIDError
+            If a strategy with the same *dto.strategy_uid* already exists.
+        """
+        return self._insert_strategy_core(dto)
 
     # -- internal: duplicate UID scan ---------------------------------------
 
