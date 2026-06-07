@@ -1,5 +1,48 @@
 # Changelog
 
+## 2026-06-07 — Batch 058D-Fix + 058E-Verify Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-058d-fix_058e-verify_normalizer-warning-suppression-and-zero-warning-verification_codex-review.md` — Codex acceptance review for the normalizer warning suppression and zero-warning verification batch.
+
+### Changed
+- Updated `docs/context_brief.md` to reflect the accepted zero-warning state after 058D/058E.
+- Prepared the next agent queue assignment for Batch 058F-Signoff + 058G-Decision.
+
+### Verification
+- Focused malformed datetime test: 1 passed.
+- Full suite: 1103 passed.
+- `git diff --check` passed with LF/CRLF normalization warnings only.
+- Tag `v0.2-alpha-validation-expansion` still points to `1a9c533`.
+
+## 2026-06-07 — Batch 058D-Fix + 058E-Verify: Normalizer Warning Suppression and Zero-warning Verification
+
+### Fixed (058D)
+- `tests/test_csv_importer.py`: Added `@pytest.mark.filterwarnings("ignore:Could not infer format:UserWarning")` to `test_normalize_malformed_datetime_raises`. The test still asserts `NormalizerError`; only the pre-existing pandas format inference warning is suppressed. No production code changed.
+
+### Added (058E)
+- `docs/zero_warning_verification_058E.md` — documents the warning source, suppression, and verification result.
+
+### Verification
+- Focused test: 1 passed, 0 warnings.
+- Full suite: **1103 passed, 0 warnings**.
+- `git diff --check` passes.
+
+## 2026-06-07 — docs/context_brief.md Created
+
+### Added
+- `docs/context_brief.md` — compact project context brief for Reasonix / Codex handoffs. Summarizes project goal, current milestone, architecture layers, non-negotiable rules, completed capabilities, open capabilities, key directories, and current review focus. Explicitly states it does not replace full-context review for risky tasks.
+
+## 2026-06-07 - Agent Context Efficiency Protocol
+
+### Changed
+- Updated `AGENTS.md` with a context and review efficiency protocol for Reasonix / Codex handoffs.
+- Added rules for compact context use, task context levels, Reasonix completion packets, Codex review packets, and pre-implementation task cards.
+- Clarified that token efficiency must not reduce development depth, verification, tests, edge-case handling, or architecture review.
+
+### Verification
+- Documentation-only change; reviewed `AGENTS.md` wording for consistency with existing workflow and project quality rules.
+
 ## 2026-06-07 - Batch 058B-Fix + 058C-Design Codex Acceptance
 
 ### Added

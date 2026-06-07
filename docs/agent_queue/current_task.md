@@ -12,7 +12,7 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 058D-Fix + 058E-Verify - Normalizer Warning Suppression and Zero-warning Verification.
+Batch 058F-Signoff + 058G-Decision - v0.2 Cleanup Signoff and Next Milestone Decision.
 
 ## Required Reading
 
@@ -24,70 +24,71 @@ Before doing anything, read:
 4. `docs/architecture.md`
 5. `docs/task_board.md`
 6. `docs/changelog.md`
-7. `docs/review_notes/2026-06-07_task-058b-fix_058c-design_widget-mc-hardening-and-normalizer-warning-triage_codex-review.md`
-8. `docs/normalizer_datetime_warning_triage_058C.md`
-9. This task file
+7. `docs/context_brief.md`
+8. `docs/review_notes/2026-06-07_task-058d-fix_058e-verify_normalizer-warning-suppression-and-zero-warning-verification_codex-review.md`
+9. `docs/zero_warning_verification_058E.md`
+10. This task file
 
 ## Context
 
-Batch 058B-Fix + 058C-Design was accepted by Codex. The remaining known warning is emitted only by `tests/test_csv_importer.py::test_normalize_malformed_datetime_raises`, where malformed datetime input intentionally triggers pandas' format inference warning before QSL raises `NormalizerError`.
+Batch 058D-Fix + 058E-Verify was accepted by Codex. The full suite is now verified at 1103 passing tests with zero warnings. This batch is documentation/signoff only: close the 058 cleanup series cleanly, then recommend the next two-task milestone batch.
 
 ## Scope
 
 ### Do
 
 - Complete two sequential tasks:
-  - Task 058D-Fix - Suppress Known Normalizer Malformed Datetime Warning in Test
-  - Task 058E-Verify - Zero-warning Verification Note
-- For Task 058D-Fix:
-  - Update `tests/test_csv_importer.py` only.
-  - Suppress the specific pandas warning only for `test_normalize_malformed_datetime_raises`.
-  - Keep the `NormalizerError` assertion intact.
-  - Do not change `data_engine/normalizer.py`.
-- For Task 058E-Verify:
-  - Create `docs/zero_warning_verification_058E.md`.
-  - Document the warning source, the test-level suppression, and the final verification result.
-  - Recommend exactly one next two-task batch.
+  - Task 058F-Signoff - Final v0.2 cleanup signoff
+  - Task 058G-Decision - Next milestone direction decision matrix
+- For Task 058F-Signoff:
+  - Create `docs/v0.2_cleanup_signoff_058F.md`.
+  - Summarize the accepted 058 cleanup series, latest verification state, remaining deferred items, and any non-blocking risks.
+  - Include the exact verification evidence from Codex review: focused test passed, full suite 1103 passed, tag still points to `1a9c533`.
+- For Task 058G-Decision:
+  - Create `docs/next_milestone_options_058G.md`.
+  - Compare exactly three next milestone directions:
+    1. v0.3 validation/robustness expansion.
+    2. v1.0 research archive/reproducibility foundation.
+    3. UI workflow polish and visual inspection.
+  - Recommend exactly one direction and exactly one next two-task batch.
+  - Keep the recommendation aligned with SOUL.md, AGENTS.md, PRD, and architecture boundaries.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-07_task-058d-fix_058e-verify_normalizer-warning-suppression-and-zero-warning-verification_deepseek.md`
+  - `docs/agent_reports/2026-06-07_task-058f-signoff_058g-decision_v0.2-cleanup-signoff-and-next-milestone-decision_deepseek.md`
 
 ### Do Not
 
 - Do not change production Python code.
-- Do not change normalizer behavior.
-- Do not broadly suppress all warnings.
+- Do not change tests.
 - Do not create, delete, move, retarget, or push any git tag.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
+- Do not expand scope into implementation of the next milestone.
 
 ## Files Likely Involved
 
-- `tests/test_csv_importer.py`
-- `docs/zero_warning_verification_058E.md`
+- `docs/v0.2_cleanup_signoff_058F.md`
+- `docs/next_milestone_options_058G.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-07_task-058d-fix_058e-verify_normalizer-warning-suppression-and-zero-warning-verification_deepseek.md`
+- `docs/agent_reports/2026-06-07_task-058f-signoff_058g-decision_v0.2-cleanup-signoff-and-next-milestone-decision_deepseek.md`
 
 ## Acceptance Criteria
 
-1. The malformed datetime test still asserts `NormalizerError`.
-2. Only the specific pandas datetime inference warning is suppressed.
-3. No production code changes are made.
-4. Full suite reports zero warnings.
-5. Zero-warning verification note exists.
-6. Changelog and task board are updated.
-7. Completion report is created.
-8. Focused test, full suite, `git diff --check`, tag verification, and agent status pass.
+1. v0.2 cleanup signoff document exists and accurately summarizes the accepted cleanup state.
+2. Next milestone decision matrix exists and compares exactly three options.
+3. Exactly one next direction and exactly one next two-task batch are recommended.
+4. No production code or tests are changed.
+5. Changelog and task board are updated.
+6. Completion report is created.
+7. `git diff --check`, tag verification, and agent status pass.
 
 ## Verification
 
 Run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/test_csv_importer.py::test_normalize_malformed_datetime_raises -q
-.\.venv\Scripts\python.exe -m pytest -q
 git diff --check
 git show --no-patch --decorate --date=iso --format=fuller v0.2-alpha-validation-expansion
 powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
@@ -95,11 +96,10 @@ powershell -ExecutionPolicy Bypass -File scripts/agent_status.ps1
 
 Expected:
 
-- Focused malformed datetime test passes.
-- Full suite passes and reports no warnings.
 - `git diff --check` passes.
 - Tag remains unchanged and points to `1a9c533`.
-- Agent status shows Batch 058D-Fix + 058E-Verify completion report as latest report.
+- Agent status shows Batch 058F-Signoff + 058G-Decision completion report as latest report.
+- No production Python code or tests are changed.
 
 ## After Completion
 

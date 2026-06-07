@@ -21,6 +21,122 @@ Before making changes, read these files in order:
 
 If any of these files are missing during early project setup, create only the files required by the current task.
 
+### 0.1 Context Discipline Without Losing Development Depth
+
+The workflow may use compact context only to reduce repeated re-reading, not to reduce engineering care.
+
+Rules:
+
+1. Full-detail review remains required for architecture changes, product-scope changes, engine logic, validation logic, backtest assumptions, strategy generation, repository schema changes, and milestone acceptance.
+2. Compact context is allowed only when the task card explicitly marks the task as low-risk and points to the relevant files.
+3. If compact context and full documents disagree, follow the full documents in the required reading order.
+4. If an agent is unsure whether compact context is sufficient, escalate to the full reading order.
+5. Token efficiency must never be used as a reason to skip verification, weaken tests, ignore edge cases, or accept unclear architecture.
+
+---
+
+## 0A. Context and Review Efficiency Protocol
+
+This protocol improves the Reasonix / Codex cross-workflow by reducing duplicate explanation while preserving careful development.
+
+### 0A.1 Project Context Brief
+
+Maintain a compact project brief when the workflow needs repeated agent handoffs:
+
+```text
+docs/context_brief.md
+```
+
+The brief should summarize:
+
+1. Project goal.
+2. Current milestone goal.
+3. Architecture layers.
+4. Non-negotiable rules.
+5. Completed capabilities.
+6. Open capabilities.
+7. Key directories.
+8. Current review focus.
+
+The brief should be used as a fast orientation aid. It must not replace `SOUL.md`, `AGENTS.md`, `docs/PRD.md`, or `docs/architecture.md` when the task risk requires full context.
+
+### 0A.2 Task Context Levels
+
+Task cards should assign one of these context levels:
+
+```text
+Level 1 - UI, docs, small wiring, formatting-safe fixes
+Read: SOUL.md, AGENTS.md, docs/context_brief.md if present, docs/task_board.md, docs/changelog.md, and relevant files.
+
+Level 2 - service layer, data flow, light engine changes
+Read: SOUL.md, AGENTS.md, docs/context_brief.md if present, docs/architecture.md, docs/task_board.md, docs/changelog.md, relevant files, and relevant tests.
+
+Level 3 - backtest, strategy, validation, repository schema, architecture, product scope, milestone acceptance
+Read the full required reading order from Section 0 plus relevant source and tests.
+```
+
+The assigned level controls how much context must be loaded first; it does not lower quality standards.
+
+### 0A.3 Reasonix Completion Packet
+
+Reasonix should report completed implementation work in this compact format:
+
+```text
+Completed:
+Files changed:
+Behavior changed:
+Tests run:
+Assumptions:
+Known risks:
+Reviewer focus:
+```
+
+`Reviewer focus` should identify the exact areas Codex should inspect first, such as architecture boundary, no-future-leak risk, serialization compatibility, UI-service boundary, or test coverage.
+
+### 0A.4 Codex Review Packet
+
+Codex should review the changed files, relevant contracts, and verification evidence before expanding scope.
+
+Codex review output should use:
+
+```text
+Decision: PASS / NEEDS FIX / BLOCKED
+
+Findings:
+- [P1/P2/P3] file:line issue
+
+Required fixes:
+- ...
+
+Architecture risk:
+- ...
+
+Verification:
+- ...
+
+Next assignment:
+- ...
+```
+
+If there are no findings, Codex should say so clearly and keep the review concise. The value of Codex review is judgment, risk detection, and acceptance criteria, not repeating the implementation narrative.
+
+### 0A.5 Task Card Before Implementation
+
+Before assigning execution work to Reasonix, Codex or the user should create a short task card:
+
+```text
+Task:
+Context level:
+Scope:
+Do:
+Do not:
+Files likely involved:
+Acceptance criteria:
+Verification:
+```
+
+This task card should reduce ambiguity before implementation begins. It must be specific enough to prevent rework, but narrow enough to keep diffs reviewable.
+
 ---
 
 ## 1. Project Summary

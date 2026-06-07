@@ -166,6 +166,7 @@ def test_normalize_duplicate_datetimes_raises():
         normalize(df)
 
 
+@pytest.mark.filterwarnings("ignore:Could not infer format:UserWarning")
 def test_normalize_malformed_datetime_raises():
     """Rows with unparseable datetimes must raise NormalizerError (no silent drop)."""
     df = pd.DataFrame({
