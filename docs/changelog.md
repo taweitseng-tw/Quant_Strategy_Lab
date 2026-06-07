@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-06-07 — Batch 059O-Design + 059P-Design Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-059o-design_059p-design_archive-importer-repository-contract-and-audit-schema_codex-review.md` — Codex acceptance review for repository contract and import audit schema design.
+
+### Changed
+- Prepared the next two-task batch for a read-only import plan builder and transaction sequence design.
+
+### Verification
+- Full suite: 1150 passed.
+- `git diff --check` passed with LF/CRLF normalization warnings only.
+
+## 2026-06-07 — Batch 059O-Design + 059P-Design: ArchiveImporter Repository Contract and Import Audit Schema Design
+
+### Added (059O-Design)
+- `docs/archive_import_repository_contract_design_059O.md`: defined interfaces (`IImportStrategyRepositoryAdapter`, `IImportDatasetRepositoryAdapter`, `IImportValidationRepositoryAdapter`, `IImportFilesystemAdapter`), transaction boundary and rollback expectations, DTOs, and exception taxonomy for future database import.
+
+### Added (059P-Design)
+- `docs/archive_import_audit_schema_design_059P.md`: defined SQLite schema for `ImportAuditLog`, strategy provenance meta payload injection, SQL-level collision detection queries (by Strategy UID, Dataset ID, and properties), and failure auditing transaction isolation.
+
+### Verification
+- Full suite: 1150 passed.
+- `git diff --check` passes.
+
 ## 2026-06-07 — Batch 059M-Impl + 059N-Design Codex Acceptance
 
 ### Added
