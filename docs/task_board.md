@@ -8,10 +8,12 @@ Post-v0.2 - Reproducibility foundation design
 
 ## In Progress
 
-- [ ] Batch 059K-Impl + 059L-Design - ArchiveExporter Folder Writer First Pass and Importer Boundary Design
+- [ ] None
 
 ## Done
 
+- [x] Batch 059K-Impl + 059L-Design-Codex Review - ArchiveExporter Folder Writer and Importer Boundary Design Acceptance
+- [x] Batch 059K-Impl + 059L-Design - ArchiveExporter Folder Writer First Pass and Importer Boundary Design
 - [x] Batch 059I-Impl + 059J-Design-Codex Review - ArchiveBuilder First-Pass Collector and Folder Manifest Integration Acceptance
 - [x] Batch 059I-Impl + 059J-Design - ArchiveBuilder First-Pass Collector and Folder Manifest Integration Design
 - [x] Batch 059G-Impl + 059H-Design-Codex Review - Manifest JSON Serialization and Archive Builder Adapter Design Acceptance
@@ -227,7 +229,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next (v0.2)
 
-- Proposed Batch 059K-Impl + 059L-Design - ArchiveExporter Folder Writer First Pass and Importer Boundary Design
+- Proposed Batch 059M-Impl + 059N-Design - ArchiveImporter Verification Skeleton and Archive Import Conflict Policy Design
 
 *(Remaining v0.2 PRD items pending task prioritization)*
 - Proposed Task 055 - Agent Workflow Automation

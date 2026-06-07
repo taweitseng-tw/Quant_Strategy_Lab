@@ -1,7 +1,7 @@
 """Quant Strategy Lab — Reproducible Experiment Archive
 
-Design-phase package. Contains manifest, verifier, integrity checking, and a
-first-pass builder collector.  Exporter / importer not yet implemented.
+Design-phase package. Contains manifest, verifier, integrity checking, a first-pass
+builder collector, and a folder exporter. Importer not yet implemented.
 """
 
 __all__ = [
@@ -18,6 +18,9 @@ __all__ = [
     "MissingValidationResultError",
     "StrategyValidationFailedError",
     "MissingDisclaimerError",
+    "ArchiveExporter",
+    "ArchiveExporterError",
+    "ExportDataUnavailableError",
 ]
 
 from archive.manifest import ArchiveManifest, ArchiveIntegrityError
@@ -33,3 +36,4 @@ from archive.builder import (
     StrategyValidationFailedError,
     MissingDisclaimerError,
 )
+from archive.exporter import ArchiveExporter, ArchiveExporterError, ExportDataUnavailableError

@@ -1,6 +1,6 @@
 # Agent Queue - Current Task
 
-> Codex writes this file. Anti-Gravity or DeepSeek reads it, executes only this scope, then writes a completion report under `docs/agent_reports/`.
+> Codex writes this file. Anti-Gravity, DeepSeek, Gemini, or Reasonix reads it, executes only this scope, then writes a completion report under `docs/agent_reports/`.
 
 ## Status
 
@@ -12,11 +12,11 @@ DeepSeek V4 Flash or Gemini 3.5 Flash
 
 ## Current Task
 
-Batch 059K-Impl + 059L-Design - ArchiveExporter Folder Writer First Pass and Importer Boundary Design.
+Batch 059M-Impl + 059N-Design - ArchiveImporter Verification Skeleton and Archive Import Conflict Policy Design.
 
 ## Context Level
 
-Level 2 for 059K implementation, Level 3 for 059L design.
+Level 2 for 059M implementation, Level 3 for 059N design.
 
 ## Required Reading
 
@@ -29,91 +29,91 @@ Before doing anything, read:
 5. `docs/task_board.md`
 6. `docs/changelog.md`
 7. `docs/context_brief.md`
-8. `docs/folder_manifest_integration_design_059J.md`
-9. `docs/review_notes/2026-06-07_task-059i-impl_059j-design_archive-builder-first-pass-and-folder-manifest-integration_codex-review.md`
+8. `docs/archive_importer_boundary_design_059L.md`
+9. `docs/review_notes/2026-06-07_task-059k-impl_059l-design_archive-exporter-folder-writer-and-importer-boundary_codex-review.md`
 10. This task file
 
 ## Context
 
-059I added a first-pass `ArchiveBuilder` that validates required materials and produces a side-effect-free `ArchiveManifest`. 059J designed the future folder archive layout and separated Builder, Exporter, Verifier, and Importer responsibilities.
+059K added a folder-only `ArchiveExporter` first pass that writes a reproducible experiment archive folder and produces hashes verified by `ArchiveVerifier`. 059L designed the future `ArchiveImporter` boundary.
 
-This batch may introduce folder writes through a narrow `ArchiveExporter` first pass. It must not implement zip output, UI/service wiring, real repository adapters, or importer behavior.
+This batch should introduce only the importer verification boundary, not actual importing into application state. Keep the implementation side-effect-free except reading the archive folder.
 
 ## Scope
 
 ### Do
 
 - Complete two sequential tasks:
-  - Task 059K-Impl - ArchiveExporter folder writer first pass
-  - Task 059L-Design - ArchiveImporter boundary design
-- For Task 059K:
-  - Add `archive/exporter.py`.
-  - Implement a minimal `ArchiveExporter` that accepts an `ArchiveBuilder` and a fake/in-memory data source style object.
-  - Exporter may write to an output folder only.
-  - It may:
-    - call `ArchiveBuilder.build(...)`,
-    - create the output folder,
-    - write `disclaimer.txt`,
-    - write `strategy.json`,
-    - write `dataset_meta.json`,
-    - write `validation_result.json`,
-    - copy the provided CSV dataset snapshot to `ohlcv_snapshot.csv`,
-    - compute SHA-256 hashes from the exact written/copied bytes,
-    - write final `manifest.json`.
-  - Add focused tests using fake data only for:
-    - successful folder export,
-    - manifest includes all written files,
-    - hashes match written bytes,
-    - verifier accepts exported folder,
-    - output folder pre-exists.
-- For Task 059L:
-  - Create `docs/archive_importer_boundary_design_059L.md`.
-  - Define future Importer responsibilities, non-goals, verification sequence, and failure modes.
+  - Task 059M-Impl - ArchiveImporter verification skeleton
+  - Task 059N-Design - Archive import conflict policy design
+- For Task 059M:
+  - Add `archive/importer.py`.
+  - Implement a minimal `ArchiveImporter` that accepts an archive folder path.
+  - Read `manifest.json` using `ArchiveManifest.read_from_folder(...)`.
+  - Check archive schema compatibility by major version only.
+    - Current supported major version: `1`.
+    - Missing, malformed, non-numeric, or newer major versions must raise a clear importer exception.
+  - Delegate content verification to `ArchiveVerifier.verify_all()`.
+  - Return a small immutable import plan / verification summary object such as `ArchiveImportPlan`.
+  - The plan may include archive root, archive version, experiment name, files, and a boolean verification flag.
+  - Add focused tests using exported fake archive folders only.
+- For Task 059N:
+  - Create `docs/archive_import_conflict_policy_design_059N.md`.
+  - Define conflict policy options for future imports:
+    - reject duplicate,
+    - overwrite with explicit opt-in,
+    - keep existing and skip,
+    - duplicate with suffix / new UID.
+  - Define which policy should be the MVP default.
+  - Define required user-facing warnings and audit/provenance records.
   - Recommend exactly one next two-task batch.
 - Update:
+  - `archive/__init__.py`
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-07_task-059k-impl_059l-design_archive-exporter-folder-writer-and-importer-boundary_deepseek.md`
+  - `docs/agent_reports/2026-06-07_task-059m-impl_059n-design_archive-importer-verification-and-conflict-policy_deepseek.md`
 
 ### Do Not
 
-- Do not implement zip export.
-- Do not implement ArchiveImporter.
-- Do not wire archive export into UI, services, CLI, or real repositories.
+- Do not import anything into SQLite or repositories.
+- Do not copy files into project data folders.
+- Do not implement zip extraction.
+- Do not wire importer into UI, services, CLI, or real repositories.
 - Do not change repository schema or migrations.
 - Do not add runtime dependencies.
 - Do not change existing engine behavior.
+- Do not weaken `ArchiveVerifier` checks.
+- Do not use runtime `assert` for validation.
 - Do not create, delete, move, retarget, or push any git tag.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
 
 ## Files Likely Involved
 
-- `archive/exporter.py`
+- `archive/importer.py`
 - `archive/__init__.py`
-- `tests/test_archive_exporter.py`
-- `docs/archive_importer_boundary_design_059L.md`
+- `tests/test_archive_importer.py`
+- `docs/archive_import_conflict_policy_design_059N.md`
 - `docs/changelog.md`
 - `docs/task_board.md`
-- `docs/agent_reports/2026-06-07_task-059k-impl_059l-design_archive-exporter-folder-writer-and-importer-boundary_deepseek.md`
+- `docs/agent_reports/2026-06-07_task-059m-impl_059n-design_archive-importer-verification-and-conflict-policy_deepseek.md`
 
 ## Acceptance Criteria
 
-1. `ArchiveExporter` writes a folder archive only.
-2. Exported folder contains `manifest.json`, `disclaimer.txt`, `strategy.json`, `dataset_meta.json`, `validation_result.json`, and `ohlcv_snapshot.csv`.
-3. Manifest `files` and `content_hashes` match the written/copied files.
-4. `ArchiveVerifier` accepts the exported folder in tests.
-5. No zip, importer, UI/service wiring, real repository adapter, schema, dependency, or engine changes are made.
-6. Importer boundary design exists and recommends exactly one next two-task batch.
-7. Changelog, task board, and completion report are updated.
-8. Focused tests, full suite, `git diff --check`, and agent status pass.
+1. `ArchiveImporter` is a verification skeleton only.
+2. Valid exported folder archives produce an import plan / verification summary.
+3. Missing manifest, malformed archive version, newer major archive version, and verifier integrity failure are tested.
+4. No DB writes, file import/copy, zip extraction, UI/service/CLI wiring, schema, dependency, or engine changes are made.
+5. Conflict policy design exists and recommends exactly one next two-task batch.
+6. Changelog, task board, and completion report are updated.
+7. Focused tests, full suite, `git diff --check`, and agent status pass.
 
 ## Verification
 
 Run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/test_archive_exporter.py tests/test_archive_builder.py tests/test_archive_manifest_json.py tests/test_dataset_snapshot.py tests/test_archive_verifier.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_archive_importer.py tests/test_archive_exporter.py tests/test_archive_verifier.py tests/test_archive_manifest_json.py -q
 .\.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts\agent_status.ps1
@@ -122,10 +122,10 @@ git status --short
 
 Expected:
 
-- Focused archive exporter/builder/manifest/snapshot/verifier tests pass.
+- Focused archive importer/exporter/verifier/manifest tests pass.
 - Full suite passes.
 - `git diff --check` passes.
-- Agent status shows Batch 059K-Impl + 059L-Design completion report as latest report.
+- Agent status shows Batch 059M-Impl + 059N-Design completion report as latest report.
 - `git status --short` shows only files within this task scope.
 
 ## After Completion

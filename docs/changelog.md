@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-06-07 — Batch 059K-Impl + 059L-Design Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-059k-impl_059l-design_archive-exporter-folder-writer-and-importer-boundary_codex-review.md` — Codex acceptance review for ArchiveExporter folder writer and importer boundary design.
+
+### Changed
+- Prepared the next two-task batch for an ArchiveImporter verification skeleton and archive import conflict policy design.
+
+### Verification
+- Focused archive tests: 36 passed.
+- Full suite: 1139 passed.
+- `git diff --check` passed with LF/CRLF normalization warnings only.
+
+## 2026-06-07 — Batch 059K-Impl + 059L-Design: ArchiveExporter Folder Writer First Pass and Importer Boundary Design (Fix)
+
+### Added (059K-Impl)
+- `archive/exporter.py`: `ArchiveExporter` class to export strategy definition, dataset metadata, validation results, copy the dataset CSV snapshot, and write disclaimer.txt into a destination directory, completing `manifest.json` with computed SHA-256 hashes. Defined `ArchiveExporterError` and `ExportDataUnavailableError` to replace asset runtime guards.
+- `tests/test_archive_exporter.py`: 7 tests (successful folder export, manifest includes all files and hashes, verifier accepts exported folder, pre-existing output folder, and 3 data unavailable failure cases). Added missing `Any` import.
+- Updated `archive/__init__.py` exports and package docstring.
+
+### Added (059L-Design)
+- `docs/archive_importer_boundary_design_059L.md` — defines `ArchiveImporter` boundary, responsibilities, non-goals, verification sequence, and failure modes. Recommends `Batch 059M-Impl + 059N-Design - ArchiveImporter Verification Skeleton and Archive Import Conflict Policy Design` as next two-task batch.
+
+### Verification
+- Focused tests: 36 passed (7 exporter + 11 builder + 6 JSON + 5 snapshot + 7 verifier).
+- Full suite: 1139 passed, 0 warnings.
+- `git diff --check` passes.
 ## 2026-06-07 — Batch 059I-Impl + 059J-Design Codex Acceptance
 
 ### Added
