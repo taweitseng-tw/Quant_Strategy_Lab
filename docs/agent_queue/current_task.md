@@ -12,11 +12,11 @@ DeepSeek V4 Flash or Gemini 3.5 Flash
 
 ## Current Task
 
-Batch 059W-Impl + 059X-Design - AuditLogRepositoryAdapter Failure Log Slice and Import Write Coordinator Design.
+Batch 059Y-Impl + 059Z-Design - StrategyRepoAdapter Duplicate-Reject Insert-Only Slice and Filesystem Staging Design.
 
 ## Context Level
 
-Level 2 for 059W implementation, Level 3 for 059X design.
+Level 2 for 059Y implementation, Level 3 for 059Z design.
 
 ## Required Reading
 
@@ -31,81 +31,68 @@ Before doing anything, read:
 7. `docs/context_brief.md`
 8. `docs/archive_import_audit_migration_plan_059S.md`
 9. `docs/archive_import_repository_adapter_test_contract_059T.md`
-10. `docs/archive_import_adapter_slice_design_059V.md`
-11. `docs/review_notes/2026-06-07_task-059u-impl_059v-design_import-audit-migration-skeleton-and-adapter-slice_codex-review.md`
+10. `docs/archive_import_write_coordinator_design_059X.md`
+11. `docs/review_notes/2026-06-07_task-059w-impl_059x-design_fix_failure-only-audit-log_codex-review.md`
 12. This task file
 
 ## Context
 
-059U added `ImportAuditLog` schema initialization through `repository/db.py`. 059V designed the first minimal audit-log repository adapter slice.
-
-This batch may implement only the failure-audit-log adapter slice. It must not implement importer DB writes, strategy/dataset/validation repository adapters, file copy, UI/CLI/service wiring, or zip behavior.
+The archive importer currently has read-only preview building, import audit schema creation, and a failure-only audit log repository adapter. The next safe write slice is strategy import persistence only, with duplicate-reject semantics. This task must not implement the full import coordinator.
 
 ## Scope
 
 ### Do
 
 - Complete two sequential tasks:
-  - Task 059W-Impl - `AuditLogRepositoryAdapter.insert_failure_log()` only
-  - Task 059X-Design - import write coordinator design only
-- For Task 059W:
-  - Add the smallest suitable repository module for audit log writes, likely `repository/import_audit_repo.py`.
-  - Define an immutable DTO such as `ImportAuditLogDTO`.
-  - Implement `AuditLogRepositoryAdapter.insert_failure_log(dto)` only.
-  - The adapter may insert one row into `ImportAuditLog` with `status='FAILED'`.
-  - It must ensure the audit schema exists before insertion, using the helper from `repository/db.py`.
-  - It may use the existing `DatabaseManager` / sqlite connection style.
+  - Task 059Y-Impl - `StrategyRepoAdapter.insert_strategy()` duplicate-reject insert-only slice.
+  - Task 059Z-Design - filesystem staging design only.
+- For Task 059Y:
+  - Add the smallest suitable repository adapter module or extend an existing repository module only if it clearly fits the project pattern.
+  - Define a narrow immutable DTO for imported strategy persistence if needed.
+  - Implement only `StrategyRepoAdapter.insert_strategy(strategy_dto)` or an equivalently named insert-only method.
+  - The method must reject duplicate strategy UID before or during insert with a clear domain/repository exception.
+  - It must not overwrite, update, rename, skip, merge, or mutate an existing strategy row.
+  - It must write strategy data only. No dataset writes, no validation writes, no audit writes, no file copies.
   - Add focused tests for:
-    - successful failed-audit insert,
-    - all DTO fields persisted exactly, including `archive_source` and `manifest_hash`,
-    - invalid status or policy is rejected by schema constraints,
-    - adapter wraps sqlite write failures in a clear repository/audit exception,
-    - no strategy/dataset/validation tables are modified.
-- For Task 059X:
-  - Create `docs/archive_import_write_coordinator_design_059X.md`.
-  - Design future coordinator boundaries only.
-  - Cover how `ArchiveImporter.build_preview()`, repository adapters, filesystem staging, and audit logging will be sequenced.
-  - Explicitly separate what is implemented now from future implementation.
+    - successful strategy insert from a DTO,
+    - duplicate UID rejected and original row unchanged,
+    - serialized strategy payload/provenance fields persisted exactly,
+    - invalid or missing required strategy identifier rejected clearly,
+    - no dataset/validation/audit tables are modified.
+- For Task 059Z:
+  - Create `docs/archive_import_filesystem_staging_design_059Z.md`.
+  - Design filesystem staging boundaries only.
+  - Cover source archive path validation, destination path policy, temporary staging path, hash verification, rollback cleanup, and transaction ordering with SQLite writes.
+  - Explicitly separate design-only content from future implementation.
   - Recommend exactly one next two-task batch.
 - Update:
-  - `repository/__init__.py` only if the project pattern requires public exports.
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-07_task-059w-impl_059x-design_audit-log-repository-adapter-and-write-coordinator_deepseek.md`
+  - `docs/agent_reports/2026-06-07_task-059y-impl_059z-design_strategy-repo-insert-only-and-filesystem-staging-design_gemini.md`
 
 ### Do Not
 
-- Do not implement importer DB writes.
-- Do not implement strategy/dataset/validation repository adapters.
-- Do not copy archive files into project folders.
-- Do not implement filesystem staging.
-- Do not wire importer into UI, services, CLI, or real repositories beyond the audit log adapter.
-- Do not implement zip extraction.
-- Do not add runtime dependencies.
-- Do not change existing engine behavior.
-- Do not run destructive migration rollback logic.
-- Do not create, delete, move, retarget, or push any git tag.
+- Do not implement importer DB write coordinator.
+- Do not implement dataset repository writes.
+- Do not implement validation repository writes.
+- Do not implement audit log success writes.
+- Do not implement filesystem copy/staging.
+- Do not implement zip behavior.
+- Do not add UI, CLI, or service wiring.
+- Do not add dependencies.
+- Do not change existing strategy serialization behavior unless the adapter cannot work without a minimal, justified call to an existing serializer.
+- Do not use overwrite/update/upsert semantics.
 - Do not run `git add`, `git commit`, `git reset`, or `git checkout`.
-
-## Files Likely Involved
-
-- `repository/import_audit_repo.py`
-- `repository/__init__.py`
-- `tests/test_import_audit_repo.py`
-- `docs/archive_import_write_coordinator_design_059X.md`
-- `docs/changelog.md`
-- `docs/task_board.md`
-- `docs/agent_reports/2026-06-07_task-059w-impl_059x-design_audit-log-repository-adapter-and-write-coordinator_deepseek.md`
 
 ## Acceptance Criteria
 
-1. `AuditLogRepositoryAdapter.insert_failure_log()` inserts only failed audit rows.
-2. Adapter persists all DTO fields exactly, including `archive_source` and `manifest_hash`.
-3. Adapter does not write strategy, dataset, validation, or filesystem state.
-4. SQLite failures are surfaced through a clear audit/repository exception.
-5. 059X coordinator design exists and recommends exactly one next two-task batch.
-6. Changelog, task board, and completion report are updated.
+1. Strategy insert adapter is repository-layer only and has no PySide6/UI imports.
+2. Duplicate strategy UID is rejected and leaves the existing row unchanged.
+3. Inserted strategy payload and provenance fields are persisted exactly according to existing repository/schema conventions.
+4. No dataset, validation, audit, filesystem, coordinator, service, CLI, or UI behavior is implemented.
+5. Filesystem staging document is design-only and includes rollback/hash/path-boundary details.
+6. The next proposed batch remains narrow and reviewable.
 7. Focused tests, full suite, `git diff --check`, and agent status pass.
 
 ## Verification
@@ -114,6 +101,7 @@ Run:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/test_import_audit_repo.py tests/test_import_audit_log_schema.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_strategy_repo*.py -q
 .\.venv\Scripts\python.exe -m pytest -q
 git diff --check
 powershell -ExecutionPolicy Bypass -File scripts\agent_status.ps1
@@ -122,18 +110,24 @@ git status --short
 
 Expected:
 
-- Focused audit repository/schema tests pass.
+- Focused tests pass.
 - Full suite passes.
-- `git diff --check` passes.
-- Agent status shows Batch 059W-Impl + 059X-Design completion report as latest report.
+- `git diff --check` has no errors.
+- Agent status shows the 059Y/059Z completion report as latest report.
 - `git status --short` shows only files within this task scope.
 
-## After Completion
+## Completion Report Format
 
-Stop and report:
+Use:
 
-1. Completed
-2. Files changed
-3. Verification result
-4. Known issues
-5. Recommended next two-task batch
+```text
+Completed:
+Files changed:
+Behavior changed:
+Tests run:
+Assumptions:
+Known risks:
+Reviewer focus:
+```
+
+Then stop.

@@ -1,5 +1,50 @@
 # Changelog
 
+## 2026-06-07 — Batch 059W-Impl + 059X-Design Fix Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-059w-impl_059x-design_fix_failure-only-audit-log_codex-review.md` — Codex acceptance review for the failure-only audit log guard fix and conservative next-task proposal.
+
+### Changed
+- Prepared the next two-task batch for a duplicate-reject, insert-only strategy repository adapter slice plus filesystem staging design only.
+
+### Verification
+- Audit repo and schema tests: 11 passed.
+- Manual probe confirmed `status='SUCCESS'` is rejected before DB insert and inserts zero rows.
+- Full suite: 1167 passed.
+- `git diff --check` passed with line-ending normalization warnings only.
+
+## 2026-06-07 — Batch 059W-Impl + 059X-Design Fix: Failure-Only Audit Log Domain Guard and Conservative Next Proposal
+
+### Changed (059W-Fix)
+- `repository/import_audit_repo.py`: `ImportAuditLogDTO` changed from hand-written class to `@dataclass(frozen=True, slots=True)`. Added `AuditLogStatusError` exception. `insert_failure_log()` now guards with an early domain check — rejects any `dto.status != 'FAILED'` before inserting any row.
+- `tests/test_import_audit_repo.py`: Added `test_dto_is_frozen` and `test_insert_success_status_rejected` (verifies no row inserted). Renamed `test_insert_invalid_status_raises` to status-domain-guard test. Invalid-policy test is kept as K.O. layer test.
+
+### Changed (059X-Fix)
+- `docs/archive_import_write_coordinator_design_059X.md`: Next batch changed from `insert_or_update` to `insert_strategy` — duplicate-reject/insert-only. Explicit no-overwrite, no-coordinator implementation.
+
+### Changed (docs)
+- `docs/task_board.md`: Proposed next updated to duplicate-reject/insert-only wording.
+
+### Verification
+- Audit repo tests: 11 passed (1 frozen + 5 original + 1 success reject + 4 schema).
+- Full suite: 1167 passed, 0 warnings.
+- `git diff --check` passes.
+
+## 2026-06-07 — Batch 059W-Impl + 059X-Design: AuditLogRepositoryAdapter Failure Log Slice and Import Write Coordinator Design
+
+### Added (059W-Impl)
+- `repository/import_audit_repo.py`: `ImportAuditLogDTO` (immutable DTO), `AuditLogRepositoryAdapter.insert_failure_log()`, `AuditLogWriteError` exception. Adapter inserts only failed rows — no strategy/dataset/validation writes, no file copy.
+- `tests/test_import_audit_repo.py`: 6 tests — success, all fields persisted, invalid status rejected, invalid policy rejected, SQLite error wrapped, no other tables touched.
+
+### Added (059X-Design)
+- `docs/archive_import_write_coordinator_design_059X.md` — coordinator boundaries, current vs future state table, recommends StrategyRepoAdapter insert-or-update next.
+
+### Verification
+- Focused audit repo tests: 10 passed (6 repo + 4 schema).
+- Full suite: 1166 passed, 0 warnings.
+- `git diff --check` passes.
+
 ## 2026-06-07 — Batch 059U-Impl + 059V-Design Codex Acceptance
 
 ### Added
