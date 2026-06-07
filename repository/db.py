@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS datasets (
     row_count       INTEGER NOT NULL DEFAULT 0,
     start_datetime  TEXT    NOT NULL DEFAULT '',
     end_datetime    TEXT    NOT NULL DEFAULT '',
+    snapshot_hash   TEXT    NOT NULL DEFAULT '',
     created_at      TEXT    NOT NULL
 );
 
@@ -75,6 +76,24 @@ def ensure_import_audit_log_schema(connection: sqlite3.Connection) -> None:
     connection.commit()
 
 
+def ensure_dataset_snapshot_hash_column(connection: sqlite3.Connection) -> None:
+    """Idempotently add ``snapshot_hash`` to the ``datasets`` table.
+
+    Checks ``PRAGMA table_info(datasets)`` first.  If the column is absent,
+    runs ``ALTER TABLE datasets ADD COLUMN snapshot_hash TEXT NOT NULL DEFAULT ''``.
+    Existing rows receive the default ``''``.
+    """
+    cursor = connection.execute("PRAGMA table_info(datasets)")
+    # PRAGMA returns columns as (cid, name, type, notnull, dflt_value, pk).
+    # Use positional access for compatibility with non-Row connections.
+    columns = {row[1] for row in cursor.fetchall()}
+    if "snapshot_hash" not in columns:
+        connection.execute(
+            "ALTER TABLE datasets ADD COLUMN snapshot_hash TEXT NOT NULL DEFAULT ''"
+        )
+        connection.commit()
+
+
 
 class DatabaseManager:
     """Manages a single project SQLite database connection.
@@ -104,6 +123,7 @@ class DatabaseManager:
         self._conn.executescript(SCHEMA_SQL)
         self._conn.commit()
         ensure_import_audit_log_schema(self._conn)
+        ensure_dataset_snapshot_hash_column(self._conn)
 
     @property
     def connection(self) -> sqlite3.Connection:

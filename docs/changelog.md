@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-06-07 - Batch 060G-Impl + 060H-Design Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-060g-impl_060h-design_dataset-hash-migration-and-adapter-design_codex-review.md` - Codex acceptance review for the dataset snapshot-hash schema migration and DatasetRepoAdapter post-migration design.
+
+### Verification
+- Dataset snapshot migration tests: 6 passed.
+- Full suite: 1192 passed.
+- `git diff --check` passed with line-ending normalization warnings only.
+
+## 2026-06-07 — Batch 060G-Impl + 060H-Design: Dataset Snapshot Hash Schema Migration and Post-Migration DatasetRepoAdapter Insert-Only Design
+
+### Added (060G-Impl)
+- `repository/db.py`: Added `snapshot_hash TEXT NOT NULL DEFAULT ''` to `SCHEMA_SQL` `datasets` table for new databases. Added `ensure_dataset_snapshot_hash_column(connection)` — idempotent ALTER TABLE migration using `PRAGMA table_info`. Wired into `DatabaseManager.initialize()`.
+- `tests/test_dataset_snapshot_hash_migration.py`: 6 tests — new DB has column, old DB migrated via helper, idempotent helper, existing rows survive with default `''`, old disk project.sqlite migrated via `DatabaseManager.initialize()`, `DatasetRepository.insert()` works with new column.
+
+### Added (060H-Design)
+- `docs/dataset_repo_adapter_post_migration_insert_only_design_060H.md` — defines `DatasetRepoAdapter` with schema probing, dual INSERT SQL (post-migration/old-DB), `snapshot_hash` dedup with `(symbol, timeframe, source_path)` fallback, and no-commit + auto-commit methods with rollback guard.
+
+### Verification
+- Migration tests: 6 passed.
+- Full suite: 1192 passed, 0 warnings.
+- `git diff --check` passes.
+
 ## 2026-06-07 - Batch 060E-Impl + 060F-Design Codex Acceptance
 
 ### Added

@@ -12,11 +12,11 @@ DeepSeek V4 Flash or Gemini 3.5 Flash
 
 ## Current Task
 
-Batch 060G-Impl + 060H-Design - Dataset Snapshot Hash Schema Migration Implementation and Post-Migration DatasetRepoAdapter Insert-Only Design with Old-DB Fallback.
+Batch 060I-Impl + 060J-Design - DatasetRepoAdapter Implementation and ArchiveStager Implementation Design.
 
 ## Context Level
 
-Level 3 for 060G implementation, Level 3 for 060H design.
+Level 3 for 060I implementation, Level 3 for 060J design.
 
 ## Required Reading
 
@@ -31,58 +31,81 @@ Before doing anything, read:
 7. `docs/context_brief.md`
 8. `repository/db.py`
 9. `repository/dataset_repo.py`
-10. `docs/dataset_snapshot_hash_schema_migration_design_060F.md`
-11. `docs/dataset_import_adapter_insert_only_design_060D.md`
-12. `docs/review_notes/2026-06-07_task-060e-impl_060f-design_strategy-transaction-refactor-and-dataset-hash-migration_codex-review.md`
-13. This task file
+10. `docs/dataset_repo_adapter_post_migration_insert_only_design_060H.md`
+11. `docs/archive_import_filesystem_staging_design_059Z.md`
+12. `docs/archive_import_coordinator_architecture_060A.md`
+13. `docs/review_notes/2026-06-07_task-060g-impl_060h-design_dataset-hash-migration-and-adapter-design_codex-review.md`
+14. This task file
 
 ## Context
 
-060F accepted the additive `datasets.snapshot_hash` migration design. The next safe step is to implement only the schema migration in `repository/db.py` and tests. DatasetRepoAdapter remains design-only in this batch: describe the post-migration insert-only adapter contract, including old-DB fallback, but do not implement it yet.
+060G added the additive `datasets.snapshot_hash` migration. 060H accepted a design for a repository-layer `DatasetRepoAdapter` that supports post-migration hash dedup and old-DB fallback. This batch may implement only the dataset repository adapter and design only the ArchiveStager. Do not implement coordinator or filesystem staging behavior.
 
 ## Scope
 
 ### Do
 
 - Complete two sequential tasks:
-  - Task 060G-Impl - implement dataset `snapshot_hash` schema migration.
-  - Task 060H-Design - design post-migration DatasetRepoAdapter insert-only behavior with old-DB fallback.
-- For Task 060G:
-  - Update `repository/db.py` only as needed.
-  - Add `snapshot_hash TEXT NOT NULL DEFAULT ''` to the `datasets` table definition in `SCHEMA_SQL` for new databases.
-  - Add an idempotent helper such as `ensure_dataset_snapshot_hash_column(connection)`.
-  - Ensure `DatabaseManager.initialize()` applies the migration after creating base schema.
-  - The helper must use `PRAGMA table_info(datasets)` before `ALTER TABLE`.
-  - The helper must not create an index in this task.
-  - Preserve existing dataset inserts that omit `snapshot_hash`.
+  - Task 060I-Impl - implement `DatasetRepoAdapter`.
+  - Task 060J-Design - design `ArchiveStager` implementation.
+- For Task 060I:
+  - Create a repository-layer adapter, suggested path `repository/dataset_import_adapter.py`.
+  - Add immutable `ImportDatasetDTO` with fields from the 060H design, including `snapshot_hash`.
+  - Add exceptions:
+    - `DatasetRepoAdapterError`
+    - `DuplicateDatasetError`
+  - On init, probe `PRAGMA table_info(datasets)` and set whether `snapshot_hash` exists.
+  - Implement insert-only behavior:
+    - no overwrite;
+    - no update;
+    - no upsert;
+    - duplicate raises `DuplicateDatasetError`.
+  - Implement duplicate-reject behavior:
+    - if `snapshot_hash` column exists and DTO hash is non-empty, dedup by `snapshot_hash`;
+    - otherwise fallback to `(symbol, timeframe, source_path)` when `source_path` is non-empty;
+    - otherwise fallback to `(symbol, timeframe)`.
+  - Implement dual INSERT SQL:
+    - post-migration insert includes `snapshot_hash`;
+    - old-DB insert omits `snapshot_hash`.
+  - Implement transaction methods aligned with `StrategyRepoAdapter`:
+    - `_insert_dataset_core(dto)` validates, dedups, and executes INSERT with no commit/rollback;
+    - `insert_dataset(dto)` auto-commits on success;
+    - `insert_dataset(dto)` rolls back only on SQLite write failure or commit failure;
+    - validation errors and `DuplicateDatasetError` must not rollback caller-owned uncommitted data;
+    - `insert_dataset_no_commit(dto)` performs no commit/rollback.
   - Add focused tests for:
-    - new in-memory DB includes `snapshot_hash`;
-    - old-style DB without the column is migrated;
-    - migration helper is idempotent;
-    - existing dataset rows survive migration with `snapshot_hash = ''`;
-    - existing `DatasetRepository.insert()` still works when it does not pass `snapshot_hash`.
-- For Task 060H:
-  - Create `docs/dataset_repo_adapter_post_migration_insert_only_design_060H.md`.
-  - Design only. Do not implement DatasetRepoAdapter.
-  - Define `ImportDatasetDTO` fields, including `snapshot_hash`.
-  - Define duplicate-reject behavior:
-    - Primary post-migration key: non-empty `snapshot_hash`.
-    - Old-DB fallback: `(symbol, timeframe, source_path)` only when the column is absent or hash is empty.
-  - Define schema probing at adapter initialization.
-  - Define insert-only semantics: no overwrite, no update, no upsert, no file moves, no audit writes.
-  - Define no-commit coordinator-facing method and optional auto-commit wrapper, aligned with `StrategyRepoAdapter`.
-  - Include focused future tests, including old-DB fallback and post-migration hash duplicate rejection.
+    - insert succeeds on post-migration schema;
+    - duplicate by non-empty `snapshot_hash` rejected;
+    - empty hash falls back to fallback key on post-migration schema;
+    - old-DB schema insert omits `snapshot_hash` and succeeds;
+    - duplicate by fallback key rejected on old-DB schema;
+    - no-commit caller commit;
+    - no-commit caller rollback;
+    - SQLite INSERT failure triggers rollback;
+    - validation error does not rollback caller uncommitted data;
+    - duplicate error does not rollback caller uncommitted data;
+    - no other tables modified.
+- For Task 060J:
+  - Create `docs/archive_stager_implementation_design_060J.md`.
+  - Design only. Do not implement ArchiveStager.
+  - Base it on `docs/archive_import_filesystem_staging_design_059Z.md`.
+  - Specify source validation, deterministic temp directory, hash verification, cleanup, final move, and orphan-file handling.
+  - Explicitly separate staging from SQLite transactions:
+    - staging copies/verifies before durable DB write;
+    - final move happens only after DB commit;
+    - cleanup responsibilities for temp and final destination are documented.
+  - Include focused future tests for success, hash mismatch, missing file, temp cleanup, final move failure, and DB-failure cleanup handoff.
 - Update:
   - `docs/changelog.md`
   - `docs/task_board.md`
 - Write completion report:
-  - `docs/agent_reports/2026-06-07_task-060g-impl_060h-design_dataset-hash-migration-and-dataset-adapter-design_gemini.md`
+  - `docs/agent_reports/2026-06-07_task-060i-impl_060j-design_dataset-adapter-and-archive-stager-design_gemini.md`
 
 ### Do Not
 
-- Do not implement `DatasetRepoAdapter`.
+- Do not implement ArchiveStager.
 - Do not implement archive import coordinator.
-- Do not modify filesystem staging or file move behavior.
+- Do not move, copy, or delete real project data files.
 - Do not add success audit writes.
 - Do not touch UI, CLI, backtest engine, validation engine, strategy generator, or report exporters.
 - Do not add dependencies.
@@ -91,11 +114,11 @@ Before doing anything, read:
 
 ## Acceptance Criteria
 
-1. New databases have `datasets.snapshot_hash TEXT NOT NULL DEFAULT ''`.
-2. Existing databases without the column are migrated idempotently.
-3. Existing dataset rows remain intact and receive default `snapshot_hash = ''`.
-4. Existing `DatasetRepository.insert()` behavior remains backward-compatible.
-5. 060H is design-only and does not create production adapter code.
+1. `DatasetRepoAdapter` is repository-layer only and imports no UI/engine modules.
+2. Post-migration schema uses `snapshot_hash` as the primary non-empty duplicate key.
+3. Old-DB fallback never queries or inserts into a missing `snapshot_hash` column.
+4. Transaction behavior is proven by tests, including rollback scope and no-commit behavior.
+5. 060J is design-only and creates no production stager code.
 6. Full suite, `git diff --check`, and agent status pass.
 
 ## Verification
@@ -113,7 +136,7 @@ Expected:
 
 - Full suite passes.
 - `git diff --check` has no errors.
-- Agent status shows the 060G/060H completion report as latest report.
+- Agent status shows the 060I/060J completion report as latest report.
 - `git status --short` shows only files within this task scope.
 
 ## Completion Report Format
