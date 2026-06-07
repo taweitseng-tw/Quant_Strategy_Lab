@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-06-07 — Batch 059S-Design + 059T-Design Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-059s-design_059t-design_import-audit-migration-and-adapter-test-contract_codex-review.md` — Codex acceptance review for ImportAuditLog migration plan and repository adapter test contract design.
+
+### Changed
+- Prepared the next two-task batch for an ImportAuditLog migration skeleton and first importer adapter slice design.
+
+### Verification
+- Full suite: 1156 passed.
+- `git diff --check` passed with LF/CRLF normalization warnings only.
+
+## 2026-06-07 — Batch 059S-Design + 059T-Design: ImportAuditLog Migration Plan and Repository Adapter Test Contract Design
+
+### Added (059S-Design)
+- `docs/archive_import_audit_migration_plan_059S.md`: Detailed SQLite schema migration plan for the `ImportAuditLog` table, including columns, indexes, constraints, rollback plans, compatibility notes, verification criteria, and detailed traceability fields (`archive_source`, `manifest_hash`).
+
+### Added (059T-Design)
+- `docs/archive_import_repository_adapter_test_contract_059T.md`: Defined test contracts for future repository and filesystem adapters, specifying mocks/spies behavior expectations, duplicate rejection tests, rollback acceptance criteria, failed audit logging criteria, read/write boundary checks, and edge cases.
+
+### Verification
+- Full suite: 1156 passed.
+- `git diff --check` passes.
+
 ## 2026-06-07 — Batch 059Q-Impl + 059R-Design Codex Acceptance
 
 ### Added
