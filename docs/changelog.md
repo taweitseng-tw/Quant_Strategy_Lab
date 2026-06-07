@@ -1,5 +1,50 @@
 # Changelog
 
+## 2026-06-07 — Batch 059Y-Impl + 059Z-Design Fix Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-059y-impl_059z-design_fix_strategy-uid-duplicate-guard_codex-review.md` — Codex acceptance review for UID-based duplicate rejection and filesystem staging ordering fix.
+
+### Changed
+- Prepared the next two-task batch for archive import coordinator architecture design and coordinator acceptance test contract design.
+
+### Verification
+- Strategy import, audit repo, and audit schema tests: 23 passed.
+- Manual probe confirmed same `strategy_uid` with different display names is rejected.
+- Manual probe confirmed missing/blank UID, mismatched payload UID, and invalid JSON are rejected without extra inserts.
+- Full suite: 1179 passed.
+- `git diff --check` passed with line-ending normalization warnings only.
+
+## 2026-06-07 — Batch 059Y-Impl + 059Z-Design Fix: Strategy UID Duplicate-Reject Guard and Staging/Commit/Move Ordering
+
+### Changed (059Y-Fix)
+- `repository/strategy_import_adapter.py`: `ImportStrategyDTO.strategy_uid` is now required (no default). Dedup changed from name-based to UID-based — scans existing `strategy_json` payloads for matching `strategy_uid`. Validates payload JSON grammar, payload `strategy_uid` presence, and payload `strategy_uid` matches DTO's UID. No schema migration.
+- `tests/test_strategy_import_adapter.py`: Added 5 new tests (same UID different name, empty UID rejected, UID mismatch, invalid JSON, non-dict JSON, missing payload UID). 12 total tests.
+
+### Changed (059Z-Fix)
+- `docs/archive_import_filesystem_staging_design_059Z.md`: Transaction ordering corrected to Stage → DB Commit → Final Move. Added two-zone cleanup (temp vs final destination). Explicit guard against orphaned files after failed DB commit.
+
+### Verification
+- Strategy import tests: 12 passed.
+- Audit tests: 11 passed (unchanged).
+- Full suite: 1179 passed, 0 warnings.
+- `git diff --check` passes.
+
+## 2026-06-07 — Batch 059Y-Impl + 059Z-Design: StrategyRepoAdapter Duplicate-Reject Insert-Only Slice and Filesystem Staging Design
+
+### Added (059Y-Impl)
+- `repository/strategy_import_adapter.py`: `ImportStrategyDTO` (frozen dataclass), `StrategyRepoAdapter.insert_strategy()` — insert-only, rejects duplicate `name` (mapped from archive `strategy_uid`) with `DuplicateStrategyUIDError`. No overwrite/update/upsert. No dataset/validation/audit writes.
+- `tests/test_strategy_import_adapter.py`: 7 tests — success insert, duplicate rejected (original unchanged), fields persisted, empty name rejected, empty JSON rejected, None JSON rejected, no other tables touched.
+
+### Added (059Z-Design)
+- `docs/archive_import_filesystem_staging_design_059Z.md` — design-only: source validation, destination policy, temp staging path, hash verification, rollback cleanup, transaction ordering. Recommends coordinator architecture design next.
+
+### Verification
+- Audit tests: 11 passed (unchanged).
+- Strategy import tests: 7 passed.
+- Full suite: 1174 passed, 0 warnings.
+- `git diff --check` passes.
+
 ## 2026-06-07 — Batch 059W-Impl + 059X-Design Fix Codex Acceptance
 
 ### Added
