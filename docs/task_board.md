@@ -8,10 +8,12 @@ Post-v0.2 - Reproducibility foundation design
 
 ## In Progress
 
-- [ ] Batch 059G-Impl + 059H-Design - Manifest JSON Serialization and Archive Builder Adapter Design
+- [ ] Batch 059I-Impl + 059J-Design - ArchiveBuilder First-Pass Collector and Folder Manifest Integration Design
 
 ## Done
 
+- [x] Batch 059G-Impl + 059H-Design-Codex Review - Manifest JSON Serialization and Archive Builder Adapter Design Acceptance
+- [x] Batch 059G-Impl + 059H-Design - Manifest JSON Serialization and Archive Builder Adapter Design
 - [x] Batch 059E-Impl + 059F-Design-Codex Review - Deterministic CSV Dataset Snapshot Writer and Archive Builder Input Contract Acceptance
 - [x] Batch 059E-Impl + 059F-Design - Deterministic CSV Dataset Snapshot Writer and Archive Builder Input Contract
 - [x] Batch 059C-Impl + 059D-Design-Codex Review - Archive Manifest Verifier Skeleton and Dataset Snapshot Decision Acceptance
@@ -223,7 +225,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next (v0.2)
 
-- Proposed Batch 059G-Impl + 059H-Design - Manifest JSON Serialization and Archive Builder Adapter Design
+- Proposed Batch 059I-Impl + 059J-Design - ArchiveBuilder First-Pass Collector and Folder Manifest Integration Design
 
 *(Remaining v0.2 PRD items pending task prioritization)*
 - Proposed Task 055 - Agent Workflow Automation

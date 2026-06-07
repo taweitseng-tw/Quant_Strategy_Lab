@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-06-07 — Batch 059G-Impl + 059H-Design Codex Acceptance
+
+### Added
+- `docs/review_notes/2026-06-07_task-059g-impl_059h-design_manifest-json-serialization-and-builder-adapter-contract_codex-review.md` — Codex acceptance review for manifest JSON serialization and archive builder adapter design.
+
+### Changed
+- Prepared the next two-task batch for a narrowly scoped ArchiveBuilder first-pass collector and folder manifest integration design.
+
+### Verification
+- Focused archive tests: 18 passed.
+- Full suite: 1121 passed.
+- `git diff --check` passed with LF/CRLF normalization warnings only.
+
+## 2026-06-07 — Batch 059G-Impl + 059H-Design: Manifest JSON Serialization and Builder Repository Adapter Design
+
+### Added (059G-Impl)
+- `archive/manifest.py`: Added `to_dict()`, `from_dict()`, `to_json()`, `from_json()`, `write_to_folder()`, `read_from_folder()` — deterministic JSON serialization with deterministic field order, folder creation, and round-trip support.
+- `tests/test_archive_manifest_json.py`: 6 tests (dict round trip, JSON round trip, deterministic bytes, field order, folder write/read, subdirectory creation).
+
+### Added (059H-Design)
+- `docs/archive_builder_repository_adapter_059H.md` — defines `ArchiveDataSource` protocol with 8 methods, return value shapes, failure behavior (hard failure for required components, optional/warning for others), and `FakeArchiveDataSource` test fixture. Recommends ArchiveBuilder first pass next.
+
+### Verification
+- Focused tests: 18 passed (6 JSON + 5 snapshot + 7 verifier).
+- Full suite: 1121 passed, 0 warnings.
+- `git diff --check` passes.
+
 ## 2026-06-07 — Batch 059E-Impl + 059F-Design: Deterministic CSV Dataset Snapshot Writer and Archive Builder Input Contract
 
 ### Added (059E-Impl)
