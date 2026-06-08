@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-06-08 — Batch 062B-Design + 062C-Design: Price-Noise Stress Test Contract and WF Equity Evidence Surface
+
+### Added (062B-Design)
+- `docs/price_noise_stress_contract_062B.md` — defines price-noise stress test: deterministic OHLC-preserving perturbation, pass/fail metrics (`pnl_degradation_ratio`, `win_rate_change`, `survival_rate`), pipeline config fields, assumptions and warnings, 8 focused future tests.
+
+### Added (062C-Design)
+- `docs/wf_equity_evidence_surface_design_062C.md` — defines WF equity chart/table rendering in UI and reports: required data shape, line chart per window, empty/failure states, markdown/HTML expectations, 7 focused future tests.
+
+### Codex Review
+- Replaced the unsafe independent OHLC noise model with an OHLC-preserving reconstruction contract.
+- Added non-positive baseline PnL handling for `pnl_degradation_ratio`.
+- Clarified that PDF embedding is optional future polish, not required implementation scope.
+
+### Verification
+- No production code changed.
+- `git diff --check` passes.
+
 ## 2026-06-08 — Task 062A: Next Milestone Decision Brief
 
 ### Added (Decision)
