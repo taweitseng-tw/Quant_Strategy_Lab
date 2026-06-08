@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-06-08 — Batch 060Y-Design + 060Z-Signoff: Full UI Export Boundary Design and Reproducibility Milestone Acceptance
+
+### Added (060Y-Design)
+- `docs/archive_full_ui_export_boundary_design_060Y.md` — resolves raw-row provider gap. Compares 3 options: `list_all_raw()` (recommended), dedicated adapter, inline SQL. Defines exact data contracts, user-facing errors, focused future tests, and out-of-scope items.
+
+### Added (060Z-Signoff)
+- `docs/reproducibility_milestone_acceptance_060Z.md` — 16-component status table. Verdict: reproducibility milestone complete for production archive export at engine/adapter/service/round-trip level. 3 remaining gaps before full UI export. Next batch: raw-row provider + ProjectArchiveDataSource wiring.
+
+### Verification
+- Adapter + round-trip: 12 passed.
+- Full suite: 1247 passed.
+- `git diff --check` passes.
+
+### Codex Review
+- Accepted at 9.0/10 for design/signoff scope.
+- Clarified that full UI export is not accepted yet; remaining work is repository raw providers, dataset path lookup, validation UID lookup, and UI-service wiring.
+- Narrowed the next batch to repository raw providers plus UI wiring design only, without milestone closure.
+
 ## 2026-06-08 — Batch 060W-Impl + 060X-Design: ProjectArchiveDataSource Adapter Slice and Full UI Export Delegation Design
 
 ### Added (060W-Impl)
