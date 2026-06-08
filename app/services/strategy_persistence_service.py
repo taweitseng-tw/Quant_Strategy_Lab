@@ -98,6 +98,10 @@ class StrategyPersistenceService:
     # list
     # ------------------------------------------------------------------
 
+    def list_all_raw(self) -> list[dict]:
+        """Return every saved strategy as raw dicts (for archive export)."""
+        return self._repo.list_all_raw()
+
     def list_saved_strategies(self, prefix: str = GA_BEST_PREFIX) -> list[Strategy]:
         """Return all strategies whose names start with *prefix*."""
         all_strats = self._repo.list_all()

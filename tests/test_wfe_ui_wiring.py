@@ -1,9 +1,12 @@
 """Tests for Walk-Forward Efficiency (WFE) UI wiring."""
 
+import json
+
 import pytest
 from PySide6.QtWidgets import QApplication
 from app.ui.main_window import MainWindow
 from app.services.validation_pipeline_service import PipelineConfig, PipelineResult
+from core.models.strategy import Strategy
 from unittest.mock import patch
 
 
@@ -230,3 +233,228 @@ def test_export_archive_validation_field_accepts_pipeline_result():
 
     assert MainWindow._validation_field(result, "elimination_result") == {"passed": True}
     assert MainWindow._validation_field(result, "baseline_metrics") == {"total_trades": 1}
+
+
+# ---------------------------------------------------------------------------
+# Archive export handler wiring (Task 061C-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_export_archive_handler_exists(main_window):
+    """Export Archive handler must exist."""
+    assert hasattr(main_window, "_handle_export_archive")
+    assert callable(main_window._handle_export_archive)
+
+
+def test_export_archive_handler_no_selection_blocks(main_window):
+    """Handler must return early when no strategy selected (no crash)."""
+    main_window.ranked_data = None
+    # Just verify no exception; can't assert service not called since import is local.
+    main_window._handle_export_archive()
+    # If we got here without an exception, the guard worked.
+
+
+def test_export_archive_handler_calls_export_service(main_window, tmp_path, monkeypatch):
+    """Valid UI archive export path must call ArchiveExportService."""
+    strategy = Strategy(name="archive-strategy")
+    snapshot = tmp_path / "snapshot.csv"
+    snapshot.write_text("datetime,open,high,low,close,volume\n", encoding="utf-8")
+
+    class _Range:
+        def topRow(self):
+            return 0
+
+    class _StrategyService:
+        def list_all_raw(self):
+            return [{
+                "name": strategy.name,
+                "strategy_json": json.dumps({
+                    "name": strategy.name,
+                    "strategy_uid": "uid-ok",
+                    "dataset_id": 7,
+                }),
+            }]
+
+    calls = []
+
+    class _ExportService:
+        def __init__(self, data_source):
+            self.data_source = data_source
+
+        def export_strategy_archive(self, **kwargs):
+            calls.append(kwargs)
+            return tmp_path / "exports" / "archives" / "uid-ok"
+
+    messages = []
+    main_window._project_root = tmp_path
+    main_window.ranked_data = [{"strategy": strategy}]
+    main_window.latest_validation_result = {
+        "strategy_uid": "uid-ok",
+        "elimination_result": {"passed": True},
+        "baseline_metrics": {"total_trades": 1},
+    }
+    monkeypatch.setattr(
+        main_window.results_table.table,
+        "selectedRanges",
+        lambda: [_Range()],
+    )
+    monkeypatch.setattr(
+        main_window,
+        "_get_strategy_persistence_service",
+        lambda: _StrategyService(),
+    )
+    monkeypatch.setattr(
+        main_window.data_service,
+        "get_dataset_raw_by_id",
+        lambda dataset_id: {"id": dataset_id, "normalized_path": str(snapshot)},
+    )
+    monkeypatch.setattr(
+        main_window.log_panel,
+        "add_message",
+        lambda level, message: messages.append((level, message)),
+    )
+    monkeypatch.setattr("app.ui.main_window.QMessageBox.information", lambda *a, **k: None)
+    monkeypatch.setattr("app.ui.main_window.QMessageBox.warning", lambda *a, **k: None)
+    monkeypatch.setattr("app.ui.main_window.QMessageBox.critical", lambda *a, **k: None)
+    monkeypatch.setattr("app.services.archive_export_service.ArchiveExportService", _ExportService)
+
+    main_window._handle_export_archive()
+
+    assert len(calls) == 1
+    assert calls[0]["strategy_uid"] == "uid-ok"
+    assert calls[0]["dataset_snapshot_path"] == str(snapshot)
+    assert any(level == "INFO" and "Archive successfully exported" in msg for level, msg in messages)
+
+
+def test_export_archive_handler_validation_uid_mismatch_blocks_service(
+    main_window, tmp_path, monkeypatch,
+):
+    """A validation result for a different strategy UID must not export."""
+    strategy = Strategy(name="archive-strategy")
+    snapshot = tmp_path / "snapshot.csv"
+    snapshot.write_text("datetime,open,high,low,close,volume\n", encoding="utf-8")
+
+    class _Range:
+        def topRow(self):
+            return 0
+
+    class _StrategyService:
+        def list_all_raw(self):
+            return [{
+                "name": strategy.name,
+                "strategy_json": json.dumps({
+                    "name": strategy.name,
+                    "strategy_uid": "uid-ok",
+                    "dataset_id": 7,
+                }),
+            }]
+
+    calls = []
+
+    class _ExportService:
+        def __init__(self, data_source):
+            self.data_source = data_source
+
+        def export_strategy_archive(self, **kwargs):
+            calls.append(kwargs)
+            return tmp_path / "unexpected"
+
+    warnings = []
+    main_window._project_root = tmp_path
+    main_window.ranked_data = [{"strategy": strategy}]
+    main_window.latest_validation_result = {
+        "strategy_uid": "uid-other",
+        "elimination_result": {"passed": True},
+        "baseline_metrics": {"total_trades": 1},
+    }
+    monkeypatch.setattr(
+        main_window.results_table.table,
+        "selectedRanges",
+        lambda: [_Range()],
+    )
+    monkeypatch.setattr(
+        main_window,
+        "_get_strategy_persistence_service",
+        lambda: _StrategyService(),
+    )
+    monkeypatch.setattr(
+        main_window.data_service,
+        "get_dataset_raw_by_id",
+        lambda dataset_id: {"id": dataset_id, "normalized_path": str(snapshot)},
+    )
+    monkeypatch.setattr("app.ui.main_window.QMessageBox.information", lambda *a, **k: None)
+    monkeypatch.setattr(
+        "app.ui.main_window.QMessageBox.warning",
+        lambda *args, **kwargs: warnings.append(args),
+    )
+    monkeypatch.setattr("app.ui.main_window.QMessageBox.critical", lambda *a, **k: None)
+    monkeypatch.setattr("app.services.archive_export_service.ArchiveExportService", _ExportService)
+
+    main_window._handle_export_archive()
+
+    assert calls == []
+    assert warnings
+
+
+def test_export_archive_handler_missing_dataset_metadata_blocks_service(
+    main_window, tmp_path, monkeypatch,
+):
+    """Missing dataset metadata must stop before ArchiveExportService."""
+    strategy = Strategy(name="archive-strategy")
+
+    class _Range:
+        def topRow(self):
+            return 0
+
+    class _StrategyService:
+        def list_all_raw(self):
+            return [{
+                "name": strategy.name,
+                "strategy_json": json.dumps({
+                    "name": strategy.name,
+                    "strategy_uid": "uid-ok",
+                    "dataset_id": 7,
+                }),
+            }]
+
+    calls = []
+
+    class _ExportService:
+        def __init__(self, data_source):
+            self.data_source = data_source
+
+        def export_strategy_archive(self, **kwargs):
+            calls.append(kwargs)
+            return tmp_path / "unexpected"
+
+    warnings = []
+    main_window._project_root = tmp_path
+    main_window.ranked_data = [{"strategy": strategy}]
+    main_window.latest_validation_result = {
+        "strategy_uid": "uid-ok",
+        "elimination_result": {"passed": True},
+        "baseline_metrics": {"total_trades": 1},
+    }
+    monkeypatch.setattr(
+        main_window.results_table.table,
+        "selectedRanges",
+        lambda: [_Range()],
+    )
+    monkeypatch.setattr(
+        main_window,
+        "_get_strategy_persistence_service",
+        lambda: _StrategyService(),
+    )
+    monkeypatch.setattr(main_window.data_service, "get_dataset_raw_by_id", lambda dataset_id: None)
+    monkeypatch.setattr("app.ui.main_window.QMessageBox.information", lambda *a, **k: None)
+    monkeypatch.setattr(
+        "app.ui.main_window.QMessageBox.warning",
+        lambda *args, **kwargs: warnings.append(args),
+    )
+    monkeypatch.setattr("app.ui.main_window.QMessageBox.critical", lambda *a, **k: None)
+    monkeypatch.setattr("app.services.archive_export_service.ArchiveExportService", _ExportService)
+
+    main_window._handle_export_archive()
+
+    assert calls == []
+    assert warnings

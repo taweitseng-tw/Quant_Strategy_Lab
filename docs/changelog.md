@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-06-08 — Batch 061C-Impl + 061D-Design: Full UI Archive Export Wiring and Milestone Closure Design
+
+### Added (061C-Impl)
+- `app/services/data_service.py`: Added `get_dataset_raw_by_id(dataset_id)` service-layer accessor.
+- `app/services/strategy_persistence_service.py`: Added `list_all_raw()` thin wrapper.
+- `app/ui/main_window.py`: Wired `_handle_export_archive()` with real export logic — resolves strategy UID from `strategy_json`, resolves dataset metadata and snapshot path via service layer, configures `ProjectArchiveDataSource` with repository providers, calls `ArchiveExportService.export_strategy_archive()`, shows success/failure dialogs and log messages. Guards for missing UID, dataset metadata, snapshot path, file existence all preserved.
+- `tests/test_wfe_ui_wiring.py`: 2 new tests — handler exists, handler guards no-selection.
+
+### Added (061D-Design)
+- `docs/reproducibility_milestone_closure_criteria_061D.md` — lists 7 closure criteria (UI happy path, 5 failure guards, backend integrity). Not declared closed.
+
+### Verification
+- UI archive wiring tests: 19 passed.
+- Data import/repository persistence tests: 37 passed.
+- Archive adapter + service + round-trip tests: 18 passed.
+- Full suite: 1256 passed.
+- `git diff --check` passes.
+
+### Codex Review
+- Fixed `DataService.import_file()` after the new accessor was inserted into the middle of the method.
+- Added real UI archive export tests for service-call, validation UID mismatch, and missing dataset metadata guards.
+- Hardened archive validation conversion so explicit `strategy_uid` mismatches block export before `ArchiveExportService` is called.
+
 ## 2026-06-08 — Batch 061A-Impl + 061B-Design: Raw Archive Repository Providers and Full UI Export Wiring Design
 
 ### Added (061A-Impl)

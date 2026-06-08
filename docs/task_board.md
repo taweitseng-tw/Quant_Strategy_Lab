@@ -22,6 +22,8 @@ Post-v0.2 - Reproducibility foundation design
 - [x] Batch 060I-Impl + 060J-Design-Codex Review - DatasetRepoAdapter and ArchiveStager Design Acceptance
 - [x] Batch 060K-Impl + 060L-Design-Codex Review - ArchiveStager and Coordinator Wiring Design Acceptance
 - [x] Batch 061A-Impl + 061B-Design-Codex Review - Raw Archive Repository Providers and Full UI Export Wiring Design Acceptance
+- [x] Batch 061C-Impl + 061D-Design-Codex Review - Full UI Archive Export Wiring Acceptance with Fixes
+- [x] Batch 061C-Impl + 061D-Design - Full UI Archive Export Wiring and Milestone Closure Design
 - [x] Batch 061A-Impl + 061B-Design - Raw Archive Repository Providers and Full UI Export Wiring Design
 - [x] Batch 060Y-Design + 060Z-Signoff - Full UI Export Boundary Design and Reproducibility Milestone Acceptance
 - [x] Batch 060W-Impl + 060X-Design - ProjectArchiveDataSource Adapter Slice and Full UI Export Delegation Design
@@ -264,7 +266,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next (v0.2)
 
-- Proposed Batch 061C-Impl + 061D-Design - Full UI Archive Export Wiring and Milestone Closure Design
+- Proposed Batch 061E - Reproducibility Milestone Closure and Final Changelog (single task, signoff only)
 
 
 *(Remaining v0.2 PRD items pending task prioritization)*

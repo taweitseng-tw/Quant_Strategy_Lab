@@ -823,10 +823,89 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Export Failed", "No backtest data found for this strategy.")
             return
 
-        self.log_panel.add_message("INFO", (
-            "Archive export guard checks passed — ready to export."
-            " (Full dataset snapshot and archive wiring not yet implemented in this slice.)"
-        ))
+        # -- All guards passed.  Proceed with export. --
+        from pathlib import Path
+
+        # Resolve strategy UID.
+        srv = self._get_strategy_persistence_service()
+        if srv is None:
+            self.log_panel.add_message("ERROR", "Cannot archive export: no strategy persistence service.")
+            QMessageBox.critical(self, "Export Failed", "Internal error: strategy service unavailable.")
+            return
+
+        strategy_uid, dataset_id = self._resolve_archive_strategy_record(
+            strategy,
+            srv.list_all_raw(),
+        )
+
+        if not strategy_uid:
+            self.log_panel.add_message("WARN", "Could not resolve strategy UID for archive export.")
+            QMessageBox.warning(self, "Export Failed", "Could not locate strategy UID in the project database.")
+            return
+
+        # Resolve dataset metadata.
+        ds_raw = self.data_service.get_dataset_raw_by_id(dataset_id) if dataset_id else None
+        if not ds_raw:
+            self.log_panel.add_message("WARN", "No dataset metadata found for this strategy — cannot export archive.")
+            QMessageBox.warning(self, "Export Failed", "No dataset metadata found for this strategy. Dataset metadata is required for archive export.")
+            return
+
+        snapshot_path_str = ds_raw.get("normalized_path", "")
+        if not snapshot_path_str:
+            self.log_panel.add_message("WARN", "Dataset snapshot path missing — cannot export archive.")
+            QMessageBox.warning(self, "Export Failed", "Dataset snapshot path is missing. Re-run the backtest or import the dataset again.")
+            return
+
+        # Resolve relative path to absolute if needed.
+        snapshot_path = Path(snapshot_path_str)
+        if not snapshot_path.is_absolute():
+            snapshot_path = Path(project_root) / snapshot_path
+
+        if not snapshot_path.is_file():
+            self.log_panel.add_message("WARN", f"Dataset snapshot file not found at {snapshot_path} — cannot export archive.")
+            QMessageBox.warning(self, "Export Failed", f"Dataset OHLCV file not found at {snapshot_path}. Please re-run the backtest or import the dataset again.")
+            return
+
+        # Validation provider.
+        validation_dict = self._coerce_archive_validation_result(
+            self.latest_validation_result,
+            strategy_uid,
+        )
+        if validation_dict is None:
+            self.log_panel.add_message("WARN", "Validation result does not match selected strategy UID.")
+            QMessageBox.warning(self, "Export Failed", "Validation result does not match the selected strategy.")
+            return
+
+        def _get_validation(uid: str) -> dict | None:
+            if uid == strategy_uid:
+                return validation_dict
+            return None
+
+        # Build data source and export service.
+        from app.services.archive_project_data_source import ProjectArchiveDataSource
+        from app.services.archive_export_service import ArchiveExportService
+
+        adapter = ProjectArchiveDataSource(
+            strategy_rows_provider=lambda: srv.list_all_raw(),
+            dataset_rows_provider=lambda did: self.data_service.get_dataset_raw_by_id(did),
+            validation_result_provider=_get_validation,
+        )
+
+        export_svc = ArchiveExportService(adapter)
+        output_dir = Path(project_root) / "exports" / "archives" / strategy_uid
+
+        try:
+            archive_path = export_svc.export_strategy_archive(
+                strategy_uid=strategy_uid,
+                dataset_snapshot_path=str(snapshot_path),
+                output_dir=output_dir,
+                experiment_name=strategy.name,
+            )
+            self.log_panel.add_message("INFO", f"Archive successfully exported to {archive_path}")
+            QMessageBox.information(self, "Export Successful", f"Archive exported to:\n{archive_path}")
+        except Exception as exc:
+            self.log_panel.add_message("ERROR", f"Failed to export archive: {exc}")
+            QMessageBox.critical(self, "Export Failed", f"An error occurred while exporting the archive:\n{exc}")
 
     def _get_archive_project_root(self):
         """Return the active project root for archive export guards."""
@@ -847,6 +926,51 @@ class MainWindow(QMainWindow):
         if isinstance(result, dict):
             return result.get(key, default)
         return getattr(result, key, default)
+
+    @staticmethod
+    def _resolve_archive_strategy_record(strategy, rows: list[dict]) -> tuple[str | None, int | None]:
+        """Resolve archive strategy UID and dataset ID from raw strategy rows."""
+        import json
+
+        strategy_name = getattr(strategy, "name", None)
+        for row in rows:
+            raw_payload = row.get("strategy_json", "{}")
+            try:
+                payload = json.loads(raw_payload) if isinstance(raw_payload, str) else raw_payload
+            except (TypeError, ValueError, json.JSONDecodeError):
+                continue
+            if not isinstance(payload, dict):
+                continue
+            row_name = payload.get("name") or row.get("name")
+            if row_name == strategy_name:
+                return payload.get("strategy_uid"), payload.get("dataset_id")
+        return None, None
+
+    @staticmethod
+    def _coerce_archive_validation_result(result, strategy_uid: str) -> dict | None:
+        """Return an archive validation dict, rejecting explicit UID mismatches."""
+        from dataclasses import asdict, is_dataclass
+
+        if result is None:
+            return None
+        if isinstance(result, dict):
+            data = dict(result)
+        elif is_dataclass(result):
+            data = asdict(result)
+        else:
+            return None
+
+        result_uid = data.get("strategy_uid")
+        nested_strategy = data.get("strategy")
+        if result_uid is None and isinstance(nested_strategy, dict):
+            result_uid = nested_strategy.get("strategy_uid")
+        if result_uid is not None and result_uid != strategy_uid:
+            return None
+
+        elimination = data.get("elimination_result") or {}
+        if isinstance(elimination, dict):
+            data.setdefault("passed", bool(elimination.get("passed", False)))
+        return data
 
     def _handle_active_profile_changed(self, symbol: str) -> None:
         self.log_panel.add_message("INFO", f"Active instrument profile changed to: {symbol}")

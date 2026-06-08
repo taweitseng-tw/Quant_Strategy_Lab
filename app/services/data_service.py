@@ -1,10 +1,11 @@
-"""Service layer for Data operations — Task 012 / Task 019A / Task 032D."""
+"""Service layer for Data operations."""
 
 from __future__ import annotations
 
 import logging
 import tempfile
 from pathlib import Path
+
 import pandas as pd
 
 from core.models.dataset import DatasetMeta
@@ -20,12 +21,9 @@ class DataService:
     """Service to handle importing, loading, and slicing of datasets.
 
     Delegates parsing to CsvImporter and runs data quality checks after
-    normalization.  When a :class:`DatabaseManager` is provided via
-    :meth:`set_db`, imported :class:`DatasetMeta` is automatically persisted
-    to the active project's SQLite database.
-
-    If no active project is available, uses a temporary directory as the
-    project root for local file persistence and skips database writes.
+    normalization. When a DatabaseManager is provided via set_db, imported
+    DatasetMeta is automatically persisted to the active project's SQLite
+    database.
     """
 
     def __init__(self, project_path: Path | str | None = None) -> None:
@@ -42,12 +40,7 @@ class DataService:
         self.project_path = Path(path).resolve() if path else None
 
     def set_db(self, db: DatabaseManager | None) -> None:
-        """Set (or clear) the database handle for metadata persistence.
-
-        When set, every call to :meth:`import_file` will also persist
-        the :class:`DatasetMeta` into the project database.  Pass ``None``
-        to disable persistence (e.g. when no project is open).
-        """
+        """Set or clear the database handle for metadata persistence."""
         self._db = db
         self._dataset_repo = DatasetRepository(db) if db else None
 
@@ -57,36 +50,20 @@ class DataService:
         symbol: str = "RESEARCH",
         timeframe: str = "1min",
     ) -> tuple[pd.DataFrame, DatasetMeta, DataQualityReport]:
-        """Import a CSV/TXT OHLCV file and run quality checks.
-
-        Parameters
-        ----------
-        source_path : Path or str
-        symbol : str
-        timeframe : str
-
-        Returns
-        -------
-        tuple
-            (normalized_df, dataset_meta, quality_report)
-
-            - **quality_report.passed** is ``True`` when no errors were found.
-              Warning-only reports (gaps, outliers) still pass and the data
-              is usable for research.
-            - When *quality_report.passed* is ``False``, callers should
-              inspect ``quality_report.errors`` before using the data.
-        """
+        """Import a CSV/TXT OHLCV file and run quality checks."""
         source = Path(source_path).resolve()
         if not source.is_file():
             raise FileNotFoundError(f"Source file not found: {source}")
 
-        # Fallback to temp directory if no active project is open
         root_dir = self.project_path
         if root_dir is None:
             temp_root = Path(tempfile.gettempdir()) / "qsl_temp_project"
             temp_root.mkdir(parents=True, exist_ok=True)
             root_dir = temp_root
-            logger.info(f"No active project. Using temp project root for normalization: {root_dir}")
+            logger.info(
+                "No active project. Using temp project root for normalization: %s",
+                root_dir,
+            )
 
         normalized_df, meta = self.importer.import_file(
             source_path=source,
@@ -95,7 +72,6 @@ class DataService:
             timeframe=timeframe,
         )
 
-        # Run quality checks on the normalized output.
         quality_report = check_quality(
             normalized_df,
             expected_freq_minutes=_timeframe_to_minutes(timeframe),
@@ -104,24 +80,33 @@ class DataService:
 
         if not quality_report.passed:
             logger.warning(
-                f"Data quality check FAILED for {source}: "
-                f"{quality_report.errors}"
+                "Data quality check FAILED for %s: %s",
+                source,
+                quality_report.errors,
             )
         elif quality_report.warnings:
             logger.info(
-                f"Data quality check passed with warnings for {source}: "
-                f"{quality_report.warnings}"
+                "Data quality check passed with warnings for %s: %s",
+                source,
+                quality_report.warnings,
             )
 
-        # ── Persist metadata when an active project database is available ──
         if self._dataset_repo is not None:
             try:
                 self._dataset_repo.save(meta)
-                logger.info(f"Dataset metadata persisted: {meta.name}")
+                logger.info("Dataset metadata persisted: %s", meta.name)
             except Exception:
-                logger.exception("Failed to persist dataset metadata — continuing in-memory only.")
+                logger.exception(
+                    "Failed to persist dataset metadata; continuing in-memory only."
+                )
 
         return normalized_df, meta, quality_report
+
+    def get_dataset_raw_by_id(self, dataset_id: int) -> dict | None:
+        """Return a dataset row as a raw dict, or None."""
+        if self._dataset_repo is None:
+            return None
+        return self._dataset_repo.get_raw_by_id(dataset_id)
 
     @staticmethod
     def get_render_subset(df: pd.DataFrame, max_rows: int = 2000) -> pd.DataFrame:
@@ -137,7 +122,7 @@ def _timeframe_to_minutes(tf: str) -> int | None:
     for suffix in ("min", "m"):
         if tf_lower.endswith(suffix):
             try:
-                return int(tf_lower[:-len(suffix)])
+                return int(tf_lower[: -len(suffix)])
             except ValueError:
                 return None
     return None
