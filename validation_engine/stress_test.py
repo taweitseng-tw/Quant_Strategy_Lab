@@ -16,6 +16,7 @@ import random
 from dataclasses import dataclass, field
 from typing import Callable
 
+import numpy as np
 import pandas as pd
 
 from core.models.backtest_result import BacktestResult, Trade
@@ -464,6 +465,157 @@ def stress_remove_best_n_trades(
 # ---------------------------------------------------------------------------
 # internal helpers
 # ---------------------------------------------------------------------------
+
+
+def stress_price_noise(
+    baseline: "BacktestResult",
+    *,
+    noise_pct: float = 0.005,
+    base_seed: int = 42,
+    iterations: int = 50,
+    strategy: "Strategy" = None,
+    df: pd.DataFrame = None,
+    instrument=None,
+) -> StressTestResult:
+    """Run a deterministic, OHLC-preserving price-noise stress test."""
+    if not 0.0 <= noise_pct <= 0.05:
+        raise ValueError(f"noise_pct must be in [0, 0.05], got {noise_pct}.")
+    if iterations <= 0:
+        raise ValueError(f"iterations must be > 0, got {iterations}.")
+    if strategy is None or df is None:
+        raise ValueError("strategy and df are required for price-noise stress.")
+
+    baseline_metrics = dict(baseline.metrics)
+    baseline_assumptions = dict(getattr(baseline, "assumptions", {}) or {})
+    base_pnl = float(baseline_metrics.get("total_pnl", 0.0))
+    base_win_rate = float(baseline_metrics.get("win_rate", 0.0))
+    run_kwargs = {
+        "initial_capital": baseline_assumptions.get("initial_capital", 100_000.0),
+        "commission": baseline_assumptions.get("commission_per_side", 0.0),
+        "slippage_ticks": baseline_assumptions.get("slippage_per_side_ticks", 0.0),
+        "tick_size": baseline_assumptions.get("tick_size", 1.0),
+        "point_value": baseline_assumptions.get("point_value", 1.0),
+        "execution_delay_bars": baseline_assumptions.get("execution_delay_bars", 0),
+    }
+
+    metrics: list[dict] = []
+    for i in range(iterations):
+        perturbed = _perturb_ohlc_price_noise(df, noise_pct=noise_pct, seed=base_seed + i)
+        bt = run_backtest(strategy, perturbed, instrument=instrument, **run_kwargs)
+        metrics.append(dict(bt.metrics))
+
+    pnl_values = [float(m.get("total_pnl", 0.0)) for m in metrics]
+    pf_values = [float(m.get("profit_factor", 0.0)) for m in metrics]
+    dd_values = [float(m.get("max_drawdown_pnl", 0.0)) for m in metrics]
+    wr_values = [float(m.get("win_rate", 0.0)) for m in metrics]
+
+    median_pnl = float(np.median(pnl_values)) if pnl_values else 0.0
+    median_pf = float(np.median(pf_values)) if pf_values else 0.0
+    worst_pnl = min(pnl_values) if pnl_values else 0.0
+    worst_dd = min(dd_values) if dd_values else 0.0
+    median_wr = float(np.median(wr_values)) if wr_values else 0.0
+    win_rate_change = median_wr - base_win_rate
+
+    warnings: list[str] = []
+    degradation: dict[str, float | None] = {"win_rate_change": round(win_rate_change, 6)}
+    pnl_degradation_ratio: float | None = None
+    if base_pnl > 1e-9:
+        pnl_degradation_ratio = median_pnl / base_pnl
+        degradation["pnl_degradation_ratio"] = round(pnl_degradation_ratio, 6)
+        degradation["total_pnl"] = round((median_pnl - base_pnl) / abs(base_pnl), 6)
+    else:
+        degradation["pnl_degradation_ratio"] = None
+        degradation["total_pnl"] = None
+        warnings.append("Baseline PnL is non-positive; pnl_degradation_ratio is undefined.")
+
+    survival_flags = []
+    for pnl, wr in zip(pnl_values, wr_values):
+        if base_pnl > 1e-9:
+            survival_flags.append((pnl / base_pnl) >= 0.8 and (wr - base_win_rate) >= -0.1)
+        else:
+            survival_flags.append(pnl <= base_pnl)
+    survival_rate = sum(1 for flag in survival_flags if flag) / len(survival_flags)
+
+    stressed_metrics = {
+        "total_pnl": median_pnl,
+        "profit_factor": median_pf,
+        "max_drawdown_pnl": worst_dd,
+        "win_rate": median_wr,
+        "median_total_pnl": median_pnl,
+        "median_profit_factor": median_pf,
+        "worst_total_pnl": worst_pnl,
+        "worst_max_drawdown_pnl": worst_dd,
+        "survival_rate": survival_rate,
+    }
+
+    result = _build_result(
+        test_name="price_noise",
+        baseline_metrics=baseline_metrics,
+        stressed_metrics=stressed_metrics,
+        assumptions={
+            "noise_pct": noise_pct,
+            "base_seed": base_seed,
+            "iterations": iterations,
+            "method": "ohlc_preserving_gaussian_noise",
+            "research_only": True,
+        },
+        threshold={
+            "min_pnl_degradation_ratio": 0.8,
+            "min_win_rate_change": -0.1,
+        },
+    )
+    # Override _build_result's computed values with our custom logic.
+    if pnl_degradation_ratio is None:
+        result.passed = False
+    else:
+        result.passed = pnl_degradation_ratio >= 0.8 and win_rate_change >= -0.1
+    result.degradation = degradation
+    result.warnings = warnings
+    result.warnings.append(
+        "Price-noise stress test is an approximate robustness diagnostic. "
+        "It does not prove live-trading robustness."
+    )
+    return result
+
+
+def _perturb_ohlc_price_noise(
+    df: pd.DataFrame,
+    *,
+    noise_pct: float,
+    seed: int,
+) -> pd.DataFrame:
+    """Return an OHLC-preserving noisy copy of *df*."""
+    required = {"open", "high", "low", "close", "volume"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing OHLC columns for price-noise stress: {sorted(missing)}")
+
+    perturbed = df.copy()
+    if noise_pct == 0:
+        return perturbed
+
+    rng = np.random.default_rng(seed)
+    body_noise = np.clip(rng.normal(0.0, noise_pct, size=(len(df), 2)), -0.20, 0.20)
+    wick_noise = np.clip(rng.normal(0.0, noise_pct, size=(len(df), 2)), -0.95, 5.00)
+
+    original_open = df["open"].to_numpy(dtype=float)
+    original_high = df["high"].to_numpy(dtype=float)
+    original_low = df["low"].to_numpy(dtype=float)
+    original_close = df["close"].to_numpy(dtype=float)
+
+    open_noisy = original_open * (1.0 + body_noise[:, 0])
+    close_noisy = original_close * (1.0 + body_noise[:, 1])
+    upper_wick = np.maximum(0.0, original_high - np.maximum(original_open, original_close))
+    lower_wick = np.maximum(0.0, np.minimum(original_open, original_close) - original_low)
+
+    high_noisy = np.maximum(open_noisy, close_noisy) + upper_wick * (1.0 + wick_noise[:, 0])
+    low_noisy = np.minimum(open_noisy, close_noisy) - lower_wick * (1.0 + wick_noise[:, 1])
+
+    perturbed["open"] = open_noisy
+    perturbed["high"] = high_noisy
+    perturbed["low"] = low_noisy
+    perturbed["close"] = close_noisy
+    return perturbed
 
 
 def _build_result(

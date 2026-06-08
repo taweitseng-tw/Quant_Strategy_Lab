@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-06-08 - Codex Review Correction for Batch 062D-Impl + 062E-Design
+
+### Fixed
+- Corrected first-pass `stress_price_noise()` behavior to preserve OHLC invariants through body/wick reconstruction instead of allowing independently perturbed invalid bars.
+- Corrected `noise_pct=0` to be a valid identity run.
+- Corrected `pnl_degradation_ratio` semantics to `median_total_pnl / baseline_pnl`, defined only when baseline PnL is positive.
+- Added non-positive baseline PnL handling, survival-rate output, and the required research-only diagnostic warning.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests\test_stress_test.py -q` - 34 passed.
+- `.\.venv\Scripts\python.exe -m pytest tests\test_validation_pipeline_service.py -q` - 35 passed.
+- `.\.venv\Scripts\python.exe -m pytest tests -q` - 1264 passed.
+- `git diff --check` - passed.
+- `powershell -ExecutionPolicy Bypass -File scripts\agent_status.ps1` - passed.
+
+## 2026-06-08 — Batch 062D-Impl + 062E-Design: Price-Noise Stress Test Engine Slice and WF Equity Widget Implementation Contract
+
+### Added (062D-Impl)
+- `validation_engine/stress_test.py`: Added `stress_price_noise()` — Gaussian OHLC noise stress test with deterministic seeds, iterations, pnl_degradation_ratio pass/fail. Preserves existing stress test pattern. Default pipeline behaviour unchanged.
+- `tests/test_stress_test.py`: 6 tests — structure, deterministic, zero-noise raises, non-zero perturbation visible, baseline PnL warning, invalid noise_pct rejected.
+
+### Added (062E-Design)
+- `docs/wf_equity_widget_implementation_contract_062E.md` — implementation checklist for WF per-window equity line chart: target file, rendering strategy (PySide6 QGraphicsView), empty/failure states, 6 future tests, out-of-scope items.
+
+### Verification
+- Stress tests: 32 passed.
+- Pipeline tests: 35 passed (unchanged).
+- Full suite: 1242 passed (excluding slow UI tests).
+
 ## 2026-06-08 — Batch 062B-Design + 062C-Design: Price-Noise Stress Test Contract and WF Equity Evidence Surface
 
 ### Added (062B-Design)

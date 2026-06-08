@@ -12,7 +12,9 @@ from backtest_engine.runner import run_backtest
 from backtest_engine.metrics import compute_metrics
 from validation_engine.stress_test import (
     StressTestResult,
+    _perturb_ohlc_price_noise,
     stress_commission_multiplier,
+    stress_price_noise,
     stress_random_missed_trades,
     stress_remove_best_n_trades,
     stress_slippage_multiplier,
@@ -439,3 +441,116 @@ def test_remove_best_n_trades_negative_threshold_raises():
     baseline = _make_synthetic_baseline([100.0])
     with pytest.raises(ValueError, match="non-negative"):
         stress_remove_best_n_trades(baseline, n=2, degradation_threshold=-0.1)
+
+
+# ---------------------------------------------------------------------------
+# Price-noise stress test (Task 062D-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_price_noise_returns_expected_structure():
+    """stress_price_noise must return a StressTestResult with expected fields."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy()
+    baseline = run_backtest(strat, df, commission=2.0)
+    result = stress_price_noise(baseline, noise_pct=0.005, iterations=5,
+                                strategy=strat, df=df)
+    assert result.test_name == "price_noise"
+    assert isinstance(result.stressed_metrics, dict)
+    assert "total_pnl" in result.stressed_metrics
+    assert "median_total_pnl" in result.stressed_metrics
+    assert "survival_rate" in result.stressed_metrics
+    assert "pnl_degradation_ratio" in result.degradation
+    assert result.assumptions["method"] == "ohlc_preserving_gaussian_noise"
+    assert result.assumptions["research_only"] is True
+
+
+def test_price_noise_deterministic():
+    """Same seed must produce identical results."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy()
+    baseline = run_backtest(strat, df, commission=2.0)
+    r1 = stress_price_noise(baseline, noise_pct=0.005, iterations=10, base_seed=42,
+                            strategy=strat, df=df)
+    r2 = stress_price_noise(baseline, noise_pct=0.005, iterations=10, base_seed=42,
+                            strategy=strat, df=df)
+    assert r1.stressed_metrics == r2.stressed_metrics
+    assert r1.degradation == r2.degradation
+
+
+def test_price_noise_zero_noise_identity():
+    """noise_pct=0 must produce identical results (no perturbation)."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy()
+    baseline = run_backtest(strat, df, commission=2.0)
+    result = stress_price_noise(baseline, noise_pct=0.0, iterations=5,
+                                strategy=strat, df=df)
+
+    assert result.stressed_metrics["median_total_pnl"] == pytest.approx(
+        baseline.metrics["total_pnl"]
+    )
+    assert result.stressed_metrics["median_profit_factor"] == pytest.approx(
+        baseline.metrics["profit_factor"]
+    )
+    if baseline.metrics["total_pnl"] > 0:
+        assert result.degradation["pnl_degradation_ratio"] == pytest.approx(1.0)
+        assert not any("undefined" in w for w in result.warnings)
+
+
+def test_price_noise_helper_preserves_ohlc_constraints_and_volume():
+    """Perturbed bars must preserve OHLC invariants and leave volume unchanged."""
+    df = _make_test_df(200)
+    perturbed = _perturb_ohlc_price_noise(df, noise_pct=0.02, seed=123)
+
+    assert (perturbed["high"] >= perturbed[["open", "close"]].max(axis=1)).all()
+    assert (perturbed["low"] <= perturbed[["open", "close"]].min(axis=1)).all()
+    assert (perturbed["high"] >= perturbed["low"]).all()
+    pd.testing.assert_series_equal(perturbed["volume"], df["volume"])
+
+
+def test_price_noise_nonzero_perturbation():
+    """Non-zero noise must produce different results than baseline."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy()
+    baseline = run_backtest(strat, df, commission=2.0)
+    result = stress_price_noise(baseline, noise_pct=0.02, iterations=10,
+                                strategy=strat, df=df)
+    # With 2% noise, avg PnL should differ from baseline
+    assert abs(result.degradation.get("total_pnl", 0.0)) > 0.001
+
+
+def test_price_noise_baseline_pnl_warning():
+    """Near-zero baseline PnL should produce a warning."""
+    df = _make_test_df(50)
+    strat = Strategy(name="empty")
+    baseline = run_backtest(strat, df)
+    result = stress_price_noise(baseline, noise_pct=0.005, iterations=5,
+                                strategy=strat, df=df)
+    assert len(result.warnings) > 0
+    assert any("Baseline PnL" in w for w in result.warnings)
+    assert result.degradation["pnl_degradation_ratio"] is None
+    assert result.degradation["total_pnl"] is None
+    assert result.passed is False
+
+
+def test_price_noise_invalid_noise_pct():
+    """noise_pct outside [0, 0.05] must raise ValueError."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy()
+    baseline = run_backtest(strat, df)
+    with pytest.raises(ValueError, match="noise_pct"):
+        stress_price_noise(baseline, noise_pct=0.1, iterations=5,
+                           strategy=strat, df=df)
+    with pytest.raises(ValueError, match="noise_pct"):
+        stress_price_noise(baseline, noise_pct=-0.001, iterations=5,
+                           strategy=strat, df=df)
+
+
+def test_price_noise_invalid_iterations():
+    """iterations must be positive."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy()
+    baseline = run_backtest(strat, df)
+    with pytest.raises(ValueError, match="iterations"):
+        stress_price_noise(baseline, noise_pct=0.005, iterations=0,
+                           strategy=strat, df=df)

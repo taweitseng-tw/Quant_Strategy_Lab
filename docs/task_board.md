@@ -25,6 +25,8 @@ Post-v0.2 - Reproducibility foundation design
 - [x] Batch 061C-Impl + 061D-Design-Codex Review - Full UI Archive Export Wiring Acceptance with Fixes
 - [x] Task 061E-Codex Review - Reproducibility Milestone Closure Acceptance
 - [x] Batch 062B-Design + 062C-Design-Codex Review - Price-Noise and WF Equity Evidence Design Acceptance
+- [x] Batch 062D-Impl + 062E-Design-Codex Review - Price-Noise Engine Acceptance with Corrections
+- [x] Batch 062D-Impl + 062E-Design - Price-Noise Stress Test Engine Slice and WF Equity Widget Implementation Contract
 - [x] Batch 062B-Design + 062C-Design - Price-Noise Stress Test Contract and WF Equity Evidence Surface Design
 - [x] Task 062A - Next Milestone Decision Brief
 - [x] Task 061E - Reproducibility Milestone Closure and Final Changelog
@@ -271,7 +273,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next (v0.2)
 
-- Proposed Batch 062D-Impl + 062E-Design - Price-Noise Stress Test Engine Slice + WF Equity Widget Implementation Contract
+- Proposed Batch 062F-Impl + 062G-Design - Price-Noise Stress Pipeline Wiring + WF Equity Widget Test Contract
 
 
 *(Remaining v0.2 PRD items pending task prioritization)*
