@@ -12,11 +12,11 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Task 062A - User-Directed Milestone Decision Brief.
+Batch 062B-Design + 062C-Design - Price-Noise Stress Test Contract and WF Equity Evidence Surface Design.
 
 ## Context Level
 
-Level 3 because this chooses the next product milestone after reproducibility archive closure.
+Level 3 for both tasks because they affect validation assumptions, anti-overfitting evidence, and UI/report acceptance criteria.
 
 ## Required Reading
 
@@ -29,50 +29,64 @@ Before doing anything, read:
 5. `docs/task_board.md`
 6. `docs/changelog.md`
 7. `docs/context_brief.md`
-8. `docs/reproducibility_milestone_closure_061E.md`
-9. `docs/review_notes/2026-06-08_task-061e-signoff_reproducibility-milestone-closure-and-final-changelog_codex-review.md`
+8. `docs/next_milestone_decision_062A.md`
+9. Relevant validation/report/UI files only as needed for design grounding
 10. This task file
 
 ## Context
 
-The reproducibility archive milestone is closed at engine, adapter, service, UI, and acceptance-test levels. Optional polish remains out of scope unless selected later:
+Task 062A recommends Strategy Quality and Robustness Expansion as the next default milestone. The first batch is design-only to prevent accidental engine/UI churn.
 
-- zip archive export;
-- import UI;
-- success audit log writes;
-- batch/concurrent export.
-
-The next step is a product/engineering direction decision, not implementation.
+This project prioritizes killing weak curve-fit strategies and preserving explainable, reproducible evidence. Do not implement new validation logic in this batch.
 
 ## Scope
 
-### Task 062A - User-Directed Milestone Decision Brief
+### Task 062B-Design - Price-Noise Stress Test Contract
 
 Do:
 
-- Create `docs/next_milestone_decision_062A.md`.
-- Propose 3 to 5 next milestone options grounded in the PRD and current state.
-- For each option, include:
-  - objective;
-  - why now;
-  - risks;
-  - likely files/modules;
-  - suggested first two-task batch.
-- Recommend one option as the default next milestone.
-- Update `docs/changelog.md` and `docs/task_board.md`.
+- Create `docs/price_noise_stress_contract_062B.md`.
+- Define the proposed price-noise stress test:
+  - purpose;
+  - input data shape;
+  - random seed / deterministic behavior;
+  - price perturbation model;
+  - no-future-leak constraints;
+  - pass/fail metrics;
+  - assumptions and warnings;
+  - focused future tests.
+- Specify how results should fit into existing validation pipeline structures.
 
 Do not:
 
-- Do not modify production code.
-- Do not implement a chosen milestone yet.
-- Do not add live trading, broker API, portfolio backtest, zip export, or import UI unless explicitly selected later by the user.
-- Do not claim strategy performance, investment value, or live-trading readiness.
+- Do not implement the stress test.
+- Do not alter backtest, validation, UI, or report production code.
+- Do not claim robustness or trading edge.
+
+### Task 062C-Design - WF Equity Evidence Surface
+
+Do:
+
+- Create `docs/wf_equity_evidence_surface_design_062C.md`.
+- Define how walk-forward equity evidence should be surfaced in UI/reports:
+  - required data shape;
+  - chart/table expectations;
+  - empty/failure states;
+  - report serialization expectations;
+  - focused future tests.
+- Keep the design compatible with existing walk-forward and WFE outputs.
+
+Do not:
+
+- Do not implement UI/report rendering.
+- Do not add new dependencies.
+- Do not broaden into portfolio, live trading, or broker scope.
 
 ## Acceptance Criteria
 
-1. Decision brief gives clear options and a recommended next milestone.
-2. Scope remains decision-only.
-3. Suggested first batch is small enough for two-task execution.
+1. Both design docs are specific enough for a future implementation agent.
+2. Designs explicitly preserve no-future-leak and research-only constraints.
+3. Future test plans include deterministic and failure-path coverage.
 4. Changelog and task board are updated.
 
 ## Verification
@@ -86,7 +100,7 @@ Run:
 
 After completion, create:
 
-`docs/agent_reports/2026-06-08_task-062a-decision_next-milestone-decision-brief_deepseek.md`
+`docs/agent_reports/2026-06-08_task-062b-design_062c-design_price-noise-stress-and-wf-equity-evidence_deepseek.md`
 
 Use this packet:
 

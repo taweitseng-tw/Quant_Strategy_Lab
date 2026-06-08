@@ -24,6 +24,7 @@ Post-v0.2 - Reproducibility foundation design
 - [x] Batch 061A-Impl + 061B-Design-Codex Review - Raw Archive Repository Providers and Full UI Export Wiring Design Acceptance
 - [x] Batch 061C-Impl + 061D-Design-Codex Review - Full UI Archive Export Wiring Acceptance with Fixes
 - [x] Task 061E-Codex Review - Reproducibility Milestone Closure Acceptance
+- [x] Task 062A - Next Milestone Decision Brief
 - [x] Task 061E - Reproducibility Milestone Closure and Final Changelog
 - [x] Batch 061C-Impl + 061D-Design - Full UI Archive Export Wiring and Milestone Closure Design
 - [x] Batch 061A-Impl + 061B-Design - Raw Archive Repository Providers and Full UI Export Wiring Design
@@ -268,7 +269,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next (v0.2)
 
-- Proposed Task 062A - User-Directed Milestone Decision (what to work on next)
+- Proposed Batch 062B-Design + 062C-Design - Price-Noise Stress Test Contract and WF Equity Evidence Surface Design
 
 
 *(Remaining v0.2 PRD items pending task prioritization)*

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-06-08 — Task 062A: Next Milestone Decision Brief
+
+### Added (Decision)
+- `docs/next_milestone_decision_062A.md` — 4 next-direction options: strategy quality/robustness, data workflow polish, GA research visibility, and system hardening. Recommends Option A: strategy quality and robustness expansion.
+
+### Verification
+- No production code changed.
+- `git diff --check` passes.
+
 ## 2026-06-08 — Task 061E: Reproducibility Milestone Closure
 
 ### Added (Signoff)
