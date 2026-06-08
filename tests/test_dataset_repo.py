@@ -202,3 +202,36 @@ def test_created_at_is_datetime(repo_and_db):
     now = datetime.now(timezone.utc)
     delta = (now - loaded.created_at).total_seconds()
     assert 0 <= delta < 60
+
+
+# ---------------------------------------------------------------------------
+# get_raw_by_id (Task 061A-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_get_raw_by_id_returns_row(repo_and_db):
+    """get_raw_by_id must return a dict for an existing dataset."""
+    proj_repo, db = repo_and_db
+    from repository.dataset_repo import DatasetRepository
+    from core.models.dataset import DatasetMeta
+
+    dr = DatasetRepository(db)
+    meta = DatasetMeta(name="ds-raw-test", symbol="ES", timeframe="1min")
+    row_id = dr.insert(meta)
+    assert row_id is not None
+
+    raw = dr.get_raw_by_id(row_id)
+    assert raw is not None
+    assert raw["name"] == "ds-raw-test"
+    assert raw["symbol"] == "ES"
+    assert "normalized_path" in raw, "raw dataset dict must include normalized_path"
+
+
+def test_get_raw_by_id_nonexistent_returns_none(repo_and_db):
+    """get_raw_by_id must return None for a missing dataset."""
+    proj_repo, db = repo_and_db
+    from repository.dataset_repo import DatasetRepository
+
+    dr = DatasetRepository(db)
+    raw = dr.get_raw_by_id(99999)
+    assert raw is None

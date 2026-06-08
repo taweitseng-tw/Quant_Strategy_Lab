@@ -87,6 +87,18 @@ class StrategyRepository:
         ).fetchall()
         return [_row_to_strategy(r) for r in rows]
 
+    def list_all_raw(self) -> list[dict]:
+        """Return every saved strategy as raw dict rows, newest first.
+
+        Each dict has the keys ``id``, ``project_id``, ``name``,
+        ``strategy_json``, ``created_at``, ``updated_at``.
+        """
+        rows = self._db.connection.execute(
+            "SELECT id, project_id, name, strategy_json, created_at, updated_at "
+            "FROM strategies ORDER BY created_at DESC, id DESC"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
     # ------------------------------------------------------------------
     # delete
     # ------------------------------------------------------------------

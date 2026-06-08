@@ -19,13 +19,12 @@ class ProjectArchiveDataSource:
     strategy_rows_provider : callable
         A zero-argument callable returning a list of dicts with keys
         (at minimum) ``id``, ``name``, ``strategy_json``.
-        Expected to wrap ``StrategyRepository.list_all()``.
-        The adapter consumes ``list_all`` results filtered by strategy_uid
+        Expected to wrap ``StrategyRepository.list_all_raw()``.
+        The adapter consumes raw strategy rows filtered by strategy_uid
         inside ``strategy_json``.
     dataset_rows_provider : callable
         A single-argument callable ``(dataset_id: int) -> dict | None``.
-        Expected to wrap ``DatasetRepository.get_by_name()`` or direct SQL,
-        returning dict-like rows.
+        Expected to wrap ``DatasetRepository.get_raw_by_id()``.
     validation_result_provider : callable
         A single-argument callable ``(strategy_uid: str) -> dict | None``.
         Expected to look up validation results (e.g. from a stored dict

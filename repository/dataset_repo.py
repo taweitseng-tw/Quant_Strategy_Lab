@@ -50,6 +50,13 @@ class DatasetRepository:
             return None
         return _row_to_meta(row)
 
+    def get_raw_by_id(self, dataset_id: int) -> dict | None:
+        """Return a dataset row as a raw dict, or None."""
+        row = self._db.connection.execute(
+            "SELECT * FROM datasets WHERE id = ?", (dataset_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
     def list_all(self) -> list[DatasetMeta]:
         rows = self._db.connection.execute(
             "SELECT * FROM datasets ORDER BY created_at DESC"

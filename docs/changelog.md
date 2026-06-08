@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-06-08 — Batch 061A-Impl + 061B-Design: Raw Archive Repository Providers and Full UI Export Wiring Design
+
+### Added (061A-Impl)
+- `repository/strategy_repo.py`: Added `StrategyRepository.list_all_raw()` — returns `list[dict]` with `id`, `project_id`, `name`, `strategy_json`, `created_at`, `updated_at`. Same ordering as `list_all()`. Backward-compatible — existing `list_all()` unchanged.
+- `repository/dataset_repo.py`: Added `DatasetRepository.get_raw_by_id(dataset_id)` — returns `dict | None`. Includes `normalized_path` and all dataset columns.
+- `tests/test_strategy_repo.py`: 2 new tests — list_all_raw returns dicts ordered newest first, preserves strategy_json as string.
+- `tests/test_dataset_repo.py`: 2 new tests — get_raw_by_id returns row for existing ID, returns None for missing ID.
+
+### Added (061B-Design)
+- `docs/archive_full_ui_export_wiring_design_061B.md` — defines the future MainWindow wiring: data source construction, provider lambdas, snapshot path resolution, 8 user-facing error messages, 5 focused UI wiring tests, and open items.
+
+### Verification
+- Repo tests: 32 passed.
+- Archive adapter + round-trip: 12 passed.
+- Full suite: 1251 passed.
+- `git diff --check` passes.
+
+### Codex Review
+- Accepted at 9.1/10 after Codex fixes.
+- Rewrote the 061B provider-shape design to remove an incorrect dataset provider placeholder.
+- Updated `ProjectArchiveDataSource` provider documentation to point to `StrategyRepository.list_all_raw()` and `DatasetRepository.get_raw_by_id()`.
+- Strengthened `StrategyRepository.list_all_raw()` ordering test to compare against `list_all()` ordering.
+
 ## 2026-06-08 — Batch 060Y-Design + 060Z-Signoff: Full UI Export Boundary Design and Reproducibility Milestone Acceptance
 
 ### Added (060Y-Design)

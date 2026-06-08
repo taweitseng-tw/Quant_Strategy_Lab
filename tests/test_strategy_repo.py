@@ -255,3 +255,41 @@ def test_strategies_table_exists_after_init(db):
 def test_strategy_repo_uses_in_memory_database(db):
     """The strategy repository tests run against an in-memory SQLite database."""
     assert db.db_path == ":memory:"
+
+
+# ---------------------------------------------------------------------------
+# list_all_raw (Task 061A-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_list_all_raw_returns_dict_rows_ordered(db):
+    """list_all_raw must return dicts with correct keys, newest first."""
+    repo = StrategyRepository(db)
+    s1 = _sma_strategy("alpha")
+    s2 = _sma_strategy("beta")
+    repo.insert(s1)
+    repo.insert(s2)
+
+    raw = repo.list_all_raw()
+    modeled = repo.list_all()
+    assert len(raw) >= 2
+    assert [row["name"] for row in raw] == [strategy.name for strategy in modeled]
+
+    required_keys = {"id", "project_id", "name", "strategy_json", "created_at", "updated_at"}
+    for row in raw:
+        assert required_keys.issubset(row.keys()), f"Missing keys in {row}"
+        assert isinstance(row["strategy_json"], str), "strategy_json must be a string"
+
+
+def test_list_all_raw_preserves_json_as_string(db):
+    """list_all_raw must preserve strategy_json as a raw string."""
+    repo = StrategyRepository(db)
+    s = _sma_strategy("json_test")
+    repo.insert(s)
+
+    raw = repo.list_all_raw()
+    row = [r for r in raw if r["name"] == "json_test"][0]
+    assert isinstance(row["strategy_json"], str)
+    import json
+    parsed = json.loads(row["strategy_json"])
+    assert parsed["name"] == "json_test"
