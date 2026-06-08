@@ -12,13 +12,13 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 062F-Impl + 062G-Design - Price-Noise Pipeline Integration and WF Equity Widget Test Contract.
+Batch 062H-Impl + 062I-Design - WF Equity Chart Widget Implementation and Price-Noise UI Config Controls Design.
 
 ## Context Level
 
-Level 3 for 062F because it changes validation pipeline behavior.
+Level 2 for 062H because it changes a UI widget while consuming existing serialized validation data.
 
-Level 2 for 062G because it is design/test-contract only for the UI widget slice.
+Level 2 for 062I because it is design-only for UI controls and must not change runtime behavior.
 
 ## Required Reading
 
@@ -31,70 +31,74 @@ Before doing anything, read:
 5. `docs/task_board.md`
 6. `docs/changelog.md`
 7. `docs/context_brief.md`
-8. `docs/price_noise_stress_contract_062B.md`
-9. `docs/wf_equity_widget_implementation_contract_062E.md`
-10. `docs/review_notes/2026-06-08_task-062d-impl_062e-design_price-noise-engine-and-wf-equity-widget-contract_codex-review.md`
-11. Relevant validation pipeline source and tests
+8. `docs/wf_equity_widget_implementation_contract_062E.md`
+9. `docs/wf_equity_widget_test_contract_062G.md`
+10. `docs/review_notes/2026-06-08_task-062f-impl_062g-design_price-noise-pipeline-integration-and-wf-equity-widget-test-contract_codex-review.md`
+11. Relevant UI widget source and tests
 12. This task file
 
 ## Scope
 
-### Task 062F-Impl - Price-Noise Pipeline Integration
+### Task 062H-Impl - WF Equity Chart Widget Implementation
 
 Do:
 
-- Import and wire `stress_price_noise()` into `app/services/validation_pipeline_service.py`.
-- Add `PipelineConfig` fields:
-  - `run_price_noise_stress: bool = False`
-  - `price_noise_pct: float = 0.005`
-  - `price_noise_iterations: int = 50`
-  - `price_noise_seed: int = 42`
-- Keep default behavior unchanged: `PipelineConfig()` must not include `price_noise` in `stress_results`.
-- When `run_price_noise_stress=True`, append a `price_noise` stress result after existing optional stress tests.
-- Pass the train split, strategy, baseline, instrument, and baseline backtest assumptions consistently through `stress_price_noise()`.
-- Add focused tests in `tests/test_validation_pipeline_service.py` proving:
-  - default config does not run price noise;
-  - opt-in config appends a `price_noise` stress result;
-  - config snapshot includes the four new fields;
-  - opt-in result contains `pnl_degradation_ratio`, `survival_rate`, and `research_only=True`;
-  - same seed/config gives deterministic pipeline stress results.
+- Implement a small WF equity line chart in `app/widgets/validation_summary.py`.
+- Use existing PySide6 dependencies only; no matplotlib, plotly, pyqtgraph, or new dependency.
+- Prefer a private `_WFEquityChart` widget using `QGraphicsView` / `QGraphicsScene` or an equivalent PySide6-only drawing approach.
+- Consume only existing `walk_forward_summary["windows"]` dictionaries with:
+  - `index`
+  - `equity_curve`
+  - `passed`
+- Render only windows whose `equity_curve` is a list with length >= 2.
+- Use green for passed windows and red for failed windows.
+- Constrain chart height so the dashboard layout does not expand uncontrollably.
+- Preserve the existing WF Equity Summary text section.
+- Add focused tests in `tests/test_validation_summary.py` proving:
+  - chart appears when valid equity windows exist;
+  - chart is omitted when `windows` is missing;
+  - chart is omitted when all equity curves are `None`;
+  - chart handles partial equity availability;
+  - single-window length < 2 does not render a chart;
+  - chart height is constrained.
 - Update changelog and task board.
 
 Do not:
 
-- Do not add UI controls yet.
-- Do not run price-noise by default.
-- Do not change existing stress result names or ordering except appending opt-in `price_noise`.
+- Do not change validation engine, backtest engine, or pipeline serialization.
+- Do not add report chart rendering.
+- Do not add interactive zoom/pan/tooltips.
 - Do not add dependencies.
-- Do not claim live-trading robustness.
+- Do not change existing text summary behavior except to insert the chart after it.
 
-### Task 062G-Design - WF Equity Widget Test Contract
+### Task 062I-Design - Price-Noise UI Config Controls Design
 
 Do:
 
-- Create `docs/wf_equity_widget_test_contract_062G.md`.
-- Convert `docs/wf_equity_widget_implementation_contract_062E.md` into an implementation-ready test contract for the next UI slice.
+- Create `docs/price_noise_ui_controls_design_062I.md`.
+- Design future Validate/Run UI controls for the already-default-off price-noise pipeline config.
 - Include:
-  - target file(s);
-  - exact input shapes for `walk_forward_summary["windows"]`;
-  - expected chart visibility rules;
-  - skipped/missing equity behavior;
-  - color/label expectations;
-  - focused tests for `tests/test_validation_summary.py` or the existing closest UI test file;
+  - target file(s), likely `app/ui/main_window.py` and any existing validation config area;
+  - exact controls for `run_price_noise_stress`, `price_noise_pct`, `price_noise_iterations`, and `price_noise_seed`;
+  - defaults matching `PipelineConfig`;
+  - validation ranges and user-facing guard text;
+  - no-live-trading / research-only copy;
+  - focused future tests;
   - out-of-scope items.
 
 Do not:
 
-- Do not implement the WF equity widget in this task.
-- Do not change UI code.
-- Do not change report rendering.
+- Do not implement UI controls in this task.
+- Do not change `PipelineConfig`.
+- Do not wire runtime behavior.
+- Do not add dependencies.
 
 ## Verification
 
 Run:
 
+- `.\.venv\Scripts\python.exe -m pytest tests\test_validation_summary.py -q`
 - `.\.venv\Scripts\python.exe -m pytest tests\test_validation_pipeline_service.py -q`
-- `.\.venv\Scripts\python.exe -m pytest tests\test_stress_test.py -q`
 - `git diff --check`
 - `powershell -ExecutionPolicy Bypass -File scripts\agent_status.ps1`
 
@@ -102,7 +106,7 @@ Run:
 
 After completion, create:
 
-`docs/agent_reports/2026-06-08_task-062f-impl_062g-design_price-noise-pipeline-integration-and-wf-equity-widget-test-contract_deepseek.md`
+`docs/agent_reports/2026-06-08_task-062h-impl_062i-design_wf-equity-chart-widget-and-price-noise-ui-controls-design_deepseek.md`
 
 Use this packet:
 

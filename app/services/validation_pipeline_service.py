@@ -14,7 +14,7 @@ from core.models.strategy import Strategy
 from core.models.instrument import InstrumentProfile
 from backtest_engine.runner import run_backtest
 from validation_engine.splitter import split_by_ratio
-from validation_engine.stress_test import stress_commission_multiplier, stress_slippage_multiplier, stress_one_bar_delay, stress_parameter_perturbation, stress_remove_best_n_trades
+from validation_engine.stress_test import stress_commission_multiplier, stress_slippage_multiplier, stress_one_bar_delay, stress_parameter_perturbation, stress_remove_best_n_trades, stress_price_noise
 from validation_engine.monte_carlo import run_missed_trade_monte_carlo, run_bootstrap_monte_carlo
 from validation_engine.walk_forward import walk_forward
 from validation_engine.walk_forward_matrix import walk_forward_matrix
@@ -47,6 +47,12 @@ class PipelineConfig:
     run_remove_best_n_trades_stress: bool = False
     remove_best_n_trades_n: int = 3
     remove_best_n_trades_degradation_threshold: float = 0.30
+
+    # Price-noise stress (default off).
+    run_price_noise_stress: bool = False
+    price_noise_pct: float = 0.005
+    price_noise_iterations: int = 50
+    price_noise_seed: int = 42
 
     # Monte Carlo.
     mc_iterations: int = 25
@@ -227,6 +233,18 @@ def run_validation_pipeline(
             degradation_threshold=cfg.remove_best_n_trades_degradation_threshold,
         )
         stress_results.append(_stress_to_dict(n_trades_res))
+
+    if cfg.run_price_noise_stress:
+        pn_res = stress_price_noise(
+            baseline,
+            noise_pct=cfg.price_noise_pct,
+            base_seed=cfg.price_noise_seed,
+            iterations=cfg.price_noise_iterations,
+            strategy=strategy,
+            df=split.train,
+            instrument=instrument,
+        )
+        stress_results.append(_stress_to_dict(pn_res))
 
     # ── 4. Monte Carlo ──────────────────────────────────────────────────────
     mc = run_missed_trade_monte_carlo(

@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-06-08 — Batch 062F-Impl + 062G-Design: Price-Noise Pipeline Integration and WF Equity Widget Test Contract
+
+### Added (062F-Impl)
+- `app/services/validation_pipeline_service.py`: Imported `stress_price_noise`, added 4 `PipelineConfig` fields (`run_price_noise_stress`, `price_noise_pct`, `price_noise_iterations`, `price_noise_seed`), wired price-noise stress after remove-best-N stress. Default off.
+- `tests/test_validation_pipeline_service.py`: 5 tests — default not included, opt-in included, config snapshot fields, same-seed deterministic, explicit off.
+
+### Added (062G-Design)
+- `docs/wf_equity_widget_test_contract_062G.md` — implementation-ready test contract for WF per-window equity chart: target file, input shape, visibility rules, color/label expectations, 7 focused tests, out-of-scope items.
+
+### Codex Review
+- Added missing pipeline assertions for price-noise `pnl_degradation_ratio`, `survival_rate`, and `research_only=True`.
+- Added explicit-off coverage and full price-noise dict determinism comparison.
+- Rewrote the WF equity widget visibility table to use explicit `Yes` / `No` values.
+
+### Verification
+- Pipeline tests: 40 passed (35 existing + 5 new).
+- Stress tests: 34 passed.
+- Full suite: 1269 passed.
+- `git diff --check` passes.
+
 ## 2026-06-08 - Codex Review Correction for Batch 062D-Impl + 062E-Design
 
 ### Fixed

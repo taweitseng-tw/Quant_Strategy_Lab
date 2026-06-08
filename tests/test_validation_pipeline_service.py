@@ -652,3 +652,83 @@ def test_bootstrap_mc_config_fields_in_snapshot():
     assert result.config_snapshot["run_bootstrap_monte_carlo"] is True
     assert result.config_snapshot["bootstrap_iterations"] == 100
     assert result.config_snapshot["bootstrap_confidence_level"] == 0.90
+
+
+# ---------------------------------------------------------------------------
+# Price-noise stress pipeline integration (Task 062F-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_price_noise_not_included_by_default():
+    """Default PipelineConfig must not include price_noise stress."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    result = run_validation_pipeline(df, strat, commission=2.0)
+    test_names = [s["test_name"] for s in result.stress_results]
+    assert not any("price_noise" in t for t in test_names)
+    assert result.config_snapshot.get("run_price_noise_stress") is False
+
+
+def test_price_noise_included_when_enabled():
+    """Opt-in PipelineConfig must include price_noise stress."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    cfg = PipelineConfig(run_price_noise_stress=True, price_noise_iterations=5)
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+    test_names = [s["test_name"] for s in result.stress_results]
+    assert any("price_noise" in t for t in test_names)
+    assert test_names[-1] == "price_noise"
+    pn = next(s for s in result.stress_results if s["test_name"] == "price_noise")
+    assert pn["test_name"] == "price_noise"
+    assert isinstance(pn["stressed_metrics"], dict)
+    assert "total_pnl" in pn["stressed_metrics"]
+    assert "survival_rate" in pn["stressed_metrics"]
+    assert "pnl_degradation_ratio" in pn["degradation"]
+    assert pn["assumptions"]["research_only"] is True
+
+
+def test_price_noise_explicit_off_is_not_included():
+    """Explicitly disabled price-noise stress must not alter stress results."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    cfg = PipelineConfig(run_price_noise_stress=False)
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+
+    test_names = [s["test_name"] for s in result.stress_results]
+
+    assert not any("price_noise" in t for t in test_names)
+    assert len(test_names) == 4
+
+
+def test_price_noise_config_fields_in_snapshot():
+    """Config snapshot must include the four price-noise fields."""
+    cfg = PipelineConfig(
+        run_price_noise_stress=True,
+        price_noise_pct=0.01,
+        price_noise_iterations=20,
+        price_noise_seed=99,
+    )
+    df = _make_df(200)
+    strat = _make_strategy()
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+    snap = result.config_snapshot
+    assert snap["run_price_noise_stress"] is True
+    assert snap["price_noise_pct"] == 0.01
+    assert snap["price_noise_iterations"] == 20
+    assert snap["price_noise_seed"] == 99
+
+
+def test_price_noise_same_seed_deterministic():
+    """Same seed + config must produce deterministic stress results."""
+    df = _make_df(200)
+    strat = _make_strategy()
+    cfg = PipelineConfig(
+        run_price_noise_stress=True,
+        price_noise_iterations=5,
+        price_noise_seed=42,
+    )
+    r1 = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+    r2 = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+    pn1 = next(s for s in r1.stress_results if s["test_name"] == "price_noise")
+    pn2 = next(s for s in r2.stress_results if s["test_name"] == "price_noise")
+    assert pn1 == pn2
