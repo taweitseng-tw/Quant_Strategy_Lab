@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-06-07 — Batch 060Q-Impl + 060R-Design: Archive Export Service Boundary and UI/Round-Trip Contract Design
+
+### Added (060Q-Impl)
+- `app/services/archive_export_service.py`: `ArchiveExportService` — dependency-injected orchestration wrapping `ArchiveBuilder` + `ArchiveExporter`. No PySide6 imports. Single public method `export_strategy_archive()`. Built-in research disclaimer default.
+- `tests/test_archive_export_service.py`: 4 tests — successful export + ArchiveVerifier verification, missing strategy raises, missing validation raises, missing dataset raises.
+- All 24 archive tests pass (6 service + 10 builder + 8 exporter). Codex tightened the original 4 service tests with cause/no-manifest/package-export/UI-boundary checks.
+
+### Added (060R-Design)
+- `docs/archive_export_ui_and_roundtrip_contract_060R.md` — UI trigger location (Results page), data flow, error handling, archive output path, 5-step round-trip acceptance test plan (export → verify → import → assert → boundary), UI implementation surface table.
+
+### Changed (Codex Review Fix)
+- Exported `ArchiveExportService` and `ArchiveExportServiceError` from `app.services` to match the existing service package pattern.
+- Tightened export service tests to assert failure cause preservation, no success manifest on failed inputs, and no UI dependency.
+
+### Verification
+- Export service + builder + exporter: 24 passed.
+- Full suite: 1232 passed.
+- `git diff --check` passes.
+
 ## 2026-06-07 — Batch 060O-Impl + 060P-Signoff: Coordinator Acceptance Tests and Reproducibility Foundation Signoff
 
 ### Added (060O-Impl)
