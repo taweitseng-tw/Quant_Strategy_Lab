@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-06-08 — Task 061E: Reproducibility Milestone Closure
+
+### Added (Signoff)
+- `docs/reproducibility_milestone_closure_061E.md` — confirms all 13 closure criteria with evidence. Verdict: **Reproducibility milestone CLOSED**. Archive export complete at engine, adapter, service, UI, and acceptance-test levels.
+
+### Verification
+- All archive tests pass.
+- Full suite: 1256 passed.
+- `git diff --check` passes.
+
 ## 2026-06-08 — Batch 061C-Impl + 061D-Design: Full UI Archive Export Wiring and Milestone Closure Design
 
 ### Added (061C-Impl)
