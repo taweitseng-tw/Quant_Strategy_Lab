@@ -12,11 +12,11 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 060U-Impl + 060V-Design - Results Archive Export Guard Wiring and Data-Source Adapter Design.
+Batch 060W-Impl + 060X-Design - ProjectArchiveDataSource Adapter Slice and Full UI Export Delegation Design.
 
 ## Context Level
 
-Level 2 for 060U implementation and Level 3 for 060V design.
+Level 3 for 060W implementation and Level 2 for 060X design.
 
 ## Required Reading
 
@@ -29,89 +29,90 @@ Before doing anything, read:
 5. `docs/task_board.md`
 6. `docs/changelog.md`
 7. `docs/context_brief.md`
-8. `app/ui/main_window.py`
-9. `app/services/archive_export_service.py`
-10. `app/services/__init__.py`
-11. `tests/test_archive_roundtrip_acceptance.py`
-12. `docs/archive_ui_wiring_readiness_contract_060T.md`
-13. `docs/review_notes/2026-06-08_task-060s-impl_060t-design_archive-roundtrip-and-ui-readiness_codex-review.md`
-14. This task file
+8. `app/services/archive_export_service.py`
+9. `app/ui/main_window.py`
+10. `repository/strategy_repo.py`
+11. `repository/dataset_repo.py`
+12. `app/services/project_service.py`
+13. `docs/archive_ui_data_source_adapter_design_060V.md`
+14. `docs/review_notes/2026-06-08_task-060u-impl_060v-design_results-archive-export-guard-and-data-source-adapter_codex-review.md`
+15. This task file
 
 ## Context
 
-060S proved backend export -> verify -> import round-trip. Codex tightened it to assert dataset `snapshot_hash` persistence and final moved CSV contents.
+060U added a guarded Results-page "Export Archive" action surface. Codex fixed it so project root resolution uses `ProjectService` and validation guards support real `PipelineResult` dataclasses.
 
-The next safe UI step is not full production archive export. Add narrow Results-page guard/button wiring and log behavior, while designing the real data-source adapter needed for full export later.
+The next step is to implement the project data-source adapter needed by `ArchiveExportService`, without yet enabling full UI export from `MainWindow`.
 
 ## Scope
 
-### Task 060U-Impl - Results Archive Export Guard Wiring
+### Task 060W-Impl - ProjectArchiveDataSource Adapter Slice
 
 Do:
 
-- Add an "Export Archive" button on the Results page near existing export buttons.
-- Keep the button/handler narrow and guard-first:
-  - no selected strategy -> log or show a clear user-facing message;
-  - missing project root -> log/message;
-  - missing strategy UID / dataset snapshot path / validation pass status -> log/message;
-  - only call `ArchiveExportService.export_strategy_archive()` when all required inputs are present.
-- Add helper methods on `MainWindow` if needed, but keep archive orchestration out of the UI.
-- If the current UI does not yet expose reliable strategy UID/dataset snapshot path, do not fake a successful export. Leave the handler guarded and explicit.
-- Add focused UI wiring tests using existing UI test patterns. Suggested checks:
-  1. Results page has an Export Archive button;
-  2. clicking with no valid selection does not call `ArchiveExportService`;
-  3. success path can be tested by monkeypatching a small resolver/service seam, not by building real archives in UI tests;
-  4. service module still has no PySide6 imports.
+- Add a service/repository adapter module, suggested path `app/services/archive_project_data_source.py`.
+- Implement a small `ProjectArchiveDataSource` that satisfies the `ArchiveDataSource` protocol used by `ArchiveBuilder`.
+- It should be dependency-injected and testable. Prefer constructor dependencies such as:
+  - strategy repository or strategy rows provider;
+  - dataset repository or dataset rows provider;
+  - validation result provider.
+- Implement:
+  - `get_strategy(strategy_uid) -> dict | None`;
+  - `get_dataset(dataset_id) -> dict | None`;
+  - `get_validation_result(strategy_uid) -> dict | None`.
+- UID lookup must use `strategy_uid` inside stored `strategy_json`, not display name.
+- Validation lookup must preserve pass/fail status and be compatible with `PipelineResult` dataclasses or dicts.
+- Add focused tests, suggested path `tests/test_archive_project_data_source.py`.
+- Update `app/services/__init__.py` only if consistent with service package exports.
 - Update `docs/changelog.md`.
 
 Do not:
 
-- Do not implement full import UI.
-- Do not move archive builder/exporter logic into `main_window.py`.
-- Do not fabricate strategy UID, dataset path, or validation state to force a green export.
-- Do not add zip support or success audit behavior.
+- Do not wire full UI export yet.
+- Do not add import UI.
+- Do not add zip support.
+- Do not query PySide widgets from the adapter.
+- Do not silently invent missing dataset IDs, strategy UIDs, or validation results.
 
 Acceptance criteria:
 
-1. UI has a visible/exportable Results-page archive action surface.
-2. Guard failures are explicit and do not call the archive export service.
-3. Any success-path UI test uses a seam/monkeypatch and proves delegation only.
-4. No archive/core logic is placed in PySide widgets.
+1. Adapter finds strategy rows by `strategy_uid` embedded in `strategy_json`.
+2. Adapter returns `None` for missing UID, malformed JSON, missing dataset, or missing validation.
+3. Adapter has no PySide6/UI imports.
+4. Tests cover happy path and at least three failure paths.
 
 Verification:
 
 - Run:
-  - `.\.venv\Scripts\python.exe -m pytest tests\test_wfe_ui_wiring.py tests\test_archive_export_service.py -q`
-  - If a new UI test file is added, include it explicitly.
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_archive_project_data_source.py tests\test_archive_export_service.py -q`
   - `.\.venv\Scripts\python.exe -m pytest -q`
   - `git diff --check`
   - `powershell -ExecutionPolicy Bypass -File scripts\agent_status.ps1`
 
-### Task 060V-Design - Archive UI Data-Source Adapter Design
+### Task 060X-Design - Full UI Export Delegation Design
 
 Do:
 
-- Create a design document, suggested path `docs/archive_ui_data_source_adapter_design_060V.md`.
-- Define the future adapter that will provide `ArchiveExportService` with real strategy/dataset/validation data from the project repositories.
-- Specify exact inputs/outputs:
-  - selected strategy UID;
-  - dataset ID/path;
-  - validation pass/fail result;
-  - output archive folder;
-  - disclaimer policy.
-- Define failure modes and user-facing messages.
-- Define the next two-task batch after 060U/060V.
+- Create a design document, suggested path `docs/archive_full_ui_export_delegation_design_060X.md`.
+- Define exactly how `MainWindow._handle_export_archive()` should delegate to:
+  - selection resolver;
+  - `ProjectArchiveDataSource`;
+  - `ArchiveExportService`;
+  - output path resolver.
+- Define the success-path UI test plan using monkeypatch seams.
+- Define failure handling and cleanup expectations.
+- Recommend the next two-task batch after 060W/060X.
 
 Do not:
 
-- Do not implement the adapter in this design task.
-- Do not broaden to import UI, zip archives, live trading, or portfolio workflows.
+- Do not implement full UI export in this design task.
+- Do not add live trading, broker, zip, or portfolio scope.
 
 ## Completion Report
 
 After completion, create:
 
-`docs/agent_reports/2026-06-08_task-060u-impl_060v-design_results-archive-export-guard-and-data-source-adapter_deepseek.md`
+`docs/agent_reports/2026-06-08_task-060w-impl_060x-design_project-archive-data-source-and-ui-export-delegation_deepseek.md`
 
 Use this packet:
 

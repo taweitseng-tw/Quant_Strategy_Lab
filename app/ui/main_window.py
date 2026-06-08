@@ -201,6 +201,27 @@ class MainWindow(QMainWindow):
                 title.setObjectName("pageTitle")
                 title.setStyleSheet("font-size: 16px; font-weight: bold; color: #26a69a;")
                 
+                self.btn_export_archive = QPushButton("Export Archive")
+                self.btn_export_archive.setStyleSheet("""
+                    QPushButton {
+                        background-color: #607D8B;
+                        color: white;
+                        border: 1px solid #455A64;
+                        border-radius: 3px;
+                        padding: 6px 12px;
+                        font-size: 12px;
+                    }
+                    QPushButton:hover {
+                        background-color: #78909C;
+                    }
+                    QPushButton:disabled {
+                        background-color: #CCCCCC;
+                        color: #888888;
+                    }
+                """)
+                self.btn_export_archive.setEnabled(False)
+                self.btn_export_archive.clicked.connect(self._handle_export_archive)
+
                 self.btn_export_python = QPushButton("Export Code")
                 self.btn_export_python.setStyleSheet("""
                     QPushButton {
@@ -251,6 +272,7 @@ class MainWindow(QMainWindow):
                 header_layout.addWidget(title)
                 header_layout.addStretch()
                 header_layout.addWidget(self.btn_preview_json_import)
+                header_layout.addWidget(self.btn_export_archive)
                 header_layout.addWidget(self.btn_export_json)
                 header_layout.addWidget(self.btn_export_python)
                 
@@ -752,6 +774,80 @@ class MainWindow(QMainWindow):
                 f"An error occurred while exporting the code:\n{str(e)}"
             )
 
+    def _handle_export_archive(self) -> None:
+        """Guard-first Export Archive handler — checks required inputs before calling service."""
+        from PySide6.QtWidgets import QMessageBox
+
+        # Guard 1: project root
+        project_root = self._get_archive_project_root()
+        if project_root is None:
+            self.log_panel.add_message("WARN", "No project root — cannot export archive.")
+            QMessageBox.warning(self, "Export Failed", "No project is loaded. Open a project first.")
+            return
+
+        # Guard 2: selected strategy
+        selected_ranges = self.results_table.table.selectedRanges()
+        if not selected_ranges or not self.ranked_data:
+            self.log_panel.add_message("WARN", "No strategy selected for archive export.")
+            QMessageBox.warning(self, "Export Failed", "Please select a strategy from the Results table first.")
+            return
+
+        row = selected_ranges[0].topRow()
+        if not (0 <= row < len(self.ranked_data)):
+            return
+
+        strat_item = self.ranked_data[row]
+        strategy = strat_item.get("strategy")
+        if not strategy:
+            self.log_panel.add_message("WARN", "Selected item has no valid strategy for archive export.")
+            QMessageBox.warning(self, "Export Failed", "No valid strategy found for the selected row.")
+            return
+
+        # Guard 3: validation result present and passed
+        if not hasattr(self, "latest_validation_result") or self.latest_validation_result is None:
+            self.log_panel.add_message("WARN", "No validation result — archive export requires a passed validation.")
+            QMessageBox.warning(self, "Export Failed", "This strategy has not been validated. Run validation first.")
+            return
+
+        valid = self.latest_validation_result
+        elim = self._validation_field(valid, "elimination_result", {}) or {}
+        if not elim.get("passed", False):
+            self.log_panel.add_message("WARN", "Strategy failed validation — cannot export archive.")
+            QMessageBox.warning(self, "Export Failed", "This strategy did not pass validation. Only passed strategies can be exported.")
+            return
+
+        # Guard 4: dataset snapshot path
+        bm = self._validation_field(valid, "baseline_metrics", {}) or {}
+        if not bm:
+            self.log_panel.add_message("WARN", "No baseline metrics in validation result.")
+            QMessageBox.warning(self, "Export Failed", "No backtest data found for this strategy.")
+            return
+
+        self.log_panel.add_message("INFO", (
+            "Archive export guard checks passed — ready to export."
+            " (Full dataset snapshot and archive wiring not yet implemented in this slice.)"
+        ))
+
+    def _get_archive_project_root(self):
+        """Return the active project root for archive export guards."""
+        project_root = getattr(self, "_project_root", None)
+        if project_root is not None:
+            return project_root
+        if self.project_service.is_project_active():
+            project = self.project_service.get_active_project()
+            if project is not None:
+                return project.root_path
+        return None
+
+    @staticmethod
+    def _validation_field(result, key: str, default=None):
+        """Read a validation field from either PipelineResult or dict."""
+        if result is None:
+            return default
+        if isinstance(result, dict):
+            return result.get(key, default)
+        return getattr(result, key, default)
+
     def _handle_active_profile_changed(self, symbol: str) -> None:
         self.log_panel.add_message("INFO", f"Active instrument profile changed to: {symbol}")
         self._refresh_results_ranking()
@@ -795,6 +891,8 @@ class MainWindow(QMainWindow):
             self.btn_export_python.setEnabled(False)
         if hasattr(self, "btn_export_json"):
             self.btn_export_json.setEnabled(False)
+        if hasattr(self, "btn_export_archive"):
+            self.btn_export_archive.setEnabled(False)
 
         selected_ranges = self.results_table.table.selectedRanges()
         if not selected_ranges or not self.ranked_data:
@@ -827,6 +925,8 @@ class MainWindow(QMainWindow):
                 self.btn_export_python.setEnabled(True)
             if hasattr(self, "btn_export_json"):
                 self.btn_export_json.setEnabled(True)
+            if hasattr(self, "btn_export_archive"):
+                self.btn_export_archive.setEnabled(True)
 
     def _handle_add_custom_condition(self) -> None:
         """Handle request to add custom formula condition to selected strategy."""

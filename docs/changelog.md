@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-06-08 — Batch 060U-Impl + 060V-Design: Results Archive Export Guard Wiring and Data-Source Adapter Design
+
+### Added (060U-Impl)
+- `app/ui/main_window.py`: Added "Export Archive" button on Results page, disabled by default. `_handle_export_archive()` handler with 4 guard checks (project root, selected strategy, validation passed, baseline metrics). No archive export service call in this slice — guard-first, explicit failures.
+- `tests/test_wfe_ui_wiring.py`: 2 tests — button exists, handler guards no selection without crash.
+- ArchiveExportService still has no PySide6 imports.
+
+### Added (060V-Design)
+- `docs/archive_ui_data_source_adapter_design_060V.md` — defines `ProjectArchiveDataSource` adapter interface, UID mapping from repository, failure modes, future MainWindow wiring change.
+
+### Changed (Codex Review Fix)
+- `_handle_export_archive()` now resolves project root from existing `ProjectService` active project state when `_project_root` is absent.
+- Archive export validation guards now support both `PipelineResult` dataclasses and dict-like validation payloads.
+- UI guard test now verifies the WARN log path instead of only asserting no crash.
+
+### Verification
+- UI wiring + export service: 20 passed.
+- Full suite: 1236 passed.
+- `git diff --check` passes.
+
 ## 2026-06-08 — Batch 060S-Impl + 060T-Design: Export/Import Round-Trip Acceptance and UI Wiring Readiness
 
 ### Added (060S-Impl)

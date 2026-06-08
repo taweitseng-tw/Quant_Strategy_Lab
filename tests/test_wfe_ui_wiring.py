@@ -3,7 +3,7 @@
 import pytest
 from PySide6.QtWidgets import QApplication
 from app.ui.main_window import MainWindow
-from app.services.validation_pipeline_service import PipelineConfig
+from app.services.validation_pipeline_service import PipelineConfig, PipelineResult
 from unittest.mock import patch
 
 
@@ -186,3 +186,47 @@ def test_bootstrap_checked_passes_custom_values(mock_run, main_window):
     assert config.run_bootstrap_monte_carlo is True
     assert config.bootstrap_iterations == 500
     assert config.bootstrap_confidence_level == 0.90
+
+
+# ---------------------------------------------------------------------------
+# Archive Export button (Task 060U-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_export_archive_button_exists(main_window):
+    """Export Archive button must exist on the Results page."""
+    assert hasattr(main_window, "btn_export_archive")
+    btn = main_window.btn_export_archive
+    assert btn.text() == "Export Archive"
+
+
+def test_export_archive_handler_guards_no_selection(main_window, tmp_path, monkeypatch):
+    """Handler must guard: no ranked_data → returns without crash."""
+    messages = []
+    monkeypatch.setattr(
+        main_window.log_panel,
+        "add_message",
+        lambda level, message: messages.append((level, message)),
+    )
+    monkeypatch.setattr(
+        "app.ui.main_window.QMessageBox.warning",
+        lambda *args, **kwargs: None,
+    )
+    main_window._project_root = tmp_path
+    if hasattr(main_window, "ranked_data"):
+        main_window.ranked_data = []
+    # The handler should return early when no selection exists.
+    # Just verify it doesn't crash.
+    main_window._handle_export_archive()
+    assert ("WARN", "No strategy selected for archive export.") in messages
+
+
+def test_export_archive_validation_field_accepts_pipeline_result():
+    """Archive guard helpers must support PipelineResult dataclasses."""
+    result = PipelineResult(
+        baseline_metrics={"total_trades": 1},
+        elimination_result={"passed": True},
+    )
+
+    assert MainWindow._validation_field(result, "elimination_result") == {"passed": True}
+    assert MainWindow._validation_field(result, "baseline_metrics") == {"total_trades": 1}
