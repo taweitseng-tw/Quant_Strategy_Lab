@@ -12,11 +12,11 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 060S-Impl + 060T-Design - Export/Import Round-Trip Acceptance and UI Wiring Readiness.
+Batch 060U-Impl + 060V-Design - Results Archive Export Guard Wiring and Data-Source Adapter Design.
 
 ## Context Level
 
-Level 3 for 060S implementation and Level 2 for 060T design.
+Level 2 for 060U implementation and Level 3 for 060V design.
 
 ## Required Reading
 
@@ -29,97 +29,89 @@ Before doing anything, read:
 5. `docs/task_board.md`
 6. `docs/changelog.md`
 7. `docs/context_brief.md`
-8. `app/services/archive_export_service.py`
-9. `archive/import_coordinator.py`
-10. `archive/importer.py`
-11. `archive/verifier.py`
-12. `archive/stager.py`
-13. `archive/manifest.py`
-14. `repository/strategy_import_adapter.py`
-15. `repository/dataset_import_adapter.py`
-16. `repository/import_audit_repo.py`
-17. `tests/test_archive_export_service.py`
-18. `tests/test_archive_import_coordinator_acceptance.py`
-19. `docs/archive_export_ui_and_roundtrip_contract_060R.md`
-20. `docs/review_notes/2026-06-08_task-060q-impl_060r-design_archive-export-service-and-ui-roundtrip-contract_codex-review.md`
-21. This task file
+8. `app/ui/main_window.py`
+9. `app/services/archive_export_service.py`
+10. `app/services/__init__.py`
+11. `tests/test_archive_roundtrip_acceptance.py`
+12. `docs/archive_ui_wiring_readiness_contract_060T.md`
+13. `docs/review_notes/2026-06-08_task-060s-impl_060t-design_archive-roundtrip-and-ui-readiness_codex-review.md`
+14. This task file
 
 ## Context
 
-060Q added a service-layer `ArchiveExportService`. Codex tightened it by exporting it from `app.services` and adding tests for failure cause preservation, no success manifest on failed inputs, and no UI imports.
+060S proved backend export -> verify -> import round-trip. Codex tightened it to assert dataset `snapshot_hash` persistence and final moved CSV contents.
 
-The next highest-value step is to prove the archive can make a backend round trip: export -> verify -> import -> assert repository state. Do this before wiring a visible UI button.
+The next safe UI step is not full production archive export. Add narrow Results-page guard/button wiring and log behavior, while designing the real data-source adapter needed for full export later.
 
 ## Scope
 
-### Task 060S-Impl - Export/Import Round-Trip Acceptance
+### Task 060U-Impl - Results Archive Export Guard Wiring
 
 Do:
 
-- Add a focused acceptance test file, suggested path `tests/test_archive_roundtrip_acceptance.py`.
-- Build a deterministic fake export data source that works with `ArchiveExportService`.
-- Export an archive folder to a temp path.
-- Verify the exported folder with `ArchiveManifest.read_from_folder()` + `ArchiveVerifier.verify_all()`.
-- Import the exported folder into a fresh in-memory SQLite project using `ArchiveImportCoordinator`, real `StrategyRepoAdapter`, real `DatasetRepoAdapter`, real `AuditLogRepositoryAdapter`, and real `ArchiveStager` where practical.
-- Assert:
-  1. `ImportResult.success is True`;
-  2. imported strategy row exists and has the same `strategy_uid`;
-  3. imported dataset row exists with expected symbol/timeframe and snapshot hash when available;
-  4. no failed `ImportAuditLog` rows were written;
-  5. coordinator module remains free of UI/engine imports.
-- Use a small adapter/helper inside the test only if exported archive metadata needs to be converted into existing import DTOs.
-- Keep this as test/acceptance coverage. Do not broaden production import/export behavior unless a real bug is exposed.
+- Add an "Export Archive" button on the Results page near existing export buttons.
+- Keep the button/handler narrow and guard-first:
+  - no selected strategy -> log or show a clear user-facing message;
+  - missing project root -> log/message;
+  - missing strategy UID / dataset snapshot path / validation pass status -> log/message;
+  - only call `ArchiveExportService.export_strategy_archive()` when all required inputs are present.
+- Add helper methods on `MainWindow` if needed, but keep archive orchestration out of the UI.
+- If the current UI does not yet expose reliable strategy UID/dataset snapshot path, do not fake a successful export. Leave the handler guarded and explicit.
+- Add focused UI wiring tests using existing UI test patterns. Suggested checks:
+  1. Results page has an Export Archive button;
+  2. clicking with no valid selection does not call `ArchiveExportService`;
+  3. success path can be tested by monkeypatching a small resolver/service seam, not by building real archives in UI tests;
+  4. service module still has no PySide6 imports.
 - Update `docs/changelog.md`.
 
 Do not:
 
-- Do not add UI button wiring in this task.
-- Do not add zip support.
-- Do not add success audit behavior.
-- Do not change archive file format unless the round-trip test exposes a real format mismatch, and if so keep the fix minimal.
-- Do not import PySide6, backtest engine, or validation engine into archive coordinator/service modules.
+- Do not implement full import UI.
+- Do not move archive builder/exporter logic into `main_window.py`.
+- Do not fabricate strategy UID, dataset path, or validation state to force a green export.
+- Do not add zip support or success audit behavior.
 
 Acceptance criteria:
 
-1. A backend round-trip acceptance test proves exported archives can be verified and imported into a clean DB.
-2. The test uses real SQLite-backed import adapters.
-3. The test would fail if manifest hashes, snapshot staging, duplicate guards, or transaction commit are broken.
+1. UI has a visible/exportable Results-page archive action surface.
+2. Guard failures are explicit and do not call the archive export service.
+3. Any success-path UI test uses a seam/monkeypatch and proves delegation only.
+4. No archive/core logic is placed in PySide widgets.
 
 Verification:
 
 - Run:
-  - `.\.venv\Scripts\python.exe -m pytest tests\test_archive_roundtrip_acceptance.py tests\test_archive_export_service.py tests\test_archive_import_coordinator_acceptance.py -q`
+  - `.\.venv\Scripts\python.exe -m pytest tests\test_wfe_ui_wiring.py tests\test_archive_export_service.py -q`
+  - If a new UI test file is added, include it explicitly.
   - `.\.venv\Scripts\python.exe -m pytest -q`
   - `git diff --check`
   - `powershell -ExecutionPolicy Bypass -File scripts\agent_status.ps1`
 
-### Task 060T-Design - UI Wiring Readiness Contract
+### Task 060V-Design - Archive UI Data-Source Adapter Design
 
 Do:
 
-- Create a design document, suggested path `docs/archive_ui_wiring_readiness_contract_060T.md`.
-- Define exactly what data source/adapter the future Results-page UI must pass into `ArchiveExportService`.
-- Define how the UI discovers:
-  - active project root;
+- Create a design document, suggested path `docs/archive_ui_data_source_adapter_design_060V.md`.
+- Define the future adapter that will provide `ArchiveExportService` with real strategy/dataset/validation data from the project repositories.
+- Specify exact inputs/outputs:
   - selected strategy UID;
-  - dataset snapshot path;
-  - validation result presence/pass status;
-  - destination archive folder.
-- Define button enable/disable rules and log messages.
-- Define a small future UI wiring test plan, but do not implement UI in this task.
-- Recommend the next two-task batch after 060S/060T.
+  - dataset ID/path;
+  - validation pass/fail result;
+  - output archive folder;
+  - disclaimer policy.
+- Define failure modes and user-facing messages.
+- Define the next two-task batch after 060U/060V.
 
 Do not:
 
-- Do not implement full UI wiring.
-- Do not add import UI.
-- Do not add live trading, broker, zip, or portfolio scope.
+- Do not implement the adapter in this design task.
+- Do not broaden to import UI, zip archives, live trading, or portfolio workflows.
 
 ## Completion Report
 
 After completion, create:
 
-`docs/agent_reports/2026-06-08_task-060s-impl_060t-design_archive-roundtrip-and-ui-readiness_deepseek.md`
+`docs/agent_reports/2026-06-08_task-060u-impl_060v-design_results-archive-export-guard-and-data-source-adapter_deepseek.md`
 
 Use this packet:
 

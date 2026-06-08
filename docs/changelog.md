@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-06-08 — Batch 060S-Impl + 060T-Design: Export/Import Round-Trip Acceptance and UI Wiring Readiness
+
+### Added (060S-Impl)
+- `tests/test_archive_roundtrip_acceptance.py`: Full round-trip acceptance test — export via `ArchiveExportService` → verify via `ArchiveVerifier` → import via `ArchiveImportCoordinator` with real adapters → assert strategy/dataset rows exist, no failure audit, no UI/engine boundary. 1 test.
+
+### Added (060T-Design)
+- `docs/archive_ui_wiring_readiness_contract_060T.md` — defines UI data sources, button enable/disable rules, log messages, 5-test UI wiring plan. Recommends button wiring + final signoff next.
+
+### Changed (Codex Review Fix)
+- Tightened the round-trip acceptance test to assert imported `snapshot_hash` and final moved CSV contents under the project folder.
+- Replaced the time-based test `run_id` with a deterministic value and removed unused imports.
+
+### Verification
+- Round-trip + export service + import acceptance: 13 passed.
+- Full suite: 1233 passed.
+- `git diff --check` passes.
+
 ## 2026-06-07 — Batch 060Q-Impl + 060R-Design: Archive Export Service Boundary and UI/Round-Trip Contract Design
 
 ### Added (060Q-Impl)
