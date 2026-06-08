@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-06-08 — Batch 060W-Impl + 060X-Design: ProjectArchiveDataSource Adapter Slice and Full UI Export Delegation Design
+
+### Added (060W-Impl)
+- `app/services/archive_project_data_source.py`: `ProjectArchiveDataSource` — satisfies `ArchiveDataSource` protocol. Scans strategy rows for UID inside `strategy_json`, returns dict or None. Dependency-injected providers for strategies, datasets, validations. No PySide6 imports.
+- `tests/test_archive_project_data_source.py`: 8 tests — happy paths (find strategy, dataset, validation), failure paths (missing UID, malformed JSON, non-dict JSON, missing dataset, missing validation), no UI imports.
+
+### Added (060X-Design)
+- `docs/archive_full_ui_export_delegation_design_060X.md` — defines full `_handle_export_archive()` delegation wiring, helper methods, success-path UI test plan with monkeypatch seams, failure handling table, output cleanup policy, and next batch.
+
+### Changed (Codex Review Fix)
+- Exported `ProjectArchiveDataSource` from `app.services`.
+- `get_validation_result()` now converts `PipelineResult` dataclasses to dicts and returns `None` for unsupported provider payloads.
+- Strengthened service boundary tests for package export and no UI module imports.
+
+### Verification
+- Adapter + export service: 17 passed.
+- Full suite: 1247 passed.
+- `git diff --check` passes.
+
 ## 2026-06-08 — Batch 060U-Impl + 060V-Design: Results Archive Export Guard Wiring and Data-Source Adapter Design
 
 ### Added (060U-Impl)

@@ -12,11 +12,11 @@ DeepSeek V4 Pro
 
 ## Current Task
 
-Batch 060W-Impl + 060X-Design - ProjectArchiveDataSource Adapter Slice and Full UI Export Delegation Design.
+Batch 060Y-Design + 060Z-Signoff - Full UI Export Boundary Design and Reproducibility Milestone Acceptance.
 
 ## Context Level
 
-Level 3 for 060W implementation and Level 2 for 060X design.
+Level 3 for both tasks.
 
 ## Required Reading
 
@@ -29,90 +29,100 @@ Before doing anything, read:
 5. `docs/task_board.md`
 6. `docs/changelog.md`
 7. `docs/context_brief.md`
-8. `app/services/archive_export_service.py`
-9. `app/ui/main_window.py`
-10. `repository/strategy_repo.py`
-11. `repository/dataset_repo.py`
-12. `app/services/project_service.py`
-13. `docs/archive_ui_data_source_adapter_design_060V.md`
-14. `docs/review_notes/2026-06-08_task-060u-impl_060v-design_results-archive-export-guard-and-data-source-adapter_codex-review.md`
-15. This task file
+8. `app/services/archive_project_data_source.py`
+9. `app/services/archive_export_service.py`
+10. `app/ui/main_window.py`
+11. `repository/strategy_repo.py`
+12. `repository/dataset_repo.py`
+13. `tests/test_archive_project_data_source.py`
+14. `tests/test_archive_roundtrip_acceptance.py`
+15. `docs/archive_full_ui_export_delegation_design_060X.md`
+16. `docs/review_notes/2026-06-08_task-060w-impl_060x-design_project-archive-data-source-and-ui-export-delegation_codex-review.md`
+17. This task file
 
 ## Context
 
-060U added a guarded Results-page "Export Archive" action surface. Codex fixed it so project root resolution uses `ProjectService` and validation guards support real `PipelineResult` dataclasses.
+060W implemented `ProjectArchiveDataSource`. Codex tightened it for `PipelineResult` dataclass conversion, package export, and stronger UI-boundary tests.
 
-The next step is to implement the project data-source adapter needed by `ArchiveExportService`, without yet enabling full UI export from `MainWindow`.
+Important blocker before full UI export implementation:
+
+- Existing `StrategyRepository.list_all()` returns `Strategy` objects, not raw rows with `strategy_json`.
+- `ProjectArchiveDataSource` currently expects a provider of row-like dicts containing `strategy_json`.
+- Full UI export must not fake or silently invent strategy UID/dataset snapshot data.
+
+Therefore this round is design/signoff only. Do not implement full UI export yet.
 
 ## Scope
 
-### Task 060W-Impl - ProjectArchiveDataSource Adapter Slice
+### Task 060Y-Design - Full UI Export Boundary Design
 
 Do:
 
-- Add a service/repository adapter module, suggested path `app/services/archive_project_data_source.py`.
-- Implement a small `ProjectArchiveDataSource` that satisfies the `ArchiveDataSource` protocol used by `ArchiveBuilder`.
-- It should be dependency-injected and testable. Prefer constructor dependencies such as:
-  - strategy repository or strategy rows provider;
-  - dataset repository or dataset rows provider;
-  - validation result provider.
-- Implement:
-  - `get_strategy(strategy_uid) -> dict | None`;
-  - `get_dataset(dataset_id) -> dict | None`;
-  - `get_validation_result(strategy_uid) -> dict | None`.
-- UID lookup must use `strategy_uid` inside stored `strategy_json`, not display name.
-- Validation lookup must preserve pass/fail status and be compatible with `PipelineResult` dataclasses or dicts.
-- Add focused tests, suggested path `tests/test_archive_project_data_source.py`.
-- Update `app/services/__init__.py` only if consistent with service package exports.
-- Update `docs/changelog.md`.
+- Create a design document, suggested path `docs/archive_full_ui_export_boundary_design_060Y.md`.
+- Resolve the raw-row provider boundary required by `ProjectArchiveDataSource`.
+- Compare at least two options:
+  1. add a repository read method that returns raw archive export rows;
+  2. add a dedicated archive repository adapter that queries SQLite directly;
+  3. extend saved `Strategy`/provenance model only if justified.
+- Recommend one option with reasons.
+- Define exact data contracts for:
+  - strategy UID lookup;
+  - dataset ID and snapshot path lookup;
+  - validation result lookup;
+  - output folder path;
+  - user-facing errors.
+- Define focused future tests for the selected option.
+- Explicitly state what remains out of scope.
 
 Do not:
 
-- Do not wire full UI export yet.
-- Do not add import UI.
-- Do not add zip support.
-- Do not query PySide widgets from the adapter.
-- Do not silently invent missing dataset IDs, strategy UIDs, or validation results.
+- Do not implement the selected option.
+- Do not modify `MainWindow`.
+- Do not add zip, import UI, broker/live trading, or portfolio scope.
 
-Acceptance criteria:
-
-1. Adapter finds strategy rows by `strategy_uid` embedded in `strategy_json`.
-2. Adapter returns `None` for missing UID, malformed JSON, missing dataset, or missing validation.
-3. Adapter has no PySide6/UI imports.
-4. Tests cover happy path and at least three failure paths.
-
-Verification:
-
-- Run:
-  - `.\.venv\Scripts\python.exe -m pytest tests\test_archive_project_data_source.py tests\test_archive_export_service.py -q`
-  - `.\.venv\Scripts\python.exe -m pytest -q`
-  - `git diff --check`
-  - `powershell -ExecutionPolicy Bypass -File scripts\agent_status.ps1`
-
-### Task 060X-Design - Full UI Export Delegation Design
+### Task 060Z-Signoff - Reproducibility Milestone Acceptance
 
 Do:
 
-- Create a design document, suggested path `docs/archive_full_ui_export_delegation_design_060X.md`.
-- Define exactly how `MainWindow._handle_export_archive()` should delegate to:
-  - selection resolver;
-  - `ProjectArchiveDataSource`;
-  - `ArchiveExportService`;
-  - output path resolver.
-- Define the success-path UI test plan using monkeypatch seams.
-- Define failure handling and cleanup expectations.
-- Recommend the next two-task batch after 060W/060X.
+- Create a milestone acceptance document, suggested path `docs/reproducibility_milestone_acceptance_060Z.md`.
+- Summarize the accepted archive/reproducibility chain:
+  - manifest/verifier;
+  - dataset snapshot;
+  - builder/exporter;
+  - importer/coordinator;
+  - repository adapters;
+  - audit;
+  - export service;
+  - round-trip acceptance;
+  - guarded UI surface;
+  - project archive data source adapter.
+- List remaining gaps and classify them:
+  - required before full UI export;
+  - optional polish;
+  - explicitly out of scope.
+- Recommend the next two-task batch after 060Y/060Z.
+- Update `docs/changelog.md` and `docs/task_board.md`.
 
 Do not:
 
-- Do not implement full UI export in this design task.
-- Do not add live trading, broker, zip, or portfolio scope.
+- Do not declare live trading readiness.
+- Do not claim strategy performance or investment value.
+- Do not mark full UI export complete.
+
+## Verification
+
+Run:
+
+- `.\.venv\Scripts\python.exe -m pytest tests\test_archive_project_data_source.py tests\test_archive_roundtrip_acceptance.py -q`
+- `.\.venv\Scripts\python.exe -m pytest -q`
+- `git diff --check`
+- `powershell -ExecutionPolicy Bypass -File scripts\agent_status.ps1`
 
 ## Completion Report
 
 After completion, create:
 
-`docs/agent_reports/2026-06-08_task-060w-impl_060x-design_project-archive-data-source-and-ui-export-delegation_deepseek.md`
+`docs/agent_reports/2026-06-08_task-060y-design_060z-signoff_full-ui-export-boundary-and-reproducibility-acceptance_deepseek.md`
 
 Use this packet:
 
