@@ -455,3 +455,60 @@ def test_data_format_guide_label_has_object_name(qapp):
         assert window.data_format_guide_label.objectName() == "dataFormatGuideLabel"
     finally:
         window.close()
+
+
+# ---------------------------------------------------------------------------
+# Import cancel state preservation (Task 083A-083F)
+# ---------------------------------------------------------------------------
+
+
+def test_import_cancel_preserves_existing_state(qapp):
+    """Canceling the file dialog must not mutate any existing data/validation/export state."""
+    from app.services.validation_pipeline_service import PipelineResult
+
+    window = MainWindow()
+
+    # Simulate prior successful state.
+    window._loaded_dataset = "preloaded"
+    window._active_dataset_meta = {"name": "test"}
+    window._active_dataset_quality = {"passed": True}
+    window.latest_validation_result = PipelineResult(
+        baseline_metrics={"total_pnl": 100},
+        elimination_result={"passed": True},
+    )
+    window.export_action.setEnabled(True)
+    window.export_action.setToolTip("Export the latest validation report.")
+    window.validation_status_label.setText("Validation completed.")
+    window.validation_status_label.show()
+
+    # Snapshot all state before cancel.
+    snap_dataset = window._loaded_dataset
+    snap_meta = window._active_dataset_meta
+    snap_quality = window._active_dataset_quality
+    snap_result = window.latest_validation_result
+    snap_export_enabled = window.export_action.isEnabled()
+    snap_export_tip = window.export_action.toolTip()
+    snap_status_text = window.validation_status_label.text()
+    snap_status_visible = not window.validation_status_label.isHidden()
+
+    # Cancel the import dialog.
+    with (
+        patch(
+            "PySide6.QtWidgets.QFileDialog.getOpenFileName",
+            return_value=("", ""),
+        ),
+        patch("app.ui.main_window.DataService.import_file") as mock_import,
+    ):
+        window._handle_import_ohlcv_data()
+
+    # Nothing changed.
+    assert window._loaded_dataset is snap_dataset
+    assert window._active_dataset_meta is snap_meta
+    assert window._active_dataset_quality is snap_quality
+    assert window.latest_validation_result is snap_result
+    assert window.export_action.isEnabled() is snap_export_enabled
+    assert window.export_action.toolTip() == snap_export_tip
+    assert window.validation_status_label.text() == snap_status_text
+    assert (not window.validation_status_label.isHidden()) is snap_status_visible
+    mock_import.assert_not_called()
+    window.close()
