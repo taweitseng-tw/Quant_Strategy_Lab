@@ -17,6 +17,15 @@ from app.services.data_service import DataService
 from app.widgets.candlestick_chart import CandlestickChart, PYQTGRAPH_AVAILABLE
 
 
+def _write_valid_ohlcv_csv(path: Path) -> None:
+    """Write a minimal valid OHLCV CSV with 1 bar.  The filename becomes the
+    dataset name visible in the status label."""
+    pd.DataFrame({
+        "Date": ["2026/01/01"], "Time": ["09:00"], "Open": [100.0],
+        "High": [101.0], "Low": [99.0], "Close": [100.5], "TotalVolume": [1000],
+    }).to_csv(path, index=False)
+
+
 @pytest.fixture(scope="module")
 def qapp() -> QApplication:
     """Fixture to initialize a QApplication instance for GUI testing."""
@@ -319,10 +328,7 @@ def test_import_button_disabled_during_import(qapp, tmp_dir):
         return original_import_file(DataService(), *args, **kwargs)
 
     csv_file = tmp_dir / "sample_ok.csv"
-    pd.DataFrame({
-        "Date": ["2026/01/01"], "Time": ["09:00"], "Open": [100.0],
-        "High": [101.0], "Low": [99.0], "Close": [100.5], "TotalVolume": [1000],
-    }).to_csv(csv_file, index=False)
+    _write_valid_ohlcv_csv(csv_file)
 
     try:
         with (
@@ -352,10 +358,7 @@ def test_import_success_resets_validation_state(qapp, tmp_dir):
 
     window = MainWindow()
     csv_file = tmp_dir / "sample_ok.csv"
-    pd.DataFrame({
-        "Date": ["2026/01/01"], "Time": ["09:00"], "Open": [100.0],
-        "High": [101.0], "Low": [99.0], "Close": [100.5], "TotalVolume": [1000],
-    }).to_csv(csv_file, index=False)
+    _write_valid_ohlcv_csv(csv_file)
 
     stale_dataset = pd.DataFrame({"Close": [1.0]})
     stale_meta = object()
@@ -560,10 +563,7 @@ def test_data_status_label_after_successful_import(qapp, tmp_dir):
     """After successful import, status label must show dataset name and rows."""
     window = MainWindow()
     csv_file = tmp_dir / "sample_label.csv"
-    pd.DataFrame({
-        "Date": ["2026/01/01"], "Time": ["09:00"], "Open": [100.0],
-        "High": [101.0], "Low": [99.0], "Close": [100.5], "TotalVolume": [1000],
-    }).to_csv(csv_file, index=False)
+    _write_valid_ohlcv_csv(csv_file)
 
     try:
         with (
