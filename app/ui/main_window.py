@@ -237,6 +237,7 @@ class MainWindow(QMainWindow):
                 self.btn_export_archive.clicked.connect(self._handle_export_archive)
 
                 self.btn_export_python = QPushButton("Export Code")
+                self.btn_export_python.setObjectName("btnExportCode")
                 self.btn_export_python.setStyleSheet("""
                     QPushButton {
                         background-color: #3f51b5;

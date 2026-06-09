@@ -103,3 +103,9 @@ def test_export_json_button_has_object_name(main_window):
     """Export JSON button must have a stable objectName."""
     assert hasattr(main_window, "btn_export_json")
     assert main_window.btn_export_json.objectName() == "btnExportJson"
+
+
+def test_export_code_button_has_object_name(main_window):
+    """Export Code button must have a stable objectName."""
+    assert hasattr(main_window, "btn_export_python")
+    assert main_window.btn_export_python.objectName() == "btnExportCode"
