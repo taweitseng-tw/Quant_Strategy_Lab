@@ -251,3 +251,85 @@ def test_projects_table_rejects_duplicate_root_path(repo, tmp_project_dir):
         repo.db.connection.commit()
 
     repo.close()
+
+
+# ---------------------------------------------------------------------------
+# Config file preservation on open (Task 111A-111C)
+# ---------------------------------------------------------------------------
+
+
+def test_open_project_preserves_instruments_json(repo, tmp_project_dir):
+    """Modifying instruments.json then opening the project must preserve content."""
+    _ = repo.create_project("preserve-test", tmp_project_dir)
+    cfg_dir = tmp_project_dir / "config"
+
+    custom = [{"symbol": "TXF", "point_value": 200}]
+    (cfg_dir / "instruments.json").write_text(json.dumps(custom, indent=2), encoding="utf-8")
+    repo.close()
+
+    repo2 = ProjectRepository()
+    meta = repo2.open_project(tmp_project_dir)
+    data = json.loads((meta.root_path / "config" / "instruments.json").read_text(encoding="utf-8"))
+    assert data == custom, "instruments.json must be preserved after open"
+    repo2.close()
+
+
+def test_open_project_preserves_sessions_json(repo, tmp_project_dir):
+    """Modifying sessions.json then opening the project must preserve content."""
+    _ = repo.create_project("preserve-test", tmp_project_dir)
+    cfg_dir = tmp_project_dir / "config"
+
+    custom = [{"name": "day", "start": "08:45", "end": "13:45"}]
+    (cfg_dir / "sessions.json").write_text(json.dumps(custom, indent=2), encoding="utf-8")
+    repo.close()
+
+    repo2 = ProjectRepository()
+    meta = repo2.open_project(tmp_project_dir)
+    data = json.loads((meta.root_path / "config" / "sessions.json").read_text(encoding="utf-8"))
+    assert data == custom, "sessions.json must be preserved after open"
+    repo2.close()
+
+
+def test_open_project_preserves_app_settings_json(repo, tmp_project_dir):
+    """Modifying app_settings.json then opening the project must preserve content."""
+    _ = repo.create_project("preserve-test", tmp_project_dir)
+    cfg_dir = tmp_project_dir / "config"
+
+    custom = {
+        "version": "0.0.1",
+        "execution_model": "next_bar_open",
+        "same_bar_ambiguity": "stop_loss_first",
+        "default_timeframe": "5min",
+        "extra_custom_key": "should survive",
+    }
+    (cfg_dir / "app_settings.json").write_text(json.dumps(custom, indent=2), encoding="utf-8")
+    repo.close()
+
+    repo2 = ProjectRepository()
+    meta = repo2.open_project(tmp_project_dir)
+
+    data = json.loads((meta.root_path / "config" / "app_settings.json").read_text(encoding="utf-8"))
+    assert data.get("execution_model") == "next_bar_open"
+    assert data.get("same_bar_ambiguity") == "stop_loss_first"
+    assert data.get("default_timeframe") == "5min"
+    assert data.get("extra_custom_key") == "should survive", (
+        "Custom keys must survive open_project"
+    )
+    repo2.close()
+
+
+def test_open_project_returns_valid_meta_after_config_mutations(repo, tmp_project_dir):
+    """Even after config file mutations, open_project must return correct ProjectMeta."""
+    _ = repo.create_project("meta-verify", tmp_project_dir)
+    (tmp_project_dir / "config" / "sessions.json").write_text(
+        json.dumps([{"name": "custom"}], indent=2),
+        encoding="utf-8",
+    )
+    repo.close()
+
+    repo2 = ProjectRepository()
+    meta = repo2.open_project(tmp_project_dir)
+    assert meta.name == "meta-verify"
+    assert meta.root_path == tmp_project_dir
+    assert meta.version == "0.0.1"
+    repo2.close()
