@@ -9,6 +9,8 @@ from app.services.validation_pipeline_service import PipelineConfig, PipelineRes
 from core.models.strategy import Strategy
 from unittest.mock import patch
 
+from data_engine.quality_checker import DataQualityReport
+
 
 @pytest.fixture
 def app():
@@ -835,3 +837,33 @@ def test_export_tooltip_reset_after_reset(main_window):
     main_window._reset_validation_state()
     tip = main_window.export_action.toolTip()
     assert "run validation" in tip.lower(), f"Tooltip should mention run validation, got: {tip!r}"
+
+
+@patch("app.ui.main_window.QMessageBox.warning")
+def test_validation_abort_quality_failure_disables_export(mock_warning, main_window):
+    """Validation abort on failed quality checks must keep export disabled, re-enable run, and explain why."""
+    # Set up a non-passing quality report so the abort guard fires.
+    main_window._loaded_dataset = "not-none"  # non-mock path
+    main_window._active_dataset_quality = DataQualityReport(passed=False, errors=["bad data"])
+
+    # Export was previously enabled (simulating a prior successful run).
+    main_window.export_action.setEnabled(True)
+    main_window.export_action.setToolTip("Export the latest validation report.")
+    main_window.run_action.setEnabled(True)
+
+    main_window._handle_run()
+
+    # Verify export is disabled and has explanatory tooltip.
+    assert not main_window.export_action.isEnabled(), (
+        "Export must stay disabled after quality abort"
+    )
+    tip = main_window.export_action.toolTip()
+    assert "quality" in tip.lower(), f"Tooltip should mention quality, got: {tip!r}"
+
+    # Verify run button is re-enabled.
+    assert main_window.run_action.isEnabled(), "Run button must be re-enabled after abort"
+
+    # Export tooltip explains the cause.
+    assert "re-import" in tip.lower() or "quality" in tip.lower(), (
+        f"Tooltip should explain the blocked state, got: {tip!r}"
+    )

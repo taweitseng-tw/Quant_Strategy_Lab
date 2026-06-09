@@ -1446,13 +1446,22 @@ class MainWindow(QMainWindow):
         from app.services.strategy_persistence_service import StrategyPersistenceService
         return StrategyPersistenceService(self.project_service.repository.db)
 
+    def _disable_export_action(self, reason: str) -> None:
+        """Disable export with an explanatory tooltip."""
+        self.export_action.setEnabled(False)
+        self.export_action.setToolTip(reason)
+
+    def _enable_export_action(self) -> None:
+        """Enable export after successful validation."""
+        self.export_action.setEnabled(True)
+        self.export_action.setToolTip("Export the latest validation report.")
+
     def _reset_validation_state(self) -> None:
         """Clear stale validation UI state when dataset or project changes."""
         self.validation_status_label.hide()
         self.validation_status_label.setText("")
         self.latest_validation_result = None
-        self.export_action.setEnabled(False)
-        self.export_action.setToolTip("Run validation first to enable report export.")
+        self._disable_export_action("Run validation first to enable report export.")
 
     def _handle_run(self) -> None:
         """Execute the validation pipeline on current data/strategy."""
@@ -1471,7 +1480,7 @@ class MainWindow(QMainWindow):
 
         # Disable Run and Export buttons to prevent concurrent launches.
         self.run_action.setEnabled(False)
-        self.export_action.setEnabled(False)
+        self._disable_export_action("Validating...")
         QApplication.processEvents()
 
         # Determine dataset — use loaded data or fall back to mock.
@@ -1493,7 +1502,7 @@ class MainWindow(QMainWindow):
                 self.validation_status_label.hide()
                 QApplication.processEvents()
                 self.run_action.setEnabled(True)
-                self.export_action.setToolTip("Dataset failed quality checks. Re-import data before validation.")
+                self._disable_export_action("Dataset failed quality checks. Re-import data before validation.")
                 return
             source_label = self._active_dataset_meta.name if self._active_dataset_meta else "Loaded data"
             self.log_panel.add_message("INFO", f"Using active dataset: {source_label}")
@@ -1622,8 +1631,7 @@ class MainWindow(QMainWindow):
                 f"Baseline PnL: {result.baseline_metrics.get('total_pnl', 0):.0f}\n"
                 f"Elimination: {'✓ Passed' if result.elimination_result and result.elimination_result['passed'] else '✗ Eliminated'}"
             )
-            self.export_action.setEnabled(True)
-            self.export_action.setToolTip("Export the latest validation report.")
+            self._enable_export_action()
         except Exception as e:
             self.log_panel.add_message("ERROR", f"Validation pipeline failed: {e}")
             self.inspector_label.setText(
@@ -1636,7 +1644,7 @@ class MainWindow(QMainWindow):
                 "color: #ef5350; font-weight: bold; font-size: 12px; padding: 4px 0;"
             )
             QApplication.processEvents()
-            self.export_action.setToolTip("Validation failed. Run validation again to enable report export.")
+            self._disable_export_action("Validation failed. Run validation again to enable report export.")
         finally:
             self.run_action.setEnabled(True)
             QApplication.processEvents()
