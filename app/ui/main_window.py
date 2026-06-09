@@ -359,6 +359,7 @@ class MainWindow(QMainWindow):
                 self.remove_best_n_checkbox.setChecked(False)
 
                 self.remove_best_n_n_spin = QSpinBox()
+                self.remove_best_n_n_spin.setObjectName("spnRemoveBestN")
                 self.remove_best_n_n_spin.setMinimum(1)
                 self.remove_best_n_n_spin.setMaximum(50)
                 self.remove_best_n_n_spin.setValue(3)
@@ -366,6 +367,7 @@ class MainWindow(QMainWindow):
                 self.remove_best_n_n_spin.setEnabled(False)
 
                 self.remove_best_n_threshold_spin = QDoubleSpinBox()
+                self.remove_best_n_threshold_spin.setObjectName("spnRemoveBestNThreshold")
                 self.remove_best_n_threshold_spin.setMinimum(0.01)
                 self.remove_best_n_threshold_spin.setMaximum(1.00)
                 self.remove_best_n_threshold_spin.setSingleStep(0.05)
@@ -399,6 +401,7 @@ class MainWindow(QMainWindow):
                 self.bootstrap_checkbox.setChecked(False)
 
                 self.bootstrap_iter_spin = QSpinBox()
+                self.bootstrap_iter_spin.setObjectName("spnBootstrapIterations")
                 self.bootstrap_iter_spin.setMinimum(50)
                 self.bootstrap_iter_spin.setMaximum(2000)
                 self.bootstrap_iter_spin.setSingleStep(50)
@@ -407,6 +410,7 @@ class MainWindow(QMainWindow):
                 self.bootstrap_iter_spin.setEnabled(False)
 
                 self.bootstrap_conf_spin = QDoubleSpinBox()
+                self.bootstrap_conf_spin.setObjectName("spnBootstrapConfidence")
                 self.bootstrap_conf_spin.setMinimum(0.80)
                 self.bootstrap_conf_spin.setMaximum(0.99)
                 self.bootstrap_conf_spin.setSingleStep(0.01)

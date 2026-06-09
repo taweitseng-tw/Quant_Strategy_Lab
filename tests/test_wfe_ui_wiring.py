@@ -1028,3 +1028,27 @@ def test_bootstrap_checkbox_has_object_name(main_window):
     """Bootstrap checkbox must have a stable objectName."""
     assert hasattr(main_window, "bootstrap_checkbox")
     assert main_window.bootstrap_checkbox.objectName() == "chkBootstrap"
+
+
+def test_remove_best_n_spin_has_object_name(main_window):
+    """Remove Best N spinbox must have a stable objectName."""
+    assert hasattr(main_window, "remove_best_n_n_spin")
+    assert main_window.remove_best_n_n_spin.objectName() == "spnRemoveBestN"
+
+
+def test_remove_best_n_threshold_spin_has_object_name(main_window):
+    """Remove Best N threshold spinbox must have a stable objectName."""
+    assert hasattr(main_window, "remove_best_n_threshold_spin")
+    assert main_window.remove_best_n_threshold_spin.objectName() == "spnRemoveBestNThreshold"
+
+
+def test_bootstrap_iter_spin_has_object_name(main_window):
+    """Bootstrap iterations spinbox must have a stable objectName."""
+    assert hasattr(main_window, "bootstrap_iter_spin")
+    assert main_window.bootstrap_iter_spin.objectName() == "spnBootstrapIterations"
+
+
+def test_bootstrap_conf_spin_has_object_name(main_window):
+    """Bootstrap confidence spinbox must have a stable objectName."""
+    assert hasattr(main_window, "bootstrap_conf_spin")
+    assert main_window.bootstrap_conf_spin.objectName() == "spnBootstrapConfidence"
