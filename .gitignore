@@ -41,6 +41,9 @@ scratch*.py
 pytest*.txt
 test.pdf
 .reasonix/
+.codegraph/
+.ai_loop/
+/nul
 1/
 2/
 virtual/

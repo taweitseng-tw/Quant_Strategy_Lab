@@ -5,9 +5,12 @@
 
 ---
 
-## 0. Required Reading Order
+## 0. Required Context Policy
 
-Before making changes, read these files in order:
+Before making changes, classify the task by context level, then read the
+required files for that level. When risk is unclear, use Level 3.
+
+Full reading order for Level 3 tasks:
 
 ```text
 1. SOUL.md
@@ -27,8 +30,8 @@ The workflow may use compact context only to reduce repeated re-reading, not to 
 
 Rules:
 
-1. Full-detail review remains required for architecture changes, product-scope changes, engine logic, validation logic, backtest assumptions, strategy generation, repository schema changes, and milestone acceptance.
-2. Compact context is allowed only when the task card explicitly marks the task as low-risk and points to the relevant files.
+1. Full-detail review remains required for architecture changes, product-scope changes, engine logic, validation logic, backtest assumptions, strategy generation, repository schema changes, release decisions, and milestone acceptance.
+2. Compact context is allowed for Level 1 and Level 2 tasks when the task card points to the relevant files and the agent can verify the change locally.
 3. If compact context and full documents disagree, follow the full documents in the required reading order.
 4. If an agent is unsure whether compact context is sufficient, escalate to the full reading order.
 5. Token efficiency must never be used as a reason to skip verification, weaken tests, ignore edge cases, or accept unclear architecture.
@@ -66,16 +69,44 @@ Task cards should assign one of these context levels:
 
 ```text
 Level 1 - UI, docs, small wiring, formatting-safe fixes
-Read: SOUL.md, AGENTS.md, docs/context_brief.md if present, docs/task_board.md, docs/changelog.md, and relevant files.
+Read: SOUL.md, AGENTS.md, docs/context_brief.md if present, relevant docs/task_board.md sections, recent or task-matching docs/changelog.md entries, and relevant files.
 
-Level 2 - service layer, data flow, light engine changes
-Read: SOUL.md, AGENTS.md, docs/context_brief.md if present, docs/architecture.md, docs/task_board.md, docs/changelog.md, relevant files, and relevant tests.
+Level 2 - service layer, data flow, repository adapters, non-trading glue
+Read: SOUL.md, AGENTS.md, docs/context_brief.md if present, docs/architecture.md, relevant docs/task_board.md sections, recent or task-matching docs/changelog.md entries, relevant files, and relevant tests.
 
 Level 3 - backtest, strategy, validation, repository schema, architecture, product scope, milestone acceptance
 Read the full required reading order from Section 0 plus relevant source and tests.
 ```
 
 The assigned level controls how much context must be loaded first; it does not lower quality standards.
+
+### 0A.2.1 Token Budget Guardrails
+
+To keep each agent round focused, use these reading rules unless the task is
+Level 3 or uncertainty requires escalation:
+
+1. Prefer `docs/context_brief.md` for orientation instead of re-reading the full PRD.
+2. Read only the current `docs/task_board.md` sections needed for the active task, usually `In Progress`, `Next`, and the latest matching `Done` entries.
+3. Read only recent or task-matching `docs/changelog.md` entries. Use full changelog review only for release audits, regression archaeology, or compatibility decisions.
+4. Use targeted search (`rg`) for older decisions instead of loading giant files into the model context.
+5. Keep completion packets short and put long evidence in `docs/agent_reports/` only when needed.
+6. Update `docs/context_brief.md` whenever a milestone, current focus, or non-negotiable project fact changes.
+
+### 0A.2.2 Codex Review Efficiency Guardrails
+
+Codex review must be high-signal and token-efficient. Strict review does not mean
+re-reading unrelated history or expanding scope.
+
+Rules:
+
+1. Start each review from the implementation packet, changed files, targeted diffs, and verification evidence.
+2. For Level 1 and Level 2 reviews, do not read full `docs/PRD.md`, full `docs/changelog.md`, full `docs/task_board.md`, archives, or unrelated agent reports unless a concrete risk requires it.
+3. Use `git diff -- <relevant files>`, `git diff --stat`, `git status --short`, and `rg` before opening large files.
+4. Review only the smallest coherent bucket of changes. If the worktree is mixed, identify buckets and review one bucket at a time.
+5. Run focused tests first. Use full test suites only for broad engine changes, release acceptance, or when focused failures suggest wider regression risk.
+6. Keep final review packets compact: decision, score when requested, findings, required fixes, verification, architecture risk, and next assignment.
+7. If Codex proactively fixes an issue, the fix must be narrow, locally verified, and clearly separated from unrelated dirty worktree changes.
+8. Token savings must never justify passing unclear architecture, skipping no-future-leak checks, weakening tests, or accepting changes below the user's quality gate.
 
 ### 0A.3 Reasonix Completion Packet
 
@@ -727,13 +758,11 @@ Use this when assigning the next model.
 ```text
 You are working on Quant Strategy Lab.
 
+Context level:
+[Level 1 / Level 2 / Level 3]
+
 Before doing anything, read:
-1. SOUL.md
-2. AGENTS.md
-3. docs/PRD.md
-4. docs/architecture.md
-5. docs/task_board.md
-6. docs/changelog.md
+[List only the files/sections required by that context level. For Level 3, use the full reading order from AGENTS.md Section 0.]
 
 Current task:
 [describe task]

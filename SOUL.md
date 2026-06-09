@@ -279,15 +279,29 @@ Stop at natural checkpoints.
 
 ### 4.1 Read Before Editing
 
-Before editing, agents must inspect:
+Before editing, agents must inspect the context level required by `AGENTS.md`.
+
+Baseline for every task:
 
 1. `SOUL.md`
 2. `AGENTS.md`
-3. `docs/PRD.md`
-4. `docs/architecture.md`
-5. `docs/task_board.md`
-6. `docs/changelog.md`
-7. Relevant source files
+3. `docs/context_brief.md` if present
+4. The current task card or latest task-board section
+5. Relevant source files
+
+Full-detail review is still mandatory for architecture changes, product-scope
+changes, engine logic, validation logic, backtest assumptions, strategy
+generation, repository schema changes, release or milestone acceptance, and any
+task whose risk is unclear.
+
+For low-risk documentation, UI copy, small wiring, or formatting-safe fixes,
+agents may read compact context plus the relevant file sections instead of
+loading every long project document in full. If compact context conflicts with
+the full documents, the full documents win.
+
+Large append-only files such as `docs/changelog.md` should be read from the
+latest relevant entries first. Agents should expand to full-file review only
+when the task depends on older history.
 
 If a file does not exist yet, create it only when the current task requires it.
 

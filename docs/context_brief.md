@@ -1,7 +1,7 @@
 # Quant Strategy Lab — Compact Context Brief
 
 > For Reasonix / Codex handoffs. Does **not** replace full-context review for risky tasks.
-> Last updated: 2026-06-07
+> Last updated: 2026-06-09 (Codex review efficiency guardrails)
 
 ## Project Goal
 
@@ -37,17 +37,17 @@ Engine code must not import PySide6. UI must not contain trading/strategy/backte
 | **Data** | Import, normalize, resample OHLCV. Session filter. Instrument profiles. Data quality checks. |
 | **Strategy** | Four-block template (LE/LX/SE/SX). Formula conditions. GA population engine. GP tree engine. MTF conditions. Volume conditions. |
 | **Backtest** | Event-driven, bar-by-bar, single-instrument. Stop-loss / take-profit. Session-end exit. Execution delay. Indicator cache. |
-| **Validation** | IS/Val/OOS split. 5 stress tests (commission, slippage, one-bar delay, parameter perturbation, remove-best-N). Monte Carlo (missed-trade, slippage, combined). **Bootstrap MC with 95% CI**. Walk-forward + matrix + WFE. **IS/OOS stability gates**. **IS baseline quality precheck**. Elimination rules engine. |
-| **Reports** | Markdown, HTML, PDF exports. Validation evidence in all formats. |
-| **UI** | PySide6 main window. Dashboard, Data, Build, Validate, Results, Report, Settings pages. ValidationSummary widget. |
-| **Infrastructure** | Agent queue workflow. Agent status script. 1103 tests, zero warnings. |
+| **Validation** | IS/Val/OOS split. Stress tests including commission, slippage, one-bar delay, parameter perturbation, remove-best-N, and price-noise diagnostic. Monte Carlo (missed-trade, slippage, combined), bootstrap MC with 95% CI, and missed-trade MC worst-case trade-step equity evidence. Walk-forward + matrix + WFE. IS/OOS stability gates. IS baseline quality precheck. Elimination rules engine. |
+| **Reports** | Markdown, HTML, PDF exports. Validation evidence includes price-noise details, WF equity tables, MC worst-case trade-step equity, and WFE. |
+| **UI** | PySide6 main window. Dashboard, Data, Build, Validate, Results, Report, Settings pages. ValidationSummary widget with price-noise details, WF equity chart, MC worst-case equity chart, WFE line, and precheck controls. |
+| **Infrastructure** | Agent queue workflow. Agent status script. Compact task board/changelog archives. Context-level reading protocol. |
 
-## Open Capabilities (Deferred)
+## Open Capabilities / Current Gaps
 
-- Price noise stress test (PRD §12.3)
-- MC worst-case equity curve (PRD §12.4, deferred to v0.3)
-- WF plotted equity charts (PRD §12.5)
-- Precheck UI toggle (pipeline-level only)
+- Data import UX hardening: format guidance label and actionable error messages (Task 065A-Impl).
+- MC worst-case equity is trade-step evidence for missed-trade MC, not bar-by-bar equity and not all MC runner types.
+- Context/document hygiene remains active: handoff docs must avoid stale claims.
+- Data import is not currently considered blocked; focused data workflow tests pass and the old 13-failure claim is stale.
 
 ## Key Directories
 
@@ -61,12 +61,23 @@ Engine code must not import PySide6. UI must not contain trading/strategy/backte
 | `validation_engine/` | Stress, MC, WF, elimination |
 | `reports/` | Markdown, HTML, PDF, code exporters |
 | `repository/` | SQLite access |
-| `docs/` | PRD, architecture, task_board, changelog, agent_reports, review_notes |
+| `docs/` | PRD, architecture, compact task_board/changelog, archives, agent_reports, review_notes |
 | `tests/` | All test files |
 | `scripts/` | `agent_status.ps1` |
 
 ## Current Review Focus (June 2026)
 
-- v0.2 cleanup / hardening closeout (058 series).
-- Zero-warning verification accepted after 058D/058E.
-- Post-cleanup milestone decision (v0.3 features vs. v1.0 archive design).
+- Reduce repeated context loading with context levels and targeted reading.
+- For Level 1/2 tasks, start from this brief plus current task-board/changelog sections.
+- For Level 3 tasks, use the full required reading order in `AGENTS.md`.
+- Latest active next item in `docs/task_board.md`: Next item is None (065A-Impl just completed).
+
+## Context Efficiency Rules
+
+- Do not paste or reload full `docs/PRD.md`, full `docs/changelog.md`, or archive files for low-risk work.
+- Use `rg` to find older decisions in `docs/archive/`, then read only matching sections.
+- Keep handoff and review packets compact; store long evidence in `docs/agent_reports/` when needed.
+- Codex reviews should start from changed files, focused diffs, verification output, and reviewer focus. Review one coherent bucket at a time when the worktree is mixed.
+- Use focused tests before full suites unless the task touches broad engine behavior, release acceptance, no-future-leak assumptions, or architecture contracts.
+- Token savings must never weaken tests, architecture boundaries, no-future-leak review, or milestone acceptance.
+- Historical task-board Done items live in docs/archive/task_board_done_archive.md; older changelog entries live in docs/archive/changelog_archive.md. These are repository documentation artifacts, not local tool-state. Accepted untracked docs are grouped in docs/documentation_artifact_staging_plan_064H.md.
