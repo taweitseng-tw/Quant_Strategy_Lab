@@ -44,10 +44,10 @@ Engine code must not import PySide6. UI must not contain trading/strategy/backte
 
 ## Open Capabilities / Current Gaps
 
-- Data import UX hardening: format guidance label and actionable error messages (Task 065A-Impl).
+- Next post-v0.2 engineering task is not yet selected. Do not reassign Task 065A or 065B; both are complete.
 - MC worst-case equity is trade-step evidence for missed-trade MC, not bar-by-bar equity and not all MC runner types.
 - Context/document hygiene remains active: handoff docs must avoid stale claims.
-- Data import is not currently considered blocked; focused data workflow tests pass and the old 13-failure claim is stale.
+- Data import is not currently considered blocked; focused data workflow tests pass and Tasks 065A/065B completed format guidance, actionable error text, and import error smoke coverage.
 
 ## Key Directories
 
@@ -70,7 +70,7 @@ Engine code must not import PySide6. UI must not contain trading/strategy/backte
 - Reduce repeated context loading with context levels and targeted reading.
 - For Level 1/2 tasks, start from this brief plus current task-board/changelog sections.
 - For Level 3 tasks, use the full required reading order in `AGENTS.md`.
-- Latest active next item in `docs/task_board.md`: Next item is None (065A-Impl just completed).
+- Latest active next item in `docs/task_board.md`: Next item is None. A new post-v0.2 task must be selected before assigning implementation.
 
 ## Context Efficiency Rules
 
