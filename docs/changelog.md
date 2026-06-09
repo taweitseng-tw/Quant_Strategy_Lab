@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-10 - Task 112A-112C: ProjectService Config Boundary Smoke
+
+### Added
+- `tests/test_project_service.py`: Added ProjectService-level config file creation, JSON validity, open-preserve, and metadata readback smoke tests.
+
+### Changed
+- `docs/task_board.md`: Added Task 112A-112C to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_project_service.py -q` - 7 passed.
+- `.\.venv\Scripts\python.exe -m pytest tests/test_project_repo.py -q` - 17 passed.
+- `git diff --check` passes with CRLF warnings only.
+
 ## 2026-06-10 - Task 111A-111C: Project Config Open-Preserve Tests
 
 ### Added

@@ -79,3 +79,79 @@ def test_project_path_propagation_to_services(temp_dir) -> None:
     # Verify profiles are populated from active project
     assert len(instrument_service.get_profiles()) > 0
     assert instrument_service.is_mock_data() is False
+
+
+# ---------------------------------------------------------------------------
+# Config template integrity through ProjectService (Task 112A-112C)
+# ---------------------------------------------------------------------------
+
+
+def test_project_service_create_creates_config_files(temp_dir) -> None:
+    """ProjectService.create_project must create all three config files."""
+    service = ProjectService()
+    proj_path = temp_dir / "ConfigTest"
+    meta = service.create_project("ConfigTest", proj_path)
+
+    assert (meta.root_path / "config" / "instruments.json").is_file()
+    assert (meta.root_path / "config" / "sessions.json").is_file()
+    assert (meta.root_path / "config" / "app_settings.json").is_file()
+
+    service.close_project()
+
+
+def test_project_service_config_files_are_valid_json(temp_dir) -> None:
+    """Config files created through ProjectService must be valid JSON."""
+    import json
+
+    service = ProjectService()
+    proj_path = temp_dir / "JsonTest"
+    meta = service.create_project("JsonTest", proj_path)
+
+    for name in ("instruments.json", "sessions.json", "app_settings.json"):
+        content = (meta.root_path / "config" / name).read_text(encoding="utf-8")
+        data = json.loads(content)
+        assert data is not None, f"{name} must be parseable JSON"
+
+    service.close_project()
+
+
+def test_project_service_open_preserves_custom_config_key(temp_dir) -> None:
+    """Open_project through ProjectService must preserve custom keys in config files."""
+    import json
+
+    service = ProjectService()
+    proj_path = temp_dir / "PreserveTest"
+    meta = service.create_project("PreserveTest", proj_path)
+    service.close_project()
+
+    # Add a custom key to app_settings.json.
+    cfg = meta.root_path / "config" / "app_settings.json"
+    data = json.loads(cfg.read_text(encoding="utf-8"))
+    data["custom_service_key"] = "preserved"
+    cfg.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    # Reopen through service - must preserve the custom key.
+    service2 = ProjectService()
+    meta2 = service2.open_project(proj_path)
+    reopened = json.loads(
+        (meta2.root_path / "config" / "app_settings.json").read_text(encoding="utf-8")
+    )
+    assert reopened.get("custom_service_key") == "preserved", (
+        "Custom key must survive service-level open_project"
+    )
+    service2.close_project()
+
+
+def test_project_service_open_returns_valid_meta(temp_dir) -> None:
+    """ProjectService.open_project must return correct ProjectMeta."""
+    service = ProjectService()
+    proj_path = temp_dir / "MetaTest"
+    meta = service.create_project("MetaTest", proj_path)
+    service.close_project()
+
+    service2 = ProjectService()
+    meta2 = service2.open_project(proj_path)
+    assert meta2.name == "MetaTest"
+    assert meta2.root_path == proj_path.resolve()
+    assert meta2.version == "0.0.1"
+    service2.close_project()
