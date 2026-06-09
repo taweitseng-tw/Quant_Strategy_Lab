@@ -144,6 +144,7 @@ class MainWindow(QMainWindow):
                 
                 self.btn_import_data = QPushButton("Import OHLCV Data File")
                 self.btn_import_data.setObjectName("btnImportData")
+                self.btn_import_data.setToolTip("Select an OHLCV CSV or TXT file to import historical data.")
                 self.btn_import_data.setStyleSheet("""
                     QPushButton {
                         background-color: #26a69a;
@@ -1213,6 +1214,7 @@ class MainWindow(QMainWindow):
         self.log_panel.add_message("INFO", f"Importing historical research data from: {file_path}...")
         self.btn_import_data.setEnabled(False)
         self.btn_import_data.setText("Importing...")
+        self.btn_import_data.setToolTip("Import in progress - please wait.")
         QApplication.processEvents()
         
         try:
@@ -1288,6 +1290,7 @@ class MainWindow(QMainWindow):
         finally:
             self.btn_import_data.setEnabled(True)
             self.btn_import_data.setText("Import OHLCV Data File")
+            self.btn_import_data.setToolTip("Select an OHLCV CSV or TXT file to import historical data.")
 
     def _handle_new_project(self) -> None:
         from PySide6.QtWidgets import QFileDialog, QMessageBox, QInputDialog

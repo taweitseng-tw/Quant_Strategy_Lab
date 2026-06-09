@@ -624,3 +624,125 @@ def test_data_status_label_preserved_on_cancel(qapp):
         )
     finally:
         window.close()
+
+
+# ---------------------------------------------------------------------------
+# Import button tooltip state tests (Task 087A-087F)
+# ---------------------------------------------------------------------------
+
+
+def test_import_button_has_default_tooltip(qapp):
+    """Import button must have a default tooltip explaining CSV selection."""
+    window = MainWindow()
+    try:
+        tip = window.btn_import_data.toolTip()
+        assert tip, "Tooltip must not be empty"
+        assert "csv" in tip.lower() or "file" in tip.lower(), (
+            f"Tooltip should mention CSV/file, got: {tip!r}"
+        )
+    finally:
+        window.close()
+
+
+def test_import_button_tooltip_during_import(qapp, tmp_dir):
+    """Import button tooltip must change to 'Importing...' while import runs."""
+    window = MainWindow()
+    captured = {}
+    original_import_file = DataService.import_file
+
+    def _side_effect(*args, **kwargs):
+        captured["tooltip"] = window.btn_import_data.toolTip()
+        return original_import_file(DataService(), *args, **kwargs)
+
+    csv_file = tmp_dir / "sample_ok.csv"
+    _write_valid_ohlcv_csv(csv_file)
+
+    with (
+        patch(
+            "PySide6.QtWidgets.QFileDialog.getOpenFileName",
+            return_value=(str(csv_file), ""),
+        ),
+        patch(
+            "app.ui.main_window.DataService.import_file",
+            side_effect=_side_effect,
+        ),
+        patch("PySide6.QtWidgets.QMessageBox.information"),
+        patch("PySide6.QtWidgets.QMessageBox.critical") as mock_critical,
+    ):
+        window._handle_import_ohlcv_data()
+
+    try:
+        assert captured.get("tooltip", ""), "Tooltip must be set during import"
+        assert "import" in captured["tooltip"].lower(), (
+            f"Tooltip during import should mention importing, got: {captured['tooltip']!r}"
+        )
+        mock_critical.assert_not_called()
+    finally:
+        window.close()
+
+
+def test_import_button_tooltip_restored_after_success(qapp, tmp_dir):
+    """Import button tooltip must be restored after successful import."""
+    window = MainWindow()
+    csv_file = tmp_dir / "sample_ok.csv"
+    _write_valid_ohlcv_csv(csv_file)
+
+    with (
+        patch(
+            "PySide6.QtWidgets.QFileDialog.getOpenFileName",
+            return_value=(str(csv_file), ""),
+        ),
+        patch("PySide6.QtWidgets.QMessageBox.information"),
+        patch("PySide6.QtWidgets.QMessageBox.critical"),
+    ):
+        window._handle_import_ohlcv_data()
+
+    try:
+        tip = window.btn_import_data.toolTip()
+        assert tip, "Tooltip must not be empty after success"
+        assert "csv" in tip.lower() or "file" in tip.lower(), (
+            f"Tooltip should mention CSV/file after success, got: {tip!r}"
+        )
+    finally:
+        window.close()
+
+
+def test_import_button_tooltip_restored_after_failure(qapp, tmp_dir):
+    """Import button tooltip must be restored after import failure."""
+    window = MainWindow()
+    missing = tmp_dir / "nonexistent.csv"
+
+    with (
+        patch(
+            "PySide6.QtWidgets.QFileDialog.getOpenFileName",
+            return_value=(str(missing), ""),
+        ),
+        patch("PySide6.QtWidgets.QMessageBox.critical"),
+    ):
+        window._handle_import_ohlcv_data()
+
+    try:
+        tip = window.btn_import_data.toolTip()
+        assert tip, "Tooltip must not be empty after failure"
+        assert "csv" in tip.lower() or "file" in tip.lower(), (
+            f"Tooltip should mention CSV/file after failure, got: {tip!r}"
+        )
+    finally:
+        window.close()
+
+
+def test_import_button_tooltip_restored_after_cancel(qapp):
+    """Import button tooltip must stay at the default after cancel."""
+    window = MainWindow()
+    original_tip = window.btn_import_data.toolTip()
+
+    with patch(
+        "PySide6.QtWidgets.QFileDialog.getOpenFileName",
+        return_value=("", ""),
+    ):
+        window._handle_import_ohlcv_data()
+
+    try:
+        assert window.btn_import_data.toolTip() == original_tip
+    finally:
+        window.close()
