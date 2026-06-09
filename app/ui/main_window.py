@@ -158,7 +158,14 @@ class MainWindow(QMainWindow):
                 """)
                 self.btn_import_data.clicked.connect(self._handle_import_ohlcv_data)
                 
+                format_guide = DataService.get_expected_format_guide()
+                self.data_format_guide_label = QLabel(format_guide.splitlines()[0])
+                self.data_format_guide_label.setToolTip(format_guide)
+                self.data_format_guide_label.setStyleSheet("color: #888; font-size: 11px; padding-left: 4px;")
+                self.data_format_guide_label.setWordWrap(True)
+
                 control_layout.addWidget(self.data_status_label, 1)
+                control_layout.addWidget(self.data_format_guide_label)
                 control_layout.addWidget(self.btn_import_data)
                 
                 page = QFrame()
@@ -408,6 +415,84 @@ class MainWindow(QMainWindow):
                 bootstrap_layout.addWidget(self.bootstrap_conf_spin)
                 bootstrap_layout.addStretch()
                 layout.addLayout(bootstrap_layout)
+
+                # Price-noise stress controls.
+                self.price_noise_checkbox = QCheckBox("Price-Noise Stress")
+                self.price_noise_checkbox.setToolTip(
+                    "Adds Gaussian noise to OHLC prices. "
+                    "Helps detect overfit strategies. Off by default."
+                )
+                self.price_noise_checkbox.setChecked(False)
+
+                self.price_noise_pct_spin = QDoubleSpinBox()
+                self.price_noise_pct_spin.setMinimum(0.001)
+                self.price_noise_pct_spin.setMaximum(0.05)
+                self.price_noise_pct_spin.setSingleStep(0.001)
+                self.price_noise_pct_spin.setDecimals(3)
+                self.price_noise_pct_spin.setValue(0.005)
+                self.price_noise_pct_spin.setToolTip(
+                    "Std dev of Gaussian noise as a fraction of price; 0.005 = 0.5%."
+                )
+                self.price_noise_pct_spin.setEnabled(False)
+
+                self.price_noise_iter_spin = QSpinBox()
+                self.price_noise_iter_spin.setMinimum(10)
+                self.price_noise_iter_spin.setMaximum(500)
+                self.price_noise_iter_spin.setSingleStep(10)
+                self.price_noise_iter_spin.setValue(50)
+                self.price_noise_iter_spin.setToolTip("Number of noise-sampled backtests (10–500).")
+                self.price_noise_iter_spin.setEnabled(False)
+
+                self.price_noise_seed_spin = QSpinBox()
+                self.price_noise_seed_spin.setMinimum(1)
+                self.price_noise_seed_spin.setMaximum(9999)
+                self.price_noise_seed_spin.setValue(42)
+                self.price_noise_seed_spin.setToolTip("Deterministic seed for reproducibility.")
+                self.price_noise_seed_spin.setEnabled(False)
+
+                def _toggle_price_noise_spins(checked):
+                    self.price_noise_pct_spin.setEnabled(checked)
+                    self.price_noise_iter_spin.setEnabled(checked)
+                    self.price_noise_seed_spin.setEnabled(checked)
+
+                self.price_noise_checkbox.toggled.connect(_toggle_price_noise_spins)
+
+                pn_layout = QHBoxLayout()
+                pn_layout.addWidget(self.price_noise_checkbox)
+                pn_layout.addWidget(QLabel("Noise fraction:"))
+                pn_layout.addWidget(self.price_noise_pct_spin)
+                pn_layout.addWidget(QLabel("Iterations:"))
+                pn_layout.addWidget(self.price_noise_iter_spin)
+                pn_layout.addWidget(QLabel("Seed:"))
+                pn_layout.addWidget(self.price_noise_seed_spin)
+                pn_layout.addStretch()
+                layout.addLayout(pn_layout)
+
+                # IS Baseline Quality Precheck controls.
+                self.precheck_checkbox = QCheckBox("IS Baseline Quality Precheck")
+                self.precheck_checkbox.setToolTip(
+                    "Skips stress/MC/WF when baseline has zero trades. Opt-in."
+                )
+                self.precheck_checkbox.setChecked(False)
+
+                self.precheck_nonpositive_checkbox = QCheckBox("Fail on non-positive PnL")
+                self.precheck_nonpositive_checkbox.setToolTip(
+                    "Also fails strategies with total_pnl <= 0. "
+                    "Works only when precheck is enabled."
+                )
+                self.precheck_nonpositive_checkbox.setChecked(False)
+                self.precheck_nonpositive_checkbox.setEnabled(False)
+
+                def _toggle_precheck_spins(checked):
+                    self.precheck_nonpositive_checkbox.setEnabled(checked)
+
+                self.precheck_checkbox.toggled.connect(_toggle_precheck_spins)
+
+                precheck_layout = QHBoxLayout()
+                precheck_layout.addWidget(self.precheck_checkbox)
+                precheck_layout.addWidget(self.precheck_nonpositive_checkbox)
+                precheck_layout.addStretch()
+                layout.addLayout(precheck_layout)
 
                 layout.addWidget(self.validation_summary)
                 self.workspace.addWidget(page)
@@ -1177,11 +1262,12 @@ class MainWindow(QMainWindow):
             self._active_dataset_quality = None
             self.data_status_label.setText("Historical Research Data: None loaded (Using default mock data)")
             self.data_status_label.setStyleSheet("color: #ffb300; font-weight: bold; font-size: 12px;")
-            self.log_panel.add_message("ERROR", f"Failed to import data file: {e}")
+            user_msg = DataService.get_actionable_import_error(e)
+            self.log_panel.add_message("ERROR", f"Failed to import data file: {user_msg}")
             QMessageBox.critical(
                 self,
                 "Import Failed",
-                f"An error occurred while importing the data file:\n{str(e)}"
+                user_msg
             )
         finally:
             self.btn_import_data.setEnabled(True)
@@ -1409,6 +1495,22 @@ class MainWindow(QMainWindow):
             bootstrap_iterations = self.bootstrap_iter_spin.value()
             bootstrap_confidence = self.bootstrap_conf_spin.value()
 
+        run_price_noise = False
+        price_noise_pct = 0.005
+        price_noise_iterations = 50
+        price_noise_seed = 42
+        if hasattr(self, "price_noise_checkbox"):
+            run_price_noise = self.price_noise_checkbox.isChecked()
+            price_noise_pct = self.price_noise_pct_spin.value()
+            price_noise_iterations = self.price_noise_iter_spin.value()
+            price_noise_seed = self.price_noise_seed_spin.value()
+
+        run_precheck = False
+        fail_nonpositive = False
+        if hasattr(self, "precheck_checkbox"):
+            run_precheck = self.precheck_checkbox.isChecked()
+            fail_nonpositive = run_precheck and self.precheck_nonpositive_checkbox.isChecked()
+
         try:
             result = run_validation_pipeline(
                 df, strategy,
@@ -1420,6 +1522,12 @@ class MainWindow(QMainWindow):
                     run_bootstrap_monte_carlo=run_bootstrap,
                     bootstrap_iterations=bootstrap_iterations,
                     bootstrap_confidence_level=bootstrap_confidence,
+                    run_price_noise_stress=run_price_noise,
+                    price_noise_pct=price_noise_pct,
+                    price_noise_iterations=price_noise_iterations,
+                    price_noise_seed=price_noise_seed,
+                    run_is_baseline_quality_precheck=run_precheck,
+                    fail_is_baseline_on_nonpositive_pnl=fail_nonpositive,
                 ),
                 instrument=active_profile,
                 data_source=source_label,

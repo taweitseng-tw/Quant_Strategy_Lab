@@ -115,6 +115,52 @@ class DataService:
             return df.tail(max_rows).copy()
         return df
 
+    @staticmethod
+    def get_expected_format_guide() -> str:
+        """Return a human-readable description of the expected OHLCV file format."""
+        return (
+            "Columns: Date, Time, Open, High, Low, Close, TotalVolume\n"
+            "Date: YYYY/MM/DD or YYYY-MM-DD\n"
+            "Time: HH:MM:SS  |  OHLC: numeric prices  |  TotalVolume: integer\n\n"
+            "Example:\n"
+            "2026/01/01,09:00:00,100.0,105.0,95.0,101.0,1000"
+        )
+
+    @staticmethod
+    def get_actionable_import_error(e: Exception) -> str:
+        """Convert a raw import exception into an actionable user-facing message."""
+        msg = str(e)
+        if isinstance(e, FileNotFoundError):
+            return (
+                f"File not found: {msg}\n"
+                "Please check that the file exists and try again."
+            )
+        if "no data rows" in msg.lower():
+            return (
+                "The file appears to be empty or contains no data rows.\n"
+                "Please check the file content and try again."
+            )
+        if "failed to read csv" in msg.lower() or "parsing" in msg.lower():
+            return (
+                f"Could not read the file as CSV: {msg}\n"
+                "Ensure the file is a plain CSV or TXT file with OHLCV columns "
+                "(Date, Time, Open, High, Low, Close, TotalVolume)."
+            )
+        if "missing" in msg.lower() or "column" in msg.lower():
+            return (
+                f"Missing expected columns: {msg}\n"
+                "The file must contain: Date, Time, Open, High, Low, Close, TotalVolume."
+            )
+        if "normalizererror" in msg.lower() or "normalize" in msg.lower():
+            return (
+                f"Data normalization failed: {msg}\n"
+                "Check that numeric columns (Open, High, Low, Close) contain valid numbers."
+            )
+        return (
+            f"Import failed: {msg}\n"
+            "Check that the file is a valid OHLCV CSV/TXT file with the expected format."
+        )
+
 
 def _timeframe_to_minutes(tf: str) -> int | None:
     """Convert a timeframe string like '1min' or '5min' to integer minutes."""

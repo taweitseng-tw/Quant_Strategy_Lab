@@ -10,7 +10,9 @@ import pandas as pd
 import numpy as np
 import pytest
 from PySide6.QtWidgets import QApplication
+from unittest.mock import patch
 
+from app.ui.main_window import MainWindow
 from app.services.data_service import DataService
 from app.widgets.candlestick_chart import CandlestickChart, PYQTGRAPH_AVAILABLE
 
@@ -156,6 +158,112 @@ def test_bad_ohlc_data_produces_failed_quality_report(tmp_dir):
     assert any("high < low" in e for e in quality.errors)
     # Data is still returned — caller decides what to do.
     assert len(df) == 2
+
+
+# ---------------------------------------------------------------------------
+# Format Guidance and Actionable Error Tests — Task 065A
+# ---------------------------------------------------------------------------
+
+
+def test_get_expected_format_guide_returns_ohlcv_columns():
+    """The format guide must mention the required OHLCV columns.
+    The first line (used as UI label) must start with 'Columns:'."""
+    guide = DataService.get_expected_format_guide()
+    assert guide.startswith("Columns:")
+    assert "Date" in guide
+    assert "Time" in guide
+    assert "Open" in guide
+    assert "High" in guide
+    assert "Low" in guide
+    assert "Close" in guide
+    assert "TotalVolume" in guide
+    assert "Example" in guide
+
+
+def test_get_actionable_import_error_file_not_found():
+    """FileNotFoundError must produce an actionable message mentioning the file."""
+    exc = FileNotFoundError("/path/to/missing.csv")
+    msg = DataService.get_actionable_import_error(exc)
+    assert "File not found" in msg
+    assert "/path/to/missing.csv" in msg
+    assert "check that the file exists" in msg.lower()
+
+
+def test_get_actionable_import_error_no_data_rows():
+    """Empty-data error must produce a message about empty file."""
+    exc = ValueError("CSV file contains no data rows.")
+    msg = DataService.get_actionable_import_error(exc)
+    assert "empty" in msg.lower() or "no data rows" in msg.lower()
+
+
+def test_get_actionable_import_error_parsing():
+    """Parsing failures must mention expected format."""
+    exc = RuntimeError("Failed to read CSV: Expected 7 columns, got 3")
+    msg = DataService.get_actionable_import_error(exc)
+    assert "CSV" in msg or "parsing" in msg.lower()
+    assert "Date" in msg or "Open" in msg
+
+
+def test_get_actionable_import_error_missing_columns():
+    """Missing column errors must list required columns."""
+    exc = KeyError("Missing column: TotalVolume")
+    msg = DataService.get_actionable_import_error(exc)
+    assert "Missing" in msg or "column" in msg.lower()
+    assert "TotalVolume" in msg
+
+
+def test_get_actionable_import_error_fallback():
+    """Unknown exceptions must still produce a helpful fallback message."""
+    exc = RuntimeError("Unexpected disk error")
+    msg = DataService.get_actionable_import_error(exc)
+    assert "Import failed" in msg
+    assert "import failed" in msg.lower()
+    assert "ohlcv" in msg.lower()
+
+
+def test_import_file_failure_produces_actionable_message(tmp_dir):
+    """When import_file raises on a nonexistent file, the converted error is
+    actionable — proves the exception→actionable pipeline end-to-end."""
+    service = DataService()
+    missing = tmp_dir / "nonexistent.csv"
+    with pytest.raises(Exception) as exc_info:
+        service.import_file(missing, symbol="TEST")
+    msg = DataService.get_actionable_import_error(exc_info.value)
+    assert "File not found" in msg
+    assert "check that the file exists" in msg.lower()
+    assert str(missing.resolve()) in msg
+
+
+def test_import_handler_failure_dialog_uses_actionable_message(qapp, tmp_dir):
+    """The Data page import handler must show the actionable import error."""
+    window = MainWindow()
+    missing = tmp_dir / "nonexistent.csv"
+    expected_message = DataService.get_actionable_import_error(
+        FileNotFoundError(f"Source file not found: {missing.resolve()}")
+    )
+    captured = {}
+
+    def capture_critical(parent, title, message):
+        captured["title"] = title
+        captured["message"] = message
+
+    try:
+        with (
+            patch(
+                "PySide6.QtWidgets.QFileDialog.getOpenFileName",
+                return_value=(str(missing), ""),
+            ),
+            patch("PySide6.QtWidgets.QMessageBox.critical", side_effect=capture_critical),
+        ):
+            window._handle_import_ohlcv_data()
+    finally:
+        window.close()
+
+    assert captured["title"] == "Import Failed"
+    assert captured["message"] == expected_message
+    assert "File not found" in captured["message"]
+    assert "check that the file exists" in captured["message"].lower()
+    assert "An error occurred while importing" not in captured["message"]
 
 
 # ---------------------------------------------------------------------------
