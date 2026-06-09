@@ -549,3 +549,78 @@ def test_import_cancel_preserves_existing_state(qapp):
     assert (not window.validation_status_label.isHidden()) is snap_status_visible
     mock_import.assert_not_called()
     window.close()
+
+
+# ---------------------------------------------------------------------------
+# Data status label transition tests (Task 085A-085F)
+# ---------------------------------------------------------------------------
+
+
+def test_data_status_label_after_successful_import(qapp, tmp_dir):
+    """After successful import, status label must show dataset name and rows."""
+    window = MainWindow()
+    csv_file = tmp_dir / "sample_label.csv"
+    pd.DataFrame({
+        "Date": ["2026/01/01"], "Time": ["09:00"], "Open": [100.0],
+        "High": [101.0], "Low": [99.0], "Close": [100.5], "TotalVolume": [1000],
+    }).to_csv(csv_file, index=False)
+
+    try:
+        with (
+            patch(
+                "PySide6.QtWidgets.QFileDialog.getOpenFileName",
+                return_value=(str(csv_file), ""),
+            ),
+            patch("PySide6.QtWidgets.QMessageBox.information"),
+            patch("PySide6.QtWidgets.QMessageBox.critical"),
+        ):
+            window._handle_import_ohlcv_data()
+
+        text = window.data_status_label.text()
+        assert "Active Dataset" in text, f"Label should say Active Dataset, got: {text!r}"
+        assert "Rows:" in text or "Rows" in text, f"Label should show row count, got: {text!r}"
+        assert "sample_label" in text, f"Label should mention imported dataset, got: {text!r}"
+        assert "None loaded" not in text, f"Label should not say None loaded, got: {text!r}"
+    finally:
+        window.close()
+
+
+def test_data_status_label_after_import_failure(qapp, tmp_dir):
+    """After import failure, status label must return to mock/no-data wording."""
+    window = MainWindow()
+    missing = tmp_dir / "nonexistent.csv"
+
+    try:
+        with (
+            patch(
+                "PySide6.QtWidgets.QFileDialog.getOpenFileName",
+                return_value=(str(missing), ""),
+            ),
+            patch("PySide6.QtWidgets.QMessageBox.critical"),
+        ):
+            window._handle_import_ohlcv_data()
+
+        text = window.data_status_label.text()
+        assert "None loaded" in text, f"Label should say None loaded, got: {text!r}"
+        assert "mock" in text.lower(), f"Label should mention mock data, got: {text!r}"
+    finally:
+        window.close()
+
+
+def test_data_status_label_preserved_on_cancel(qapp):
+    """After canceling import dialog, status label must not change."""
+    window = MainWindow()
+    original_text = window.data_status_label.text()
+
+    with patch(
+        "PySide6.QtWidgets.QFileDialog.getOpenFileName",
+        return_value=("", ""),
+    ):
+        window._handle_import_ohlcv_data()
+
+    try:
+        assert window.data_status_label.text() == original_text, (
+            f"Label must not change on cancel, got: {window.data_status_label.text()!r}"
+        )
+    finally:
+        window.close()
