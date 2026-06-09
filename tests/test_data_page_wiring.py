@@ -372,10 +372,27 @@ def test_import_button_enabled_after_success(qapp, tmp_dir):
     assert window.btn_import_data.text() == "Import OHLCV Data File"
 
 
-def test_import_button_enabled_after_failure(qapp, tmp_dir):
-    """Import button must be re-enabled after import failure."""
+def test_import_failure_clears_all_state(qapp, tmp_dir):
+    """After import failure, button, dataset state, and validation state must all reset."""
+    from app.services.validation_pipeline_service import PipelineResult
+
     window = MainWindow()
     missing = tmp_dir / "nonexistent.csv"
+
+    # Simulate prior loaded dataset state.
+    window._loaded_dataset = pd.DataFrame({"close": [100.0]})
+    window._active_dataset_meta = object()
+    window._active_dataset_quality = object()
+
+    # Simulate prior successful validation state.
+    window.latest_validation_result = PipelineResult(
+        baseline_metrics={"total_pnl": 100},
+        elimination_result={"passed": True},
+    )
+    window.validation_status_label.setText("Validation completed.")
+    window.validation_status_label.show()
+    window.export_action.setEnabled(True)
+    window.export_action.setToolTip("Export the latest validation report.")
 
     try:
         with (
@@ -389,8 +406,23 @@ def test_import_button_enabled_after_failure(qapp, tmp_dir):
     finally:
         window.close()
 
-    assert window.btn_import_data.isEnabled(), "Import button must be enabled after failure"
+    # Button state
+    assert window.btn_import_data.isEnabled(), "Import button must be re-enabled after failure"
     assert window.btn_import_data.text() == "Import OHLCV Data File"
+
+    # Dataset state cleared
+    assert window._loaded_dataset is None, "Loaded dataset must be cleared after failure"
+    assert window._active_dataset_meta is None, "Active dataset meta must be cleared"
+    assert window._active_dataset_quality is None, "Active dataset quality must be cleared"
+
+    # Validation state reset (via _reset_validation_state)
+    assert window.latest_validation_result is None, "Validation result must be cleared"
+    assert not window.export_action.isEnabled(), "Export must be disabled after failure"
+    assert "run validation" in window.export_action.toolTip().lower(), (
+        "Export tooltip should explain disabled state"
+    )
+    assert window.validation_status_label.isHidden(), "Status label must be hidden after failure"
+    assert window.validation_status_label.text() == ""
 
 
 # ---------------------------------------------------------------------------
