@@ -613,6 +613,31 @@ def test_validation_status_label_exists_and_hidden_by_default(main_window):
     assert label.isHidden(), "Status must be hidden by default"
 
 
+def test_validation_status_set_before_pipeline_call(main_window):
+    """Verify status is set to 'Validating...' before the pipeline service runs."""
+    captured = {}
+
+    def _side_effect(*args, **kwargs):
+        # Capture label state at the moment the mock is called.
+        captured["text"] = main_window.validation_status_label.text()
+        captured["hidden"] = main_window.validation_status_label.isHidden()
+        return PipelineResult(
+            baseline_metrics={"total_pnl": 1000, "profit_factor": 1.5, "total_trades": 10},
+            elimination_result={"passed": True},
+        )
+
+    patcher = patch("app.ui.main_window.run_validation_pipeline", side_effect=_side_effect)
+    patcher.start()
+    try:
+        main_window._handle_run()
+    finally:
+        patcher.stop()
+
+    assert not captured["hidden"], "Status must be visible when pipeline runs"
+    assert captured["text"] == "Validating...", (
+        f"Expected 'Validating...' before pipeline call, got {captured['text']!r}"
+    )
+
 
 @patch("app.ui.main_window.run_validation_pipeline")
 def test_validation_status_shows_completed_on_success(mock_run, main_window):

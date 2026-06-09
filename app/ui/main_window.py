@@ -1450,7 +1450,7 @@ class MainWindow(QMainWindow):
         self.log_panel.add_message("INFO", "Validation pipeline started.")
 
         # Show progress indicator.
-        self.validation_status_label.setText("Running validation pipeline...")
+        self.validation_status_label.setText("Validating...")
         self.validation_status_label.setStyleSheet(
             "color: #ffb300; font-weight: bold; font-size: 12px; padding: 4px 0;"
         )
