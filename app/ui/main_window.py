@@ -104,11 +104,13 @@ class MainWindow(QMainWindow):
                 action.setEnabled(True)
                 action.triggered.connect(self._handle_run)
                 self.run_action = action
+                self.run_action.setObjectName("actionRun")
             elif label == "Export Report":
                 action.setEnabled(False)
                 action.setToolTip("Run validation first to enable report export.")
                 action.triggered.connect(self._handle_export_report)
                 self.export_action = action
+                self.export_action.setObjectName("actionExportReport")
             else:
                 action.setEnabled(False)
             toolbar.addAction(action)
@@ -497,6 +499,7 @@ class MainWindow(QMainWindow):
 
                 # Validation run progress / status indicator.
                 self.validation_status_label = QLabel()
+                self.validation_status_label.setObjectName("validationStatusLabel")
                 self.validation_status_label.setStyleSheet(
                     "font-weight: bold; font-size: 12px; padding: 4px 0;"
                 )

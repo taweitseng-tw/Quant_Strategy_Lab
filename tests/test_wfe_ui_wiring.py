@@ -978,3 +978,26 @@ def test_open_project_resets_validation_state(main_window, tmp_path, monkeypatch
     assert "run validation" in main_window.export_action.toolTip().lower(), (
         f"Tooltip should explain disabled state, got: {main_window.export_action.toolTip()!r}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Stable objectName for validation/report controls (Task 079A-079F)
+# ---------------------------------------------------------------------------
+
+
+def test_validation_status_label_has_object_name(main_window):
+    """validation_status_label must have a stable objectName."""
+    assert hasattr(main_window, "validation_status_label")
+    assert main_window.validation_status_label.objectName() == "validationStatusLabel"
+
+
+def test_run_action_has_object_name(main_window):
+    """Run action must have a stable objectName."""
+    assert hasattr(main_window, "run_action")
+    assert main_window.run_action.objectName() == "actionRun"
+
+
+def test_export_action_has_object_name(main_window):
+    """Export action must have a stable objectName."""
+    assert hasattr(main_window, "export_action")
+    assert main_window.export_action.objectName() == "actionExportReport"
