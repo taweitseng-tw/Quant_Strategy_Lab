@@ -867,3 +867,114 @@ def test_validation_abort_quality_failure_disables_export(mock_warning, main_win
     assert "re-import" in tip.lower() or "quality" in tip.lower(), (
         f"Tooltip should explain the blocked state, got: {tip!r}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Project context validation state reset (Task 078A-078F)
+# ---------------------------------------------------------------------------
+
+
+def test_new_project_resets_validation_state(main_window, tmp_path, monkeypatch):
+    """Creating a new project must clear stale validation state."""
+    from pathlib import Path
+    from PySide6.QtWidgets import QInputDialog, QFileDialog, QMessageBox
+
+    # Simulate prior successful validation run.
+    main_window.validation_status_label.setText("Validation completed.")
+    main_window.validation_status_label.show()
+    main_window.latest_validation_result = PipelineResult(
+        baseline_metrics={"total_pnl": 100},
+        elimination_result={"passed": True},
+    )
+    main_window.export_action.setEnabled(True)
+    main_window.export_action.setToolTip("Export the latest validation report.")
+
+    # Patch Qt dialogs to return fake values.
+    monkeypatch.setattr(QInputDialog, "getText", lambda *a, **k: ("test_project", True))
+    monkeypatch.setattr(
+        QFileDialog, "getExistingDirectory", lambda *a, **k: str(tmp_path)
+    )
+    monkeypatch.setattr(QMessageBox, "question", lambda *a, **k: QMessageBox.StandardButton.No)
+    monkeypatch.setattr(QMessageBox, "information", lambda *a, **k: None)
+    monkeypatch.setattr(QMessageBox, "critical", lambda *a, **k: None)
+
+    # Mock project service to return a valid ProjectMeta.
+    from core.models.project import ProjectMeta
+
+    mock_meta = ProjectMeta(name="test_project", root_path=Path(tmp_path / "test_project"))
+    monkeypatch.setattr(
+        main_window.project_service,
+        "create_project",
+        lambda name, root_path, overwrite=False: mock_meta,
+    )
+    # Repository.db raises RuntimeError when no project is active —
+    # bypass by patching set_db to a no-op and setting _db directly.
+    monkeypatch.setattr(main_window.data_service, "set_db", lambda db: None)
+    object.__setattr__(main_window.project_service.repository, "_db", "mock://db")
+    monkeypatch.setattr(
+        main_window.instrument_service, "get_active_profile", lambda: None,
+    )
+
+    main_window._handle_new_project()
+
+    assert main_window.validation_status_label.isHidden()
+    assert main_window.validation_status_label.text() == ""
+    assert main_window.latest_validation_result is None
+    assert not main_window.export_action.isEnabled(), "Export must be disabled after new project"
+    assert "run validation" in main_window.export_action.toolTip().lower(), (
+        f"Tooltip should explain disabled state, got: {main_window.export_action.toolTip()!r}"
+    )
+
+
+
+def test_open_project_resets_validation_state(main_window, tmp_path, monkeypatch):
+    """Opening a project must clear stale validation state."""
+    from pathlib import Path
+    from PySide6.QtWidgets import QFileDialog, QMessageBox
+
+    # Simulate prior successful validation run.
+    main_window.validation_status_label.setText("Validation completed.")
+    main_window.validation_status_label.show()
+    main_window.latest_validation_result = PipelineResult(
+        baseline_metrics={"total_pnl": 100},
+        elimination_result={"passed": True},
+    )
+    main_window.export_action.setEnabled(True)
+    main_window.export_action.setToolTip("Export the latest validation report.")
+
+    # Patch Qt dialogs.
+    monkeypatch.setattr(
+        QFileDialog, "getExistingDirectory", lambda *a, **k: str(tmp_path / "test_project")
+    )
+    monkeypatch.setattr(QMessageBox, "information", lambda *a, **k: None)
+    monkeypatch.setattr(QMessageBox, "critical", lambda *a, **k: None)
+
+    # Mock project service to return a valid ProjectMeta.
+    from core.models.project import ProjectMeta
+
+    mock_meta = ProjectMeta(name="test_project", root_path=Path(tmp_path / "test_project"))
+    monkeypatch.setattr(
+        main_window.project_service,
+        "open_project",
+        lambda project_dir: mock_meta,
+    )
+    # Repository.db raises RuntimeError when no project is active;
+    # patch set_db and set _db directly.
+    monkeypatch.setattr(main_window.data_service, "set_db", lambda db: None)
+    object.__setattr__(main_window.project_service.repository, "_db", "mock://db")
+    monkeypatch.setattr(
+        main_window, "_get_strategy_persistence_service", lambda: None,
+    )
+    monkeypatch.setattr(
+        main_window.instrument_service, "get_active_profile", lambda: None,
+    )
+
+    main_window._handle_open_project()
+
+    assert main_window.validation_status_label.isHidden()
+    assert main_window.validation_status_label.text() == ""
+    assert main_window.latest_validation_result is None
+    assert not main_window.export_action.isEnabled(), "Export must be disabled after open project"
+    assert "run validation" in main_window.export_action.toolTip().lower(), (
+        f"Tooltip should explain disabled state, got: {main_window.export_action.toolTip()!r}"
+    )
