@@ -1481,6 +1481,32 @@ class MainWindow(QMainWindow):
         self.latest_validation_result = None
         self._disable_export_action("Run validation first to enable report export.")
 
+    def _set_validation_running(self) -> None:
+        """Show progress indicator and disable Run/Export during validation."""
+        self.validation_status_label.setText("Validating...")
+        self.validation_status_label.setStyleSheet(
+            "color: #ffb300; font-weight: bold; font-size: 12px; padding: 4px 0;"
+        )
+        self.validation_status_label.show()
+        self.run_action.setEnabled(False)
+        self._disable_export_action("Validating...")
+        QApplication.processEvents()
+
+    def _set_validation_idle(self, *, export_ok: bool = True, reason: str = "") -> None:
+        """Restore Run and Export after validation completes.
+
+        Args:
+            export_ok: True to enable export (success).  When False,
+                *reason* is used as the disabled tooltip.
+            reason: Disabled-export tooltip when *export_ok* is False.
+        """
+        self.run_action.setEnabled(True)
+        if export_ok:
+            self._enable_export_action()
+        else:
+            self._disable_export_action(reason)
+        QApplication.processEvents()
+
     def _handle_run(self) -> None:
         """Execute the validation pipeline on current data/strategy."""
         import pandas as pd
@@ -1488,18 +1514,7 @@ class MainWindow(QMainWindow):
 
         self.log_panel.add_message("INFO", "Validation pipeline started.")
 
-        # Show progress indicator.
-        self.validation_status_label.setText("Validating...")
-        self.validation_status_label.setStyleSheet(
-            "color: #ffb300; font-weight: bold; font-size: 12px; padding: 4px 0;"
-        )
-        self.validation_status_label.show()
-        QApplication.processEvents()
-
-        # Disable Run and Export buttons to prevent concurrent launches.
-        self.run_action.setEnabled(False)
-        self._disable_export_action("Validating...")
-        QApplication.processEvents()
+        self._set_validation_running()
 
         # Determine dataset — use loaded data or fall back to mock.
         df = self._loaded_dataset
@@ -1518,9 +1533,10 @@ class MainWindow(QMainWindow):
                     "Cannot run validation pipeline. The active dataset has failed quality checks."
                 )
                 self.validation_status_label.hide()
-                QApplication.processEvents()
-                self.run_action.setEnabled(True)
-                self._disable_export_action("Dataset failed quality checks. Re-import data before validation.")
+                self._set_validation_idle(
+                    export_ok=False,
+                    reason="Dataset failed quality checks. Re-import data before validation.",
+                )
                 return
             source_label = self._active_dataset_meta.name if self._active_dataset_meta else "Loaded data"
             self.log_panel.add_message("INFO", f"Using active dataset: {source_label}")
@@ -1649,7 +1665,7 @@ class MainWindow(QMainWindow):
                 f"Baseline PnL: {result.baseline_metrics.get('total_pnl', 0):.0f}\n"
                 f"Elimination: {'✓ Passed' if result.elimination_result and result.elimination_result['passed'] else '✗ Eliminated'}"
             )
-            self._enable_export_action()
+            self._set_validation_idle(export_ok=True)
         except Exception as e:
             self.log_panel.add_message("ERROR", f"Validation pipeline failed: {e}")
             self.inspector_label.setText(
@@ -1661,11 +1677,10 @@ class MainWindow(QMainWindow):
             self.validation_status_label.setStyleSheet(
                 "color: #ef5350; font-weight: bold; font-size: 12px; padding: 4px 0;"
             )
-            QApplication.processEvents()
-            self._disable_export_action("Validation failed. Run validation again to enable report export.")
-        finally:
-            self.run_action.setEnabled(True)
-            QApplication.processEvents()
+            self._set_validation_idle(
+                export_ok=False,
+                reason="Validation failed. Run validation again to enable report export.",
+            )
 
     def _handle_save(self) -> None:
         from PySide6.QtWidgets import QMessageBox
