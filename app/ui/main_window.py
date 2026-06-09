@@ -1457,6 +1457,10 @@ class MainWindow(QMainWindow):
         self.validation_status_label.show()
         QApplication.processEvents()
 
+        # Disable Run button to prevent concurrent launches.
+        self.run_action.setEnabled(False)
+        QApplication.processEvents()
+
         # Determine dataset — use loaded data or fall back to mock.
         df = self._loaded_dataset
         is_mock = df is None
@@ -1475,6 +1479,7 @@ class MainWindow(QMainWindow):
                 )
                 self.validation_status_label.hide()
                 QApplication.processEvents()
+                self.run_action.setEnabled(True)
                 return
             source_label = self._active_dataset_meta.name if self._active_dataset_meta else "Loaded data"
             self.log_panel.add_message("INFO", f"Using active dataset: {source_label}")
@@ -1603,7 +1608,6 @@ class MainWindow(QMainWindow):
                 f"Baseline PnL: {result.baseline_metrics.get('total_pnl', 0):.0f}\n"
                 f"Elimination: {'✓ Passed' if result.elimination_result and result.elimination_result['passed'] else '✗ Eliminated'}"
             )
-
         except Exception as e:
             self.log_panel.add_message("ERROR", f"Validation pipeline failed: {e}")
             self.inspector_label.setText(
@@ -1615,6 +1619,9 @@ class MainWindow(QMainWindow):
             self.validation_status_label.setStyleSheet(
                 "color: #ef5350; font-weight: bold; font-size: 12px; padding: 4px 0;"
             )
+            QApplication.processEvents()
+        finally:
+            self.run_action.setEnabled(True)
             QApplication.processEvents()
 
     def _handle_save(self) -> None:

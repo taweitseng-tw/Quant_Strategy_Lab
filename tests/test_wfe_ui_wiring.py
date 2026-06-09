@@ -659,3 +659,48 @@ def test_validation_status_shows_error_on_failure(mock_run, main_window):
     assert not main_window.validation_status_label.isHidden()
     assert "failed" in main_window.validation_status_label.text().lower()
     assert "Test pipeline crash" in main_window.validation_status_label.text()
+
+
+# ---------------------------------------------------------------------------
+# Run validation button guard (Task 073A-073F)
+# ---------------------------------------------------------------------------
+
+
+def test_run_button_disabled_during_pipeline(main_window):
+    """Run button must be disabled before the pipeline service is called."""
+    captured = {}
+
+    def _side_effect(*args, **kwargs):
+        captured["enabled"] = main_window.run_action.isEnabled()
+        return PipelineResult(
+            baseline_metrics={"total_pnl": 1000, "profit_factor": 1.5, "total_trades": 10},
+            elimination_result={"passed": True},
+        )
+
+    patcher = patch("app.ui.main_window.run_validation_pipeline", side_effect=_side_effect)
+    patcher.start()
+    try:
+        main_window._handle_run()
+    finally:
+        patcher.stop()
+
+    assert captured.get("enabled") is False, "Run button must be disabled when pipeline is called"
+
+
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_run_button_reenabled_after_success(mock_run, main_window):
+    """Run button must be re-enabled after successful pipeline completion."""
+    mock_run.return_value = PipelineResult(
+        baseline_metrics={"total_pnl": 1000, "profit_factor": 1.5, "total_trades": 10},
+        elimination_result={"passed": True},
+    )
+    main_window._handle_run()
+    assert main_window.run_action.isEnabled(), "Run button must be enabled after success"
+
+
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_run_button_reenabled_after_error(mock_run, main_window):
+    """Run button must be re-enabled after pipeline error."""
+    mock_run.side_effect = ValueError("Pipeline failure")
+    main_window._handle_run()
+    assert main_window.run_action.isEnabled(), "Run button must be enabled after error"
