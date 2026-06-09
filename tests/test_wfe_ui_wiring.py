@@ -987,3 +987,9 @@ def test_export_action_has_object_name(main_window):
     """Export action must have a stable objectName."""
     assert hasattr(main_window, "export_action")
     assert main_window.export_action.objectName() == "actionExportReport"
+
+
+def test_export_archive_button_has_object_name(main_window):
+    """Export Archive button must have a stable objectName."""
+    assert hasattr(main_window, "btn_export_archive")
+    assert main_window.btn_export_archive.objectName() == "btnExportArchive"

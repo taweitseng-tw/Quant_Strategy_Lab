@@ -216,6 +216,7 @@ class MainWindow(QMainWindow):
                 title.setStyleSheet("font-size: 16px; font-weight: bold; color: #26a69a;")
                 
                 self.btn_export_archive = QPushButton("Export Archive")
+                self.btn_export_archive.setObjectName("btnExportArchive")
                 self.btn_export_archive.setStyleSheet("""
                     QPushButton {
                         background-color: #607D8B;
