@@ -300,3 +300,94 @@ def test_candlestick_chart_slicing_guardrail(qapp) -> None:
         title = chart.plot_widget.plotItem.titleLabel.text
         assert "Displaying most recent 2,000" in title
         assert "2,500 rows" in title
+
+
+# ---------------------------------------------------------------------------
+# Import button busy guard (Task 080A-080F)
+# ---------------------------------------------------------------------------
+
+
+def test_import_button_disabled_during_import(qapp, tmp_dir):
+    """Import button must be disabled before the data service call is made."""
+    window = MainWindow()
+    captured = {}
+    original_import_file = DataService.import_file
+
+    def _side_effect(*args, **kwargs):
+        captured["enabled"] = window.btn_import_data.isEnabled()
+        captured["text"] = window.btn_import_data.text()
+        return original_import_file(DataService(), *args, **kwargs)
+
+    csv_file = tmp_dir / "sample_ok.csv"
+    pd.DataFrame({
+        "Date": ["2026/01/01"], "Time": ["09:00"], "Open": [100.0],
+        "High": [101.0], "Low": [99.0], "Close": [100.5], "TotalVolume": [1000],
+    }).to_csv(csv_file, index=False)
+
+    try:
+        with (
+            patch(
+                "PySide6.QtWidgets.QFileDialog.getOpenFileName",
+                return_value=(str(csv_file), ""),
+            ),
+            patch(
+                "app.ui.main_window.DataService.import_file",
+                side_effect=_side_effect,
+            ),
+            patch("PySide6.QtWidgets.QMessageBox.information"),
+            patch("PySide6.QtWidgets.QMessageBox.critical") as mock_critical,
+        ):
+            window._handle_import_ohlcv_data()
+    finally:
+        window.close()
+
+    assert captured.get("enabled") is False, "Import button must be disabled when importing"
+    assert "Importing" in captured.get("text", ""), "Button text should change to 'Importing...'"
+    mock_critical.assert_not_called()
+
+
+def test_import_button_enabled_after_success(qapp, tmp_dir):
+    """Import button must be re-enabled after successful import."""
+    window = MainWindow()
+    csv_file = tmp_dir / "sample_ok.csv"
+    pd.DataFrame({
+        "Date": ["2026/01/01"], "Time": ["09:00"], "Open": [100.0],
+        "High": [101.0], "Low": [99.0], "Close": [100.5], "TotalVolume": [1000],
+    }).to_csv(csv_file, index=False)
+
+    try:
+        with (
+            patch(
+                "PySide6.QtWidgets.QFileDialog.getOpenFileName",
+                return_value=(str(csv_file), ""),
+            ),
+            patch("PySide6.QtWidgets.QMessageBox.information"),
+            patch("PySide6.QtWidgets.QMessageBox.critical"),
+        ):
+            window._handle_import_ohlcv_data()
+    finally:
+        window.close()
+
+    assert window.btn_import_data.isEnabled(), "Import button must be enabled after success"
+    assert window.btn_import_data.text() == "Import OHLCV Data File"
+
+
+def test_import_button_enabled_after_failure(qapp, tmp_dir):
+    """Import button must be re-enabled after import failure."""
+    window = MainWindow()
+    missing = tmp_dir / "nonexistent.csv"
+
+    try:
+        with (
+            patch(
+                "PySide6.QtWidgets.QFileDialog.getOpenFileName",
+                return_value=(str(missing), ""),
+            ),
+            patch("PySide6.QtWidgets.QMessageBox.critical"),
+        ):
+            window._handle_import_ohlcv_data()
+    finally:
+        window.close()
+
+    assert window.btn_import_data.isEnabled(), "Import button must be enabled after failure"
+    assert window.btn_import_data.text() == "Import OHLCV Data File"
