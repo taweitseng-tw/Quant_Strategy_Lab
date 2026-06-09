@@ -106,6 +106,7 @@ class MainWindow(QMainWindow):
                 self.run_action = action
             elif label == "Export Report":
                 action.setEnabled(False)
+                action.setToolTip("Run validation first to enable report export.")
                 action.triggered.connect(self._handle_export_report)
                 self.export_action = action
             else:
@@ -1451,6 +1452,7 @@ class MainWindow(QMainWindow):
         self.validation_status_label.setText("")
         self.latest_validation_result = None
         self.export_action.setEnabled(False)
+        self.export_action.setToolTip("Run validation first to enable report export.")
 
     def _handle_run(self) -> None:
         """Execute the validation pipeline on current data/strategy."""
@@ -1491,6 +1493,7 @@ class MainWindow(QMainWindow):
                 self.validation_status_label.hide()
                 QApplication.processEvents()
                 self.run_action.setEnabled(True)
+                self.export_action.setToolTip("Dataset failed quality checks. Re-import data before validation.")
                 return
             source_label = self._active_dataset_meta.name if self._active_dataset_meta else "Loaded data"
             self.log_panel.add_message("INFO", f"Using active dataset: {source_label}")
@@ -1620,6 +1623,7 @@ class MainWindow(QMainWindow):
                 f"Elimination: {'✓ Passed' if result.elimination_result and result.elimination_result['passed'] else '✗ Eliminated'}"
             )
             self.export_action.setEnabled(True)
+            self.export_action.setToolTip("Export the latest validation report.")
         except Exception as e:
             self.log_panel.add_message("ERROR", f"Validation pipeline failed: {e}")
             self.inspector_label.setText(
@@ -1632,6 +1636,7 @@ class MainWindow(QMainWindow):
                 "color: #ef5350; font-weight: bold; font-size: 12px; padding: 4px 0;"
             )
             QApplication.processEvents()
+            self.export_action.setToolTip("Validation failed. Run validation again to enable report export.")
         finally:
             self.run_action.setEnabled(True)
             QApplication.processEvents()

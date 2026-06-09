@@ -793,3 +793,45 @@ def test_reset_validation_state_does_not_touch_run(main_window):
     main_window.run_action.setEnabled(True)
     main_window._reset_validation_state()
     assert main_window.run_action.isEnabled(), "Run button must remain enabled"
+
+
+# ---------------------------------------------------------------------------
+# Export report tooltip hints (Task 076A-076F)
+# ---------------------------------------------------------------------------
+
+
+def test_export_action_default_tooltip(main_window):
+    """Default tooltip must explain why export is disabled."""
+    tip = main_window.export_action.toolTip()
+    assert tip and "validation" in tip.lower(), f"Tooltip should mention validation, got: {tip!r}"
+
+
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_export_tooltip_updated_after_success(mock_run, main_window):
+    """Tooltip must indicate export is available after successful validation."""
+    mock_run.return_value = PipelineResult(
+        baseline_metrics={"total_pnl": 1000, "profit_factor": 1.5, "total_trades": 10},
+        elimination_result={"passed": True},
+    )
+    main_window._handle_run()
+    tip = main_window.export_action.toolTip()
+    assert "export" in tip.lower() and "report" in tip.lower(), (
+        f"Tooltip should mention export, got: {tip!r}"
+    )
+
+
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_export_tooltip_reset_after_error(mock_run, main_window):
+    """Tooltip must reset to disabled explanation after pipeline error."""
+    mock_run.side_effect = ValueError("Pipeline failure")
+    main_window._handle_run()
+    tip = main_window.export_action.toolTip()
+    assert "failed" in tip.lower(), f"Tooltip should mention failure, got: {tip!r}"
+
+
+def test_export_tooltip_reset_after_reset(main_window):
+    """Tooltip must reset to disabled explanation after _reset_validation_state."""
+    main_window.export_action.setToolTip("Export the latest validation report.")
+    main_window._reset_validation_state()
+    tip = main_window.export_action.toolTip()
+    assert "run validation" in tip.lower(), f"Tooltip should mention run validation, got: {tip!r}"
