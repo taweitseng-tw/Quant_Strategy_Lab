@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Task 106A-106C - Data Quality Failure Evidence Hardening
 - [x] Task 105A-105C - Data Quality Evidence Surface
 - [x] Task 066A - Codex Reasonix CLI Loop MVP
 - [x] Task 064A - Context Efficiency Protocol Hardening

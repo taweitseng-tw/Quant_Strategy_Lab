@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Task 106A-106C: Data Quality Failure Evidence Hardening
+
+### Added
+- `tests/test_data_page_wiring.py`: Added failed-quality import mock and UI test proving `DataQualityReport(passed=False)` surfaces failure, first error, and warnings in the Data page status tooltip.
+
+### Changed
+- `docs/task_board.md`: Added Task 106A-106C to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_data_page_wiring.py -q` - 38 passed.
+- `git diff --check` passes with CRLF warnings only.
+
 ## 2026-06-10 - Task 105A-105C: Data Quality Evidence Surface
 
 ### Added

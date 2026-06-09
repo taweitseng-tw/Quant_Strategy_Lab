@@ -59,6 +59,37 @@ def _patch_import_failure(path: str):
         yield
 
 
+@contextmanager
+def _patch_import_failed_quality(path: str):
+    """Context manager patching file dialog + info/critical message boxes
+    for an import that succeeds structurally but fails quality checks.
+
+    MockDataService.import_file to return a small DataFrame, a minimal
+    DatasetMeta, and a DataQualityReport(passed=False, ...).
+    """
+    from core.models.dataset import DatasetMeta
+
+    _df = pd.DataFrame({
+        "datetime": pd.to_datetime(["2026-01-01 09:00"]),
+        "open": [100.0], "high": [101.0], "low": [99.0],
+        "close": [100.5], "volume": [1000],
+    })
+    _meta = DatasetMeta(name="quality_fail", row_count=1)
+    _quality = DataQualityReport(
+        passed=False,
+        errors=["Found 5 row(s) where high < low", "Column 'volume' has 2 null value(s)"],
+        warnings=["Found 3 time gap(s) > 2 min"],
+    )
+
+    with (
+        patch("PySide6.QtWidgets.QFileDialog.getOpenFileName", return_value=(str(path), "")),
+        patch("PySide6.QtWidgets.QMessageBox.information"),
+        patch("PySide6.QtWidgets.QMessageBox.critical"),
+        patch("app.ui.main_window.DataService.import_file", return_value=(_df, _meta, _quality)),
+    ):
+        yield
+
+
 @pytest.fixture(scope="module")
 def qapp() -> QApplication:
     """Fixture to initialize a QApplication instance for GUI testing."""
@@ -852,5 +883,33 @@ def test_quality_tooltip_on_warning_import(qapp, tmp_dir):
         assert "Passed" in tip
         assert "warning" in tip.lower()
         assert "time gap" in tip.lower()
+    finally:
+        window.close()
+
+
+# ---------------------------------------------------------------------------
+# Quality failure evidence test (Task 106A-106C)
+# ---------------------------------------------------------------------------
+
+
+def test_quality_tooltip_on_failed_quality(qapp, tmp_dir):
+    """After import with quality.passed=False, tooltip must show failure and errors."""
+    window = MainWindow()
+    csv_file = tmp_dir / "sample_bad.csv"
+    _write_valid_ohlcv_csv(csv_file)
+
+    with _patch_import_failed_quality(csv_file):
+        window._handle_import_ohlcv_data()
+
+    try:
+        tip = window.data_status_label.toolTip()
+        assert tip, "Tooltip must contain quality evidence"
+        assert "Failed" in tip, f"Tooltip should say Failed, got: {tip!r}"
+        assert "high < low" in tip, f"Tooltip should mention the error, got: {tip!r}"
+        assert "warning" in tip.lower(), f"Tooltip should mention warnings, got: {tip!r}"
+
+        # Status label must indicate problem (color: red for failed quality).
+        text = window.data_status_label.text()
+        assert "Failed" in text, f"Status label should show Failed, got: {text!r}"
     finally:
         window.close()
