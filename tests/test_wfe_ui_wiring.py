@@ -704,3 +704,48 @@ def test_run_button_reenabled_after_error(mock_run, main_window):
     mock_run.side_effect = ValueError("Pipeline failure")
     main_window._handle_run()
     assert main_window.run_action.isEnabled(), "Run button must be enabled after error"
+
+
+# ---------------------------------------------------------------------------
+# Export report button guard (Task 074A-074F)
+# ---------------------------------------------------------------------------
+
+
+def test_export_button_disabled_during_pipeline(main_window):
+    """Export button must be disabled before the pipeline service is called."""
+    captured = {}
+
+    def _side_effect(*args, **kwargs):
+        captured["enabled"] = main_window.export_action.isEnabled()
+        return PipelineResult(
+            baseline_metrics={"total_pnl": 1000, "profit_factor": 1.5, "total_trades": 10},
+            elimination_result={"passed": True},
+        )
+
+    patcher = patch("app.ui.main_window.run_validation_pipeline", side_effect=_side_effect)
+    patcher.start()
+    try:
+        main_window._handle_run()
+    finally:
+        patcher.stop()
+
+    assert captured.get("enabled") is False, "Export button must be disabled when pipeline is called"
+
+
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_export_button_reenabled_after_success(mock_run, main_window):
+    """Export button must be re-enabled after successful pipeline completion."""
+    mock_run.return_value = PipelineResult(
+        baseline_metrics={"total_pnl": 1000, "profit_factor": 1.5, "total_trades": 10},
+        elimination_result={"passed": True},
+    )
+    main_window._handle_run()
+    assert main_window.export_action.isEnabled(), "Export button must be enabled after success"
+
+
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_export_button_reenabled_after_error(mock_run, main_window):
+    """Export button must be re-enabled after pipeline error."""
+    mock_run.side_effect = ValueError("Pipeline failure")
+    main_window._handle_run()
+    assert main_window.export_action.isEnabled(), "Export button must be enabled after error"

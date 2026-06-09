@@ -1457,8 +1457,9 @@ class MainWindow(QMainWindow):
         self.validation_status_label.show()
         QApplication.processEvents()
 
-        # Disable Run button to prevent concurrent launches.
+        # Disable Run and Export buttons to prevent concurrent launches.
         self.run_action.setEnabled(False)
+        self.export_action.setEnabled(False)
         QApplication.processEvents()
 
         # Determine dataset — use loaded data or fall back to mock.
@@ -1480,6 +1481,7 @@ class MainWindow(QMainWindow):
                 self.validation_status_label.hide()
                 QApplication.processEvents()
                 self.run_action.setEnabled(True)
+                self.export_action.setEnabled(True)
                 return
             source_label = self._active_dataset_meta.name if self._active_dataset_meta else "Loaded data"
             self.log_panel.add_message("INFO", f"Using active dataset: {source_label}")
@@ -1622,6 +1624,7 @@ class MainWindow(QMainWindow):
             QApplication.processEvents()
         finally:
             self.run_action.setEnabled(True)
+            self.export_action.setEnabled(True)
             QApplication.processEvents()
 
     def _handle_save(self) -> None:
