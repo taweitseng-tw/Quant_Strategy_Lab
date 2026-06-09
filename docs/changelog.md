@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Task 110A-110C: Project Config Template Integrity Tests
+
+### Added
+- `tests/test_project_repo.py`: Added config template integrity tests for `instruments.json`, `sessions.json`, `app_settings.json`, and overwrite recreation.
+
+### Changed
+- `docs/task_board.md`: Added Task 110A-110C to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_project_repo.py -q` - 13 passed.
+- `git diff --check` passes with CRLF warnings only.
+
 ## 2026-06-10 - Task 107A-107C: Data Quality Tooltip Reset Hardening
 
 ### Fixed

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 import tempfile
 from pathlib import Path
@@ -80,6 +81,67 @@ def test_create_project_db_has_single_row(repo, tmp_project_dir):
     assert row["version"] == meta.version
 
     repo.close()
+
+
+# ---------------------------------------------------------------------------
+# Config template content integrity tests (Task 110A-110C)
+# ---------------------------------------------------------------------------
+
+
+def test_config_instruments_json_is_valid_empty_list(repo, tmp_project_dir):
+    """config/instruments.json must be valid JSON and default to an empty list."""
+    meta = repo.create_project("cfg-test", tmp_project_dir)
+    path = meta.root_path / "config" / "instruments.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert isinstance(data, list), "instruments.json should be a list"
+    assert len(data) == 0, "instruments.json should be empty by default"
+    repo.close()
+
+
+def test_config_sessions_json_is_valid_empty_list(repo, tmp_project_dir):
+    """config/sessions.json must be valid JSON and default to an empty list."""
+    meta = repo.create_project("cfg-test", tmp_project_dir)
+    path = meta.root_path / "config" / "sessions.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert isinstance(data, list), "sessions.json should be a list"
+    assert len(data) == 0, "sessions.json should be empty by default"
+    repo.close()
+
+
+def test_config_app_settings_json_has_conservative_defaults(repo, tmp_project_dir):
+    """config/app_settings.json must include expected conservative backtest defaults."""
+    meta = repo.create_project("cfg-test", tmp_project_dir)
+    path = meta.root_path / "config" / "app_settings.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert isinstance(data, dict), "app_settings.json should be a dict"
+    assert data.get("execution_model") == "next_bar_open", (
+        f"Expected next_bar_open, got {data.get('execution_model')!r}"
+    )
+    assert data.get("same_bar_ambiguity") == "stop_loss_first", (
+        f"Expected stop_loss_first, got {data.get('same_bar_ambiguity')!r}"
+    )
+    assert "default_timeframe" in data, "default_timeframe key must exist"
+    assert data.get("version") == "0.0.1"
+    repo.close()
+
+
+def test_overwrite_rewrites_valid_config_templates(repo, tmp_project_dir):
+    """Overwrite recreation must produce fresh, valid config templates."""
+    meta1 = repo.create_project("first", tmp_project_dir)
+    repo.close()
+    # Mutate the config to prove it gets rewritten.
+    bad_path = meta1.root_path / "config" / "instruments.json"
+    bad_path.write_text("not json", encoding="utf-8")
+
+    repo2 = ProjectRepository()
+    meta2 = repo2.create_project("second", tmp_project_dir, overwrite=True)
+
+    # All three config files must be valid JSON again.
+    for name in ("instruments.json", "sessions.json", "app_settings.json"):
+        content = (meta2.root_path / "config" / name).read_text(encoding="utf-8")
+        data = json.loads(content)
+        assert data is not None, f"{name} must be valid JSON after overwrite"
+    repo2.close()
 
 
 # ---------------------------------------------------------------------------
