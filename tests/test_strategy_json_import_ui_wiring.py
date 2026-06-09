@@ -29,6 +29,12 @@ def test_json_import_preview_button_exists(main_window):
     assert win.btn_preview_json_import.text() == "Preview JSON Import"
     assert win.btn_preview_json_import.isEnabled()
 
+
+def test_json_import_preview_button_has_object_name(main_window):
+    """Preview JSON Import button must have a stable objectName."""
+    assert main_window.btn_preview_json_import.objectName() == "btnPreviewJsonImport"
+
+
 @patch("PySide6.QtWidgets.QFileDialog.getOpenFileName")
 @patch("PySide6.QtWidgets.QMessageBox.question")
 def test_json_import_preview_success_flow(mock_question, mock_open, main_window, tmp_path):

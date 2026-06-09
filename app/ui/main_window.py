@@ -269,6 +269,7 @@ class MainWindow(QMainWindow):
                 self.btn_export_json.clicked.connect(self._handle_export_json)
                 
                 self.btn_preview_json_import = QPushButton("Preview JSON Import")
+                self.btn_preview_json_import.setObjectName("btnPreviewJsonImport")
                 self.btn_preview_json_import.setStyleSheet("""
                     QPushButton {
                         background-color: #00897b;
