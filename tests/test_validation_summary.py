@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 import pytest
-from PySide6.QtWidgets import QApplication, QLabel
+from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
 from app.widgets.validation_summary import ValidationSummary
 
@@ -622,3 +622,476 @@ def test_mc_card_missing_worst_total_pnl(qapp):
     text = _widget_text(widget)
     assert "Worst-case PnL:" in text
     assert "Worst-case PnL: N/A" in text
+# ---------------------------------------------------------------------------
+# WF Equity Chart (Task 062H-Impl)
+# ---------------------------------------------------------------------------
+
+
+def _wf_equity_charts(widget) -> list[QWidget]:
+    return [child for child in widget.findChildren(QWidget) if child.__class__.__name__ == "_WFEquityChart"]
+
+
+def _has_wf_equity_chart(widget) -> bool:
+    return bool(_wf_equity_charts(widget))
+
+
+def test_wf_equity_chart_shown_when_present(qapp):
+    result = {
+        'split_metadata': {'train_rows': 10},
+        'baseline_metrics': {'total_pnl': 100.0},
+        'stress_results': [],
+        'walk_forward_summary': {
+            'window_count': 2, 'pass_count': 1, 'pass_rate': 0.5,
+            'windows': [
+                {'index': 0, 'equity_curve': [100000.0, 100500.0, 101000.0], 'passed': True},
+                {'index': 1, 'equity_curve': [100000.0, 99000.0], 'passed': False},
+            ],
+        },
+        'elimination_result': {'passed': True, 'failed_rules': []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    assert _has_wf_equity_chart(widget)
+
+
+def test_wf_equity_chart_draws_pass_fail_lines(qapp):
+    result = {
+        'split_metadata': {'train_rows': 10},
+        'baseline_metrics': {'total_pnl': 100.0},
+        'stress_results': [],
+        'walk_forward_summary': {
+            'window_count': 3, 'pass_count': 1, 'pass_rate': 0.33,
+            'windows': [
+                {'index': 0, 'equity_curve': [100000.0, 100500.0, 101000.0], 'passed': True},
+                {'index': 1, 'equity_curve': [100000.0], 'passed': True},
+                {'index': 2, 'equity_curve': [100000.0, 99000.0], 'passed': False},
+            ],
+        },
+        'elimination_result': {'passed': True, 'failed_rules': []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+
+    chart = _wf_equity_charts(widget)[0]
+    line_items = [item for item in chart._scene.items() if item.__class__.__name__ == "QGraphicsPolygonItem"]
+    colors = {item.pen().color().name().lower() for item in line_items}
+
+    assert len(line_items) == 2
+    assert "#4caf50" in colors
+    assert "#f44336" in colors
+
+
+def test_wf_equity_chart_height_is_constrained(qapp):
+    result = {
+        'split_metadata': {'train_rows': 10},
+        'baseline_metrics': {'total_pnl': 100.0},
+        'stress_results': [],
+        'walk_forward_summary': {
+            'window_count': 1, 'pass_count': 1, 'pass_rate': 1.0,
+            'windows': [
+                {'index': 0, 'equity_curve': [100000.0, 100500.0], 'passed': True},
+            ],
+        },
+        'elimination_result': {'passed': True, 'failed_rules': []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+
+    chart = _wf_equity_charts(widget)[0]
+
+    assert chart._view.height() == chart.CHART_HEIGHT
+
+
+def test_wf_equity_chart_draws_basic_axis_labels(qapp):
+    result = {
+        'split_metadata': {'train_rows': 10},
+        'baseline_metrics': {'total_pnl': 100.0},
+        'stress_results': [],
+        'walk_forward_summary': {
+            'window_count': 1, 'pass_count': 1, 'pass_rate': 1.0,
+            'windows': [
+                {'index': 0, 'equity_curve': [100000.0, 100500.0, 101000.0], 'passed': True},
+            ],
+        },
+        'elimination_result': {'passed': True, 'failed_rules': []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+
+    chart = _wf_equity_charts(widget)[0]
+    labels = {item.toPlainText() for item in chart._scene.items() if hasattr(item, "toPlainText")}
+
+    assert "101,000" in labels
+    assert "100,000" in labels
+    assert "bar 0" in labels
+    assert "bar 2" in labels
+
+
+def test_wf_equity_chart_absent_when_no_windows_key(qapp):
+    result = {
+        'split_metadata': {'train_rows': 10},
+        'baseline_metrics': {'total_pnl': 100.0},
+        'stress_results': [],
+        'walk_forward_summary': {'window_count': 0, 'pass_count': 0, 'pass_rate': 0.0},
+        'elimination_result': {'passed': True, 'failed_rules': []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    assert not _has_wf_equity_chart(widget)
+
+
+def test_wf_equity_chart_absent_when_all_equity_none(qapp):
+    result = {
+        'split_metadata': {'train_rows': 10},
+        'baseline_metrics': {'total_pnl': 100.0},
+        'stress_results': [],
+        'walk_forward_summary': {
+            'window_count': 2, 'pass_count': 0, 'pass_rate': 0.0,
+            'windows': [
+                {'index': 0, 'equity_curve': None, 'passed': True},
+                {'index': 1, 'equity_curve': None, 'passed': False},
+            ],
+        },
+        'elimination_result': {'passed': True, 'failed_rules': []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    assert not _has_wf_equity_chart(widget)
+
+
+def test_wf_equity_chart_handles_partial_equity(qapp):
+    result = {
+        'split_metadata': {'train_rows': 10},
+        'baseline_metrics': {'total_pnl': 100.0},
+        'stress_results': [],
+        'walk_forward_summary': {
+            'window_count': 3, 'pass_count': 1, 'pass_rate': 0.33,
+            'windows': [
+                {'index': 0, 'equity_curve': None, 'passed': True},
+                {'index': 1, 'equity_curve': [100000.0, 105000.0], 'passed': True},
+                {'index': 2, 'equity_curve': [100000.0, 95000.0], 'passed': False},
+            ],
+        },
+        'elimination_result': {'passed': True, 'failed_rules': []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    assert _has_wf_equity_chart(widget)
+
+
+def test_wf_equity_chart_single_point_no_chart(qapp):
+    result = {
+        'split_metadata': {'train_rows': 10},
+        'baseline_metrics': {'total_pnl': 100.0},
+        'stress_results': [],
+        'walk_forward_summary': {
+            'window_count': 1, 'pass_count': 1, 'pass_rate': 1.0,
+            'windows': [
+                {'index': 0, 'equity_curve': [100000.0], 'passed': True},
+            ],
+        },
+        'elimination_result': {'passed': True, 'failed_rules': []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    assert not _has_wf_equity_chart(widget)
+
+
+# ---------------------------------------------------------------------------
+# Price-noise widget display (Task 062N-Impl)
+# ---------------------------------------------------------------------------
+
+
+def _widget_text_contains(widget, needle: str) -> bool:
+    """Check if any QLabel in the widget contains needle text."""
+    for i in range(widget._layout.count()):
+        item = widget._layout.itemAt(i)
+        if item and item.widget():
+            for child in item.widget().findChildren(QLabel):
+                if needle in str(child.text()):
+                    return True
+    return False
+
+
+def test_price_noise_widget_shown_when_opt_in(qapp):
+    """Widget must show price-noise detail when stress result is present."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [
+            {"test_name": "price_noise", "passed": True,
+             "degradation": {"total_pnl": -0.05},
+             "assumptions": {"noise_pct": 0.005, "iterations": 50,
+                              "method": "ohlc_preserving_gaussian_noise",
+                              "research_only": True},
+             "warnings": [
+                 "Price-noise stress test is an approximate robustness diagnostic. "
+                 "It does not prove live-trading robustness."
+             ]},
+        ],
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    assert _widget_text_contains(widget, "price_noise")
+    assert _widget_text_contains(widget, "Noise: 0.5%")
+    assert _widget_text_contains(widget, "Iterations: 50")
+    assert _widget_text_contains(widget, "Method: ohlc_preserving_gaussian_noise")
+    assert _widget_text_contains(widget, "Research only: True")
+    assert _widget_text_contains(widget, "does not prove live-trading robustness")
+
+
+def test_price_noise_widget_omitted_when_default(qapp):
+    """Widget must NOT show price-noise detail when stress result is absent."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [
+            {"test_name": "commission_2.0x", "passed": True,
+             "degradation": {"total_pnl": -0.15}},
+        ],
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    assert not _widget_text_contains(widget, "price_noise")
+
+
+def test_price_noise_widget_shows_warnings(qapp):
+    """Widget must show price-noise warnings."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [
+            {"test_name": "price_noise", "passed": True,
+             "degradation": {"total_pnl": -0.05},
+             "assumptions": {"noise_pct": 0.005, "iterations": 50,
+                              "method": "ohlc_preserving_gaussian_noise",
+                              "research_only": True},
+             "warnings": [
+                 "Price-noise stress test is an approximate robustness diagnostic.",
+                 "It does not prove live-trading robustness.",
+             ]},
+        ],
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    assert _widget_text_contains(widget, "approximate robustness diagnostic")
+    assert _widget_text_contains(widget, "does not prove live-trading robustness")
+
+
+def test_price_noise_widget_does_not_fabricate_research_only_flag(qapp):
+    """Widget must not invent a research_only=True flag when the payload omits it."""
+    result = {
+        "split_metadata": {"train_rows": 10},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [
+            {"test_name": "price_noise", "passed": True,
+             "degradation": {"total_pnl": -0.05},
+             "assumptions": {"noise_pct": 0.005, "iterations": 50,
+                              "method": "ohlc_preserving_gaussian_noise"},
+             "warnings": []},
+        ],
+        "elimination_result": {"passed": True, "failed_rules": []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    assert not _widget_text_contains(widget, "Research only: True")
+    assert _widget_text_contains(widget, "Research only: ?")
+
+
+# ---------------------------------------------------------------------------
+# MC Worst-Case Equity Chart (Task 063E-Impl)
+# ---------------------------------------------------------------------------
+
+
+def _has_mc_equity_chart(widget) -> bool:
+    for i in range(widget._layout.count()):
+        item = widget._layout.itemAt(i)
+        if item is None:
+            continue
+        w = item.widget()
+        if w is None:
+            continue
+        if w.__class__.__name__ == '_MCEquityChart':
+            return True
+        # Search ALL children recursively, regardless of type
+        for child in w.findChildren(QWidget):
+            if child.__class__.__name__ == '_MCEquityChart':
+                return True
+        # Also check nested layouts
+        if hasattr(w, 'layout') and w.layout() is not None:
+            for j in range(w.layout().count()):
+                ci = w.layout().itemAt(j)
+                if ci and ci.widget() and ci.widget().__class__.__name__ == '_MCEquityChart':
+                    return True
+    return False
+
+
+def test_mc_equity_chart_shown_when_present(qapp):
+    """Chart must appear when worst_case_equity_curve has >= 2 points."""
+    result = {
+        'split_metadata': {'train_rows': 10},
+        'baseline_metrics': {'total_pnl': 100.0},
+        'stress_results': [],
+        'monte_carlo_summary': {
+            'iterations': 15,
+            'percentile_summary': {'total_pnl': {'p5': 1000.0, 'p50': 5000.0, 'p95': 9000.0}},
+            'worst_case': {'total_pnl': 1000.0},
+            'worst_case_equity_curve': [100000.0, 99000.0, 95000.0],
+            'worst_case_equity_curve_type': 'trade_step',
+        },
+        'elimination_result': {'passed': True, 'failed_rules': []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    assert _has_mc_equity_chart(widget)
+    text = _walk_forward_card_text(widget)
+    assert 'MC Worst-Case Equity (trade-step)' in text
+    assert 'not bar-by-bar equity' in text
+
+
+def test_mc_equity_chart_absent_when_curve_none(qapp):
+    """Chart must be absent when worst_case_equity_curve is None."""
+    result = {
+        'split_metadata': {'train_rows': 10},
+        'baseline_metrics': {'total_pnl': 100.0},
+        'stress_results': [],
+        'monte_carlo_summary': {
+            'iterations': 15,
+            'percentile_summary': {'total_pnl': {'p5': 1000.0, 'p50': 5000.0, 'p95': 9000.0}},
+            'worst_case': {'total_pnl': 1000.0},
+        },
+        'elimination_result': {'passed': True, 'failed_rules': []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    assert not _has_mc_equity_chart(widget)
+
+
+def test_mc_equity_chart_absent_when_curve_short(qapp):
+    """Chart must be absent when curve has < 2 points."""
+    result = {
+        'split_metadata': {'train_rows': 10},
+        'baseline_metrics': {'total_pnl': 100.0},
+        'stress_results': [],
+        'monte_carlo_summary': {
+            'iterations': 15,
+            'percentile_summary': {'total_pnl': {'p5': 1000.0, 'p50': 5000.0, 'p95': 9000.0}},
+            'worst_case': {'total_pnl': 1000.0},
+            'worst_case_equity_curve': [100000.0],
+        },
+        'elimination_result': {'passed': True, 'failed_rules': []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    assert not _has_mc_equity_chart(widget)
+
+
+# ---------------------------------------------------------------------------
+# WFE display in Walk-Forward card (Task 063E-Impl)
+# ---------------------------------------------------------------------------
+
+
+def _wf_card_contains(widget, needle: str) -> bool:
+    for i in range(widget._layout.count()):
+        item = widget._layout.itemAt(i)
+        if item and item.widget():
+            for child in item.widget().findChildren(QLabel):
+                if 'Walk-Forward' in str(child.text()) or 'WFE' in str(child.text()):
+                    if needle in str(child.text()):
+                        return True
+            # Also check body labels
+            for child in item.widget().findChildren(QLabel):
+                if needle in str(child.text()):
+                    return True
+    return False
+
+
+def _walk_forward_card_text(widget) -> str:
+    texts = []
+    for i in range(widget._layout.count()):
+        item = widget._layout.itemAt(i)
+        if item and item.widget():
+            for child in item.widget().findChildren(QLabel):
+                texts.append(str(child.text()))
+    return '|'.join(texts)
+
+
+def test_wfe_line_shown_when_present(qapp):
+    """WFE line must appear when average_wfe is present."""
+    result = {
+        'split_metadata': {'train_rows': 10},
+        'baseline_metrics': {'total_pnl': 100.0},
+        'stress_results': [],
+        'walk_forward_summary': {
+            'window_count': 5, 'pass_count': 3, 'pass_rate': 0.6,
+            'average_wfe': 1.25,
+            'median_wfe': 0.85,
+        },
+        'elimination_result': {'passed': True, 'failed_rules': []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _walk_forward_card_text(widget)
+    assert 'WFE: Avg=1.25, Median=0.85, Defined=0, Undefined=0' in text
+
+
+def test_wfe_line_handles_none_avg(qapp):
+    """WFE line must render None avg as N/A."""
+    result = {
+        'split_metadata': {'train_rows': 10},
+        'baseline_metrics': {'total_pnl': 100.0},
+        'stress_results': [],
+        'walk_forward_summary': {
+            'window_count': 5, 'pass_count': 3, 'pass_rate': 0.6,
+            'average_wfe': None,
+            'median_wfe': 0.85,
+        },
+        'elimination_result': {'passed': True, 'failed_rules': []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _walk_forward_card_text(widget)
+    assert 'WFE' in text
+    assert 'Avg=N/A' in text
+    assert 'Median=0.85' in text
+
+
+def test_wfe_line_handles_both_none_when_keys_present(qapp):
+    """WFE line must render both None values as N/A when keys are present."""
+    result = {
+        'split_metadata': {'train_rows': 10},
+        'baseline_metrics': {'total_pnl': 100.0},
+        'stress_results': [],
+        'walk_forward_summary': {
+            'window_count': 5, 'pass_count': 3, 'pass_rate': 0.6,
+            'average_wfe': None,
+            'median_wfe': None,
+            'defined_wfe_count': 0,
+            'undefined_wfe_count': 5,
+        },
+        'elimination_result': {'passed': True, 'failed_rules': []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _walk_forward_card_text(widget)
+    assert 'WFE: Avg=N/A, Median=N/A, Defined=0, Undefined=5' in text
+
+
+def test_wfe_line_absent_when_keys_missing(qapp):
+    """WFE line must be absent when WFE keys are not present."""
+    result = {
+        'split_metadata': {'train_rows': 10},
+        'baseline_metrics': {'total_pnl': 100.0},
+        'stress_results': [],
+        'walk_forward_summary': {
+            'window_count': 5, 'pass_count': 3, 'pass_rate': 0.6,
+        },
+        'elimination_result': {'passed': True, 'failed_rules': []},
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    text = _walk_forward_card_text(widget)
+    assert 'WFE' not in text

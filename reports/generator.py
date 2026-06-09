@@ -798,6 +798,15 @@ def _format_markdown_validation(vr: dict) -> str:
                              f"pnl_loss={pnl_loss}, threshold={threshold})")
             for w in (s.get("warnings", []) or []):
                 lines.append(f"  - WARNING: {w}")
+
+        # Detail sub-lines for price_noise (Task 062L-Impl).
+        if name == "price_noise":
+            assumptions = s.get("assumptions", {}) or {}
+            detail = _format_price_noise_detail_text(assumptions)
+            if detail:
+                lines.append(f"  - {detail}")
+            for w in (s.get("warnings", []) or []):
+                lines.append(f"  - WARNING: {w}")
     mc = vr.get("monte_carlo_summary", {}) or {}
     ps = (mc.get("percentile_summary", {}) or {}).get("total_pnl", {}) or {}
     if ps:
@@ -817,11 +826,23 @@ def _format_markdown_validation(vr: dict) -> str:
                 if d:
                     lines.append(f"  - {label} 95% CI [{d.get('ci_lower',0):{fmt}} — {d.get('ci_upper',0):{fmt}}] "
                                  f"mean={d.get('ci_mean',0):{fmt}}")
+    # MC worst-case equity evidence (Task 063F-Impl).
+    wc_curve = mc.get("worst_case_equity_curve")
+    if isinstance(wc_curve, list) and len(wc_curve) >= 2:
+        curve_type, curve_note = _format_mc_equity_curve_type(
+            mc.get("worst_case_equity_curve_type", "trade_step")
+        )
+        start_eq = wc_curve[0]
+        end_eq = wc_curve[-1]
+        pct = ((end_eq - start_eq) / abs(start_eq)) * 100 if abs(start_eq) > 1e-9 else 0.0
+        lines.append(f"- **MC Worst-Case Equity** ({curve_type}): "
+                     f"Start={start_eq:,.0f}, End={end_eq:,.0f} ({pct:+.1f}%)")
+        lines.append(f"  - *Note: {curve_note}*")
     wf = vr.get("walk_forward_summary", {}) or {}
     if wf:
         lines.append(f"- **WF**: {wf.get('pass_count','?')}/{wf.get('window_count','?')} "
                      f"passed ({(wf.get('pass_rate',0) or 0)*100:.0f}%)")
-        if "average_wfe" in wf:
+        if "average_wfe" in wf or "median_wfe" in wf:
             avg_wfe = wf.get("average_wfe")
             med_wfe = wf.get("median_wfe")
             def_cnt = wf.get("defined_wfe_count", 0)
@@ -918,6 +939,15 @@ def _format_html_validation(vr: dict) -> str:
                              f'threshold={html.escape(str(threshold))})</div>')
             for w in (s.get("warnings", []) or []):
                 parts.append(f'<div class="warning-item">⚠ {html.escape(w)}</div>')
+
+        # Detail sub-lines for price_noise (Task 062L-Impl).
+        if raw_name == "price_noise":
+            assumptions = s.get("assumptions", {}) or {}
+            detail = _format_price_noise_detail_text(assumptions)
+            if detail:
+                parts.append(f'<div class="stress-detail">{html.escape(detail)}</div>')
+            for w in (s.get("warnings", []) or []):
+                parts.append(f'<div class="warning-item">⚠ {html.escape(w)}</div>')
     mc = vr.get("monte_carlo_summary", {}) or {}
     ps = (mc.get("percentile_summary", {}) or {}).get("total_pnl", {}) or {}
     if ps:
@@ -938,11 +968,23 @@ def _format_html_validation(vr: dict) -> str:
                     parts.append(f'<div class="stress-detail">'
                                  f'{label} 95% CI [{d.get("ci_lower",0):{fmt}} — {d.get("ci_upper",0):{fmt}}] '
                                  f'mean={d.get("ci_mean",0):{fmt}}</div>')
+    # MC worst-case equity evidence (Task 063F-Impl).
+    wc_curve = mc.get("worst_case_equity_curve")
+    if isinstance(wc_curve, list) and len(wc_curve) >= 2:
+        curve_type, curve_note = _format_mc_equity_curve_type(
+            mc.get("worst_case_equity_curve_type", "trade_step")
+        )
+        start_eq = wc_curve[0]
+        end_eq = wc_curve[-1]
+        pct = ((end_eq - start_eq) / abs(start_eq)) * 100 if abs(start_eq) > 1e-9 else 0.0
+        parts.append(f'<p><b>MC Worst-Case Equity</b> ({html.escape(curve_type)}): '
+                     f'Start={start_eq:,.0f}, End={end_eq:,.0f} ({pct:+.1f}%)</p>')
+        parts.append(f'<p><i>{html.escape(curve_note)}</i></p>')
     wf = vr.get("walk_forward_summary", {}) or {}
     if wf:
         parts.append(f'<p><b>WF:</b> {wf.get("pass_count","?")}/{wf.get("window_count","?")} '
                      f'passed ({(wf.get("pass_rate",0) or 0)*100:.0f}%)</p>')
-        if "average_wfe" in wf:
+        if "average_wfe" in wf or "median_wfe" in wf:
             avg_wfe = wf.get("average_wfe")
             med_wfe = wf.get("median_wfe")
             def_cnt = wf.get("defined_wfe_count", 0)
@@ -992,6 +1034,35 @@ def _format_html_validation(vr: dict) -> str:
         parts.append(f'<p><b>Elimination:</b> <span style="color:#ef5350;font-weight:bold;">ELIMINATED</span> — {rules}</p>')
     parts.append('</div>')
     return "\n".join(parts)
+
+
+def _format_price_noise_detail_text(assumptions: dict) -> str:
+    """Format price-noise assumptions for Markdown and escaped HTML report output."""
+    details: list[str] = []
+    noise_pct = assumptions.get("noise_pct")
+    if isinstance(noise_pct, (int, float)) and not isinstance(noise_pct, bool):
+        details.append(f"noise_pct={noise_pct:.1%}")
+    elif noise_pct is not None:
+        details.append(f"noise_pct={noise_pct}")
+
+    if "iterations" in assumptions:
+        details.append(f"iterations={assumptions.get('iterations')}")
+    if "method" in assumptions:
+        details.append(f"method={assumptions.get('method')}")
+    if "research_only" in assumptions:
+        details.append(f"research_only={assumptions.get('research_only')}")
+    return ", ".join(details)
+
+
+def _format_mc_equity_curve_type(raw_curve_type: object) -> tuple[str, str]:
+    """Return display type and honesty note for MC worst-case equity evidence."""
+    curve_type = str(raw_curve_type or "trade_step")
+    display_type = curve_type.replace("_", "-")
+    if curve_type == "trade_step":
+        note = "trade-step curve from surviving trades only; not a bar-by-bar equity curve."
+    else:
+        note = f"{display_type} curve type is not verified as bar-by-bar equity."
+    return display_type, note
 
 
 def _sanitize_md(text: str) -> str:

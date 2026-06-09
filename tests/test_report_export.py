@@ -911,3 +911,197 @@ def test_wf_equity_table_capped_at_5(mock_strategy, mock_backtest_result):
     md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
     assert "WF Equity by Window" in md
     assert "2 more" in md
+
+
+# ---------------------------------------------------------------------------
+# Price-noise stress display in reports (Task 062L-Impl)
+# ---------------------------------------------------------------------------
+
+
+def _with_price_noise(vr: dict) -> dict:
+    """Add a price_noise stress result to a validation dict."""
+    vr = dict(vr)
+    vr["stress_results"] = list(vr.get("stress_results", [])) + [
+        {
+            "test_name": "price_noise",
+            "passed": True,
+            "degradation": {"total_pnl": -0.05},
+            "assumptions": {
+                "noise_pct": 0.005,
+                "iterations": 50,
+                "method": "ohlc_preserving_gaussian_noise",
+                "research_only": True,
+            },
+            "warnings": [
+                "Price-noise stress test is an approximate robustness diagnostic. "
+                "It does not prove live-trading robustness."
+            ],
+        },
+    ]
+    return vr
+
+
+def test_markdown_includes_price_noise_when_opt_in(mock_strategy, mock_backtest_result):
+    """Markdown must include price_noise sub-lines when opt-in."""
+    vr = _make_validation_dict()
+    vr = _with_price_noise(vr)
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "price_noise" in md
+    assert "noise_pct=0.5%" in md
+    assert "iterations" in md
+    assert "method=ohlc_preserving_gaussian_noise" in md
+    assert "research_only=True" in md
+    assert "WARNING:" in md
+    assert "does not prove live-trading robustness" in md
+
+
+def test_markdown_omits_price_noise_by_default(mock_strategy, mock_backtest_result):
+    """Markdown must NOT include price_noise when default."""
+    vr = _make_validation_dict()
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "price_noise" not in md
+
+
+def test_html_includes_price_noise_when_opt_in(mock_strategy, mock_backtest_result):
+    """HTML must include price_noise sub-lines when opt-in."""
+    vr = _make_validation_dict()
+    vr = _with_price_noise(vr)
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "price_noise" in html_out
+    assert "noise_pct=0.5%" in html_out
+    assert "iterations=50" in html_out
+    assert "method=ohlc_preserving_gaussian_noise" in html_out
+    assert "research_only=True" in html_out
+    assert "warning-item" in html_out
+    assert "does not prove live-trading robustness" in html_out
+
+
+def test_html_price_noise_detail_and_warning_are_escaped(mock_strategy, mock_backtest_result):
+    """HTML price-noise detail and warning values must be escaped."""
+    vr = _make_validation_dict(stress_results=[
+        {
+            "test_name": "price_noise",
+            "passed": False,
+            "degradation": {"total_pnl": -0.10},
+            "assumptions": {
+                "noise_pct": "<script>bad</script>",
+                "iterations": "<img src=x onerror=alert(1)>",
+                "method": "<b>bad</b>",
+                "research_only": True,
+            },
+            "warnings": ["Warning <script>alert(1)</script>"],
+        },
+    ])
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+
+    assert "&lt;script&gt;bad&lt;/script&gt;" in html_out
+    assert "&lt;img src=x onerror=alert(1)&gt;" in html_out
+    assert "&lt;b&gt;bad&lt;/b&gt;" in html_out
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html_out
+    assert "<script>" not in html_out
+    assert "<img src=x" not in html_out
+
+
+def test_html_omits_price_noise_by_default(mock_strategy, mock_backtest_result):
+    """HTML must NOT include price_noise when default."""
+    vr = _make_validation_dict()
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "price_noise" not in html_out
+
+
+# ---------------------------------------------------------------------------
+# MC Worst-Case Equity report display (Task 063F-Impl)
+# ---------------------------------------------------------------------------
+
+
+def _with_mc_worst_case_equity(vr: dict) -> dict:
+    """Add worst_case_equity_curve to a validation dict."""
+    vr = dict(vr)
+    mc = dict(vr.get('monte_carlo_summary', {}))
+    mc['worst_case_equity_curve'] = [100000.0, 99000.0, 97000.0, 95000.0]
+    mc['worst_case_equity_curve_type'] = 'trade_step'
+    vr['monte_carlo_summary'] = mc
+    return vr
+
+
+def test_markdown_includes_mc_worst_case_equity_when_present(mock_strategy, mock_backtest_result):
+    """Markdown must include MC worst-case equity when curve has >= 2 points."""
+    vr = _make_validation_dict()
+    vr = _with_mc_worst_case_equity(vr)
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert 'MC Worst-Case Equity' in md
+    assert 'trade-step' in md
+    assert 'trade_step' not in md
+    assert 'surviving trades only' in md
+    assert 'not a bar-by-bar equity curve' in md
+
+
+def test_markdown_omits_mc_worst_case_equity_when_absent(mock_strategy, mock_backtest_result):
+    """Markdown must omit MC worst-case equity when curve is absent."""
+    vr = _make_validation_dict()
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert 'MC Worst-Case Equity' not in md
+
+
+def test_html_includes_mc_worst_case_equity_when_present(mock_strategy, mock_backtest_result):
+    """HTML must include MC worst-case equity when curve has >= 2 points."""
+    vr = _make_validation_dict()
+    vr = _with_mc_worst_case_equity(vr)
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert 'MC Worst-Case Equity' in html_out
+    assert 'trade-step' in html_out
+    assert 'trade_step' not in html_out
+    assert 'surviving trades only' in html_out
+    assert 'not a bar-by-bar equity curve' in html_out
+
+
+def test_html_omits_mc_worst_case_equity_when_absent(mock_strategy, mock_backtest_result):
+    """HTML must omit MC worst-case equity when curve is absent."""
+    vr = _make_validation_dict()
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert 'MC Worst-Case Equity' not in html_out
+
+
+def test_markdown_wfe_already_displayed_when_present(mock_strategy, mock_backtest_result):
+    """WFE line must appear when average_wfe is present (existing behavior)."""
+    vr = _make_validation_dict()
+    vr['walk_forward_summary']['average_wfe'] = 1.25
+    vr['walk_forward_summary']['median_wfe'] = 0.85
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert 'WF Efficiency' in md
+    assert 'Avg=1.25' in md
+    assert 'Median=0.85' in md
+
+
+def test_markdown_wfe_none_renders_as_na(mock_strategy, mock_backtest_result):
+    """WFE must render None avg/median as N/A."""
+    vr = _make_validation_dict()
+    vr['walk_forward_summary']['average_wfe'] = None
+    vr['walk_forward_summary']['median_wfe'] = 0.85
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert 'WF Efficiency' in md
+    assert 'Avg=N/A' in md
+    assert 'Median=0.85' in md
+
+
+def test_markdown_wfe_absent_when_keys_missing(mock_strategy, mock_backtest_result):
+    """WFE line must be absent when average_wfe key is not present."""
+    vr = _make_validation_dict()
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert 'WF Efficiency' not in md
+
+
+def test_reports_wfe_shown_when_only_median_key_present(mock_strategy, mock_backtest_result):
+    """WFE line must appear when median_wfe is present even if average_wfe is missing."""
+    vr = _make_validation_dict()
+    vr['walk_forward_summary']['median_wfe'] = 0.85
+
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+
+    assert 'WF Efficiency' in md
+    assert 'Avg=N/A' in md
+    assert 'Median=0.85' in md
+    assert 'WF Efficiency' in html_out
+    assert 'Avg=N/A' in html_out
+    assert 'Median=0.85' in html_out

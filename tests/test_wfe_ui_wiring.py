@@ -3,7 +3,7 @@
 import json
 
 import pytest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QLabel
 from app.ui.main_window import MainWindow
 from app.services.validation_pipeline_service import PipelineConfig, PipelineResult
 from core.models.strategy import Strategy
@@ -458,3 +458,144 @@ def test_export_archive_handler_missing_dataset_metadata_blocks_service(
 
     assert calls == []
     assert warnings
+
+
+# ---------------------------------------------------------------------------
+# Price-noise stress UI controls (Task 062J-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_price_noise_controls_exist_and_defaults(main_window):
+    """Price-noise controls must exist with correct defaults."""
+    assert hasattr(main_window, 'price_noise_checkbox')
+    assert hasattr(main_window, 'price_noise_pct_spin')
+    assert hasattr(main_window, 'price_noise_iter_spin')
+    assert hasattr(main_window, 'price_noise_seed_spin')
+    assert not main_window.price_noise_checkbox.isChecked()
+    assert main_window.price_noise_pct_spin.value() == 0.005
+    assert main_window.price_noise_iter_spin.value() == 50
+    assert main_window.price_noise_seed_spin.value() == 42
+    assert not main_window.price_noise_pct_spin.isEnabled()
+    assert not main_window.price_noise_iter_spin.isEnabled()
+    assert not main_window.price_noise_seed_spin.isEnabled()
+
+
+def test_price_noise_noise_input_uses_fraction_wording(main_window):
+    """Noise input wording must not imply percent units while config uses fractions."""
+    labels = [label.text() for label in main_window.findChildren(QLabel)]
+
+    assert "Noise fraction:" in labels
+    assert "Noise %:" not in labels
+    assert "0.005 = 0.5%" in main_window.price_noise_pct_spin.toolTip()
+
+
+def test_price_noise_spins_enabled_when_checked(main_window):
+    """Spinboxes must enable when checkbox is checked."""
+    main_window.price_noise_checkbox.setChecked(True)
+    assert main_window.price_noise_pct_spin.isEnabled()
+    assert main_window.price_noise_iter_spin.isEnabled()
+    assert main_window.price_noise_seed_spin.isEnabled()
+    main_window.price_noise_checkbox.setChecked(False)
+    assert not main_window.price_noise_pct_spin.isEnabled()
+    assert not main_window.price_noise_iter_spin.isEnabled()
+    assert not main_window.price_noise_seed_spin.isEnabled()
+
+
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_price_noise_unchecked_passes_false(mock_run, main_window):
+    """Unchecked checkbox must pass run_price_noise_stress=False."""
+    main_window.price_noise_checkbox.setChecked(False)
+    main_window._handle_run()
+    mock_run.assert_called_once()
+    config = mock_run.call_args.kwargs["config"]
+    assert config.run_price_noise_stress is False
+    assert config.price_noise_pct == 0.005
+    assert config.price_noise_iterations == 50
+    assert config.price_noise_seed == 42
+
+
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_price_noise_checked_passes_custom_values(mock_run, main_window):
+    """Checked checkbox must pass custom values."""
+    main_window.price_noise_checkbox.setChecked(True)
+    main_window.price_noise_pct_spin.setValue(0.02)
+    main_window.price_noise_iter_spin.setValue(100)
+    main_window.price_noise_seed_spin.setValue(77)
+    main_window._handle_run()
+    mock_run.assert_called_once()
+    config = mock_run.call_args.kwargs["config"]
+    assert config.run_price_noise_stress is True
+    assert config.price_noise_pct == 0.02
+    assert config.price_noise_iterations == 100
+    assert config.price_noise_seed == 77
+
+
+# ---------------------------------------------------------------------------
+# Precheck UI controls (Task 063E-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_precheck_controls_exist_and_defaults(main_window):
+    """Precheck controls must exist with correct defaults."""
+    assert hasattr(main_window, "precheck_checkbox")
+    assert hasattr(main_window, "precheck_nonpositive_checkbox")
+    assert not main_window.precheck_checkbox.isChecked()
+    assert not main_window.precheck_nonpositive_checkbox.isChecked()
+    assert not main_window.precheck_nonpositive_checkbox.isEnabled()
+
+
+def test_precheck_nonpositive_enabled_when_parent_checked(main_window):
+    """Non-positive checkbox must enable when parent is checked."""
+    assert not main_window.precheck_nonpositive_checkbox.isEnabled()
+    main_window.precheck_checkbox.setChecked(True)
+    assert main_window.precheck_nonpositive_checkbox.isEnabled()
+    main_window.precheck_checkbox.setChecked(False)
+    assert not main_window.precheck_nonpositive_checkbox.isEnabled()
+
+
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_precheck_unchecked_passes_false(mock_run, main_window):
+    """Unchecked parent must pass both precheck fields as False."""
+    main_window.precheck_checkbox.setChecked(False)
+    main_window._handle_run()
+    mock_run.assert_called_once()
+    config = mock_run.call_args.kwargs["config"]
+    assert config.run_is_baseline_quality_precheck is False
+    assert config.fail_is_baseline_on_nonpositive_pnl is False
+
+
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_precheck_parent_checked_nonpositive_checked(mock_run, main_window):
+    """Parent + nonpositive both checked must pass True/True."""
+    main_window.precheck_checkbox.setChecked(True)
+    main_window.precheck_nonpositive_checkbox.setChecked(True)
+    main_window._handle_run()
+    mock_run.assert_called_once()
+    config = mock_run.call_args.kwargs["config"]
+    assert config.run_is_baseline_quality_precheck is True
+    assert config.fail_is_baseline_on_nonpositive_pnl is True
+
+
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_precheck_parent_checked_nonpositive_unchecked(mock_run, main_window):
+    """Parent checked but nonpositive unchecked must pass True/False."""
+    main_window.precheck_checkbox.setChecked(True)
+    main_window.precheck_nonpositive_checkbox.setChecked(False)
+    main_window._handle_run()
+    mock_run.assert_called_once()
+    config = mock_run.call_args.kwargs["config"]
+    assert config.run_is_baseline_quality_precheck is True
+    assert config.fail_is_baseline_on_nonpositive_pnl is False
+
+
+# ---------------------------------------------------------------------------
+# Data import format guidance — Task 065A
+# ---------------------------------------------------------------------------
+
+
+def test_data_format_guide_label_exists(main_window):
+    """The Data page must show a format guidance label near the import button."""
+    assert hasattr(main_window, "data_format_guide_label")
+    label = main_window.data_format_guide_label
+    assert label.text() != ""
+    assert "CSV" in label.text() or "csv" in label.text() or "Date" in label.text()

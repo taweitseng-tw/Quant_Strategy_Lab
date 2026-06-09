@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QRectF
+from PySide6.QtGui import QColor, QPainter, QPen, QPolygonF
 from PySide6.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -11,6 +12,143 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+
+class _WFEquityChart(QWidget):
+    """Small WF per-window equity line chart using PySide6 only."""
+
+    CHART_HEIGHT = 200
+    MARGIN = 40
+    PASS_COLOR = QColor("#4CAF50")
+    FAIL_COLOR = QColor("#F44336")
+    AXIS_COLOR = QColor("#8e8e93")
+
+    def __init__(self, windows: list[dict], parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._windows = windows
+        self._setup_ui()
+
+    def _setup_ui(self) -> None:
+        from PySide6.QtWidgets import QGraphicsView, QGraphicsScene
+
+        self._scene = QGraphicsScene(self)
+        self._view = QGraphicsView(self._scene)
+        self._view.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self._view.setStyleSheet("border: none; background: #1e1e24;")
+        self._view.setFixedHeight(self.CHART_HEIGHT)
+        self._view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self._view)
+
+        self._draw_chart()
+
+    def _draw_chart(self) -> None:
+        if not self._windows:
+            return
+
+        # Determine the longest equity curve for x-range.
+        max_len = max(len(w["equity_curve"]) for w in self._windows)
+        if max_len < 2:
+            return
+
+        # Determine y-range across all windows.
+        all_values = [v for w in self._windows for v in w["equity_curve"]]
+        y_min, y_max = min(all_values), max(all_values)
+        y_range = y_max - y_min or 1.0
+
+        w = max(300, max_len * 2)  # scene width
+        h = self.CHART_HEIGHT
+        m = self.MARGIN
+        plot_w = w - 2 * m
+        plot_h = h - 2 * m
+
+        self._scene.addLine(m, m, m, m + plot_h, QPen(self.AXIS_COLOR, 1.0))
+        self._scene.addLine(m, m + plot_h, m + plot_w, m + plot_h, QPen(self.AXIS_COLOR, 1.0))
+
+        label_specs = [
+            (f"{y_max:,.0f}", 4, m - 8),
+            (f"{y_min:,.0f}", 4, m + plot_h - 8),
+            ("bar 0", m, h - 28),
+            (f"bar {max_len - 1}", m + plot_w - 46, h - 28),
+        ]
+        for text, x_pos, y_pos in label_specs:
+            item = self._scene.addText(text)
+            item.setDefaultTextColor(self.AXIS_COLOR)
+            item.setPos(x_pos, y_pos)
+
+        def _to_scene(bar_idx: int, equity: float) -> tuple[float, float]:
+            sx = m + (bar_idx / (max_len - 1)) * plot_w if max_len > 1 else m
+            sy = m + ((y_max - equity) / y_range) * plot_h
+            return sx, sy
+
+        for win in self._windows:
+            curve = win.get("equity_curve", [])
+            if not isinstance(curve, list) or len(curve) < 2:
+                continue
+            color = self.PASS_COLOR if win.get("passed") else self.FAIL_COLOR
+            pen = QPen(color, 1.5)
+            poly = QPolygonF()
+            for i, val in enumerate(curve):
+                sx, sy = _to_scene(i, val)
+                poly.append(QRectF(sx, sy, 0, 0).topLeft())
+            self._scene.addPolygon(poly, pen)
+
+        self._scene.setSceneRect(0, 0, w, h)
+
+
+class _MCEquityChart(QWidget):
+    """Single-line equity chart for MC worst-case (trade-step) equity curve."""
+
+    CHART_HEIGHT = 150
+    MARGIN = 40
+
+    def __init__(self, equity_curve: list[float], curve_type: str = "trade_step",
+                 parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._curve = equity_curve
+        self._curve_type = curve_type
+        self._setup_ui()
+
+    def _setup_ui(self) -> None:
+        from PySide6.QtWidgets import QGraphicsView, QGraphicsScene
+
+        self._scene = QGraphicsScene(self)
+        self._view = QGraphicsView(self._scene)
+        self._view.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self._view.setStyleSheet("border: none; background: #1e1e24;")
+        self._view.setFixedHeight(self.CHART_HEIGHT)
+        self._view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self._view)
+        self._draw_chart()
+
+    def _draw_chart(self) -> None:
+        curve = self._curve
+        if not curve or len(curve) < 2:
+            return
+
+        y_min, y_max = min(curve), max(curve)
+        y_range = y_max - y_min or 1.0
+        w = max(300, len(curve) * 2)
+        h = self.CHART_HEIGHT
+        m = self.MARGIN
+        plot_w = w - 2 * m
+        plot_h = h - 2 * m
+
+        pen = QPen(QColor("#FF9800"), 1.5)
+        poly = QPolygonF()
+        for i, val in enumerate(curve):
+            sx = m + (i / (len(curve) - 1)) * plot_w if len(curve) > 1 else m
+            sy = m + ((y_max - val) / y_range) * plot_h
+            poly.append(QRectF(sx, sy, 0, 0).topLeft())
+        self._scene.addPolygon(poly, pen)
+        self._scene.setSceneRect(0, 0, w, h)
 
 
 class ValidationSummary(QWidget):
@@ -112,6 +250,26 @@ class ValidationSummary(QWidget):
                 warnings = s.get("warnings", []) or []
                 for w in warnings:
                     stress_lines.append(f"  → ⚠ {w}")
+
+            # Detail sub-lines for price_noise (Task 062N-Impl).
+            if name == "price_noise":
+                assumptions = s.get("assumptions", {}) or {}
+                noise_pct = assumptions.get("noise_pct", "?")
+                noise_str = (
+                    f"{noise_pct:.1%}"
+                    if isinstance(noise_pct, (int, float)) and not isinstance(noise_pct, bool)
+                    else str(noise_pct)
+                )
+                iterations = assumptions.get("iterations", "?")
+                method = assumptions.get("method", "?")
+                research_only = assumptions.get("research_only", "?")
+                stress_lines.append(
+                    f"  → Noise: {noise_str}, Iterations: {iterations}, "
+                    f"Method: {method}, Research only: {research_only}"
+                )
+                warnings = s.get("warnings", []) or []
+                for w in warnings:
+                    stress_lines.append(f"  → ⚠ {w}")
         self._add_section("Stress Tests", "\n".join(stress_lines) if stress_lines else "No stress results.")
 
         # --- Monte Carlo ---
@@ -148,13 +306,46 @@ class ValidationSummary(QWidget):
                         )
                 self._add_section("Bootstrap MC", "\n".join(lines))
 
+        # --- MC Worst-Case Equity Chart ---
+        wc_curve = mc.get("worst_case_equity_curve")
+        if isinstance(wc_curve, list) and len(wc_curve) >= 2:
+            raw_curve_type = str(mc.get("worst_case_equity_curve_type", "trade_step"))
+            display_curve_type = raw_curve_type.replace("_", "-")
+            if raw_curve_type == "trade_step":
+                curve_note = "surviving trades only; not bar-by-bar equity"
+            else:
+                curve_note = "curve type not verified as bar-by-bar equity"
+            label = f"MC Worst-Case Equity ({display_curve_type})"
+            self._add_section(label, f"Curve type: {display_curve_type} ({curve_note}). Points: {len(wc_curve)}")
+            chart = _MCEquityChart(wc_curve, curve_type=raw_curve_type)
+            chart_frame = QFrame()
+            chart_frame.setStyleSheet("QFrame { border: none; background: transparent; }")
+            chart_layout = QVBoxLayout(chart_frame)
+            chart_layout.setContentsMargins(14, 0, 14, 10)
+            chart_layout.addWidget(chart)
+            self._layout.addWidget(chart_frame)
+
         # --- Walk-forward ---
         wf = self._get(result, "walk_forward_summary", {}) or {}
-        self._add_section("Walk-Forward", (
+        wf_text = (
             f"Windows: {wf.get('window_count', '?')}  |  "
             f"Passed: {wf.get('pass_count', '?')}  |  "
             f"Pass Rate: {(wf.get('pass_rate', 0) or 0) * 100:.0f}%"
-        ) if wf else "Walk-forward skipped (dataset too short).")
+        )
+        # WF Efficiency (optional).
+        has_wfe = "average_wfe" in wf or "median_wfe" in wf
+        if has_wfe:
+            avg_wfe = wf.get("average_wfe")
+            med_wfe = wf.get("median_wfe")
+            avg_str = f"{avg_wfe:.2f}" if avg_wfe is not None else "N/A"
+            med_str = f"{med_wfe:.2f}" if med_wfe is not None else "N/A"
+            defined_count = wf.get("defined_wfe_count", 0)
+            undefined_count = wf.get("undefined_wfe_count", 0)
+            wf_text += (
+                f"  |  WFE: Avg={avg_str}, Median={med_str}, "
+                f"Defined={defined_count}, Undefined={undefined_count}"
+            )
+        self._add_section("Walk-Forward", wf_text if wf else "Walk-forward skipped (dataset too short).")
 
         # --- WF Equity Summary ---
         windows = wf.get("windows") or []
@@ -176,6 +367,16 @@ class ValidationSummary(QWidget):
             if len(equity_windows) > MAX_SHOW:
                 lines.append(f"... {len(equity_windows) - MAX_SHOW} more windows")
             self._add_section("WF Equity Summary", "\n".join(lines))
+
+            # WF Equity line chart.
+            chart = _WFEquityChart(equity_windows)
+            # Wrap the chart in a QFrame for consistency with cards.
+            chart_frame = QFrame()
+            chart_frame.setStyleSheet("QFrame { border: none; background: transparent; }")
+            chart_layout = QVBoxLayout(chart_frame)
+            chart_layout.setContentsMargins(14, 0, 14, 10)
+            chart_layout.addWidget(chart)
+            self._layout.addWidget(chart_frame)
 
         # --- Walk-forward Matrix ---
         wfm = self._get(result, "walk_forward_matrix_summary", {}) or {}
