@@ -1196,6 +1196,20 @@ class MainWindow(QMainWindow):
         dialog.condition_added.connect(on_condition_added)
         dialog.exec()
 
+    def _set_import_busy(self) -> None:
+        """Set import button to busy state while an import is running."""
+        self.btn_import_data.setEnabled(False)
+        self.btn_import_data.setText("Importing...")
+        self.btn_import_data.setToolTip("Import in progress - please wait.")
+        QApplication.processEvents()
+
+    def _set_import_idle(self) -> None:
+        """Restore import button to idle state after import completes or fails."""
+        self.btn_import_data.setEnabled(True)
+        self.btn_import_data.setText("Import OHLCV Data File")
+        self.btn_import_data.setToolTip("Select an OHLCV CSV or TXT file to import historical data.")
+        QApplication.processEvents()
+
     def _handle_import_ohlcv_data(self) -> None:
         from PySide6.QtWidgets import QFileDialog, QMessageBox
         import os
@@ -1212,10 +1226,7 @@ class MainWindow(QMainWindow):
 
         filename = os.path.basename(file_path)
         self.log_panel.add_message("INFO", f"Importing historical research data from: {file_path}...")
-        self.btn_import_data.setEnabled(False)
-        self.btn_import_data.setText("Importing...")
-        self.btn_import_data.setToolTip("Import in progress - please wait.")
-        QApplication.processEvents()
+        self._set_import_busy()
         
         try:
             # Import file through service layer (uses CsvImporter under the hood).
@@ -1288,9 +1299,7 @@ class MainWindow(QMainWindow):
                 user_msg
             )
         finally:
-            self.btn_import_data.setEnabled(True)
-            self.btn_import_data.setText("Import OHLCV Data File")
-            self.btn_import_data.setToolTip("Select an OHLCV CSV or TXT file to import historical data.")
+            self._set_import_idle()
 
     def _handle_new_project(self) -> None:
         from PySide6.QtWidgets import QFileDialog, QMessageBox, QInputDialog
