@@ -391,3 +391,35 @@ def test_import_button_enabled_after_failure(qapp, tmp_dir):
 
     assert window.btn_import_data.isEnabled(), "Import button must be enabled after failure"
     assert window.btn_import_data.text() == "Import OHLCV Data File"
+
+
+# ---------------------------------------------------------------------------
+# Data page stable objectName values (Task 081A-081F)
+# ---------------------------------------------------------------------------
+
+
+def test_import_button_has_object_name(qapp):
+    """Import button must have a stable objectName."""
+    window = MainWindow()
+    try:
+        assert window.btn_import_data.objectName() == "btnImportData"
+    finally:
+        window.close()
+
+
+def test_data_status_label_has_object_name(qapp):
+    """Data status label must have a stable objectName."""
+    window = MainWindow()
+    try:
+        assert window.data_status_label.objectName() == "dataStatusLabel"
+    finally:
+        window.close()
+
+
+def test_data_format_guide_label_has_object_name(qapp):
+    """Data format guide label must have a stable objectName."""
+    window = MainWindow()
+    try:
+        assert window.data_format_guide_label.objectName() == "dataFormatGuideLabel"
+    finally:
+        window.close()

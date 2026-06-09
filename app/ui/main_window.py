@@ -139,9 +139,11 @@ class MainWindow(QMainWindow):
                 control_layout.setSpacing(12)
                 
                 self.data_status_label = QLabel("Historical Research Data: None loaded (Using default mock data)")
+                self.data_status_label.setObjectName("dataStatusLabel")
                 self.data_status_label.setStyleSheet("color: #ffb300; font-weight: bold; font-size: 12px;")
                 
                 self.btn_import_data = QPushButton("Import OHLCV Data File")
+                self.btn_import_data.setObjectName("btnImportData")
                 self.btn_import_data.setStyleSheet("""
                     QPushButton {
                         background-color: #26a69a;
@@ -163,6 +165,7 @@ class MainWindow(QMainWindow):
                 
                 format_guide = DataService.get_expected_format_guide()
                 self.data_format_guide_label = QLabel(format_guide.splitlines()[0])
+                self.data_format_guide_label.setObjectName("dataFormatGuideLabel")
                 self.data_format_guide_label.setToolTip(format_guide)
                 self.data_format_guide_label.setStyleSheet("color: #888; font-size: 11px; padding-left: 4px;")
                 self.data_format_guide_label.setWordWrap(True)
