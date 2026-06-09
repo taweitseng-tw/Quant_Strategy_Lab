@@ -10,8 +10,10 @@ from core.models.strategy import Condition, Strategy, StrategyBlock
 from app.services.validation_pipeline_service import (
     PipelineConfig,
     PipelineResult,
+    _mc_to_dict,
     run_validation_pipeline,
 )
+from validation_engine.monte_carlo import MonteCarloResult
 
 
 # ---------------------------------------------------------------------------
@@ -732,3 +734,57 @@ def test_price_noise_same_seed_deterministic():
     pn1 = next(s for s in r1.stress_results if s["test_name"] == "price_noise")
     pn2 = next(s for s in r2.stress_results if s["test_name"] == "price_noise")
     assert pn1 == pn2
+
+
+# ---------------------------------------------------------------------------
+# MC worst-case equity serialization (Task 063D-Codex Review)
+# ---------------------------------------------------------------------------
+
+
+def test_mc_to_dict_omits_worst_case_equity_when_absent():
+    mc = MonteCarloResult(
+        test_name="missed_trade_mc",
+        iterations=3,
+        percentile_summary={"total_pnl": {"p5": -10.0}},
+        worst_case={"total_pnl": -10.0},
+    )
+
+    serialized = _mc_to_dict(mc)
+
+    assert "worst_case_equity_curve" not in serialized
+    assert "worst_case_equity_curve_type" not in serialized
+
+
+def test_mc_to_dict_includes_worst_case_equity_metadata_when_present():
+    mc = MonteCarloResult(
+        test_name="missed_trade_mc",
+        iterations=3,
+        percentile_summary={"total_pnl": {"p5": -10.0}},
+        worst_case={"total_pnl": -10.0},
+        worst_case_equity_curve=[1000.0, 950.0],
+        worst_case_equity_curve_type="trade_step",
+        warnings=["worst_case_equity_curve is a trade-step curve."],
+    )
+
+    serialized = _mc_to_dict(mc)
+
+    assert serialized["worst_case_equity_curve"] == [1000.0, 950.0]
+    assert serialized["worst_case_equity_curve_type"] == "trade_step"
+    assert "trade-step" in serialized["warnings"][0]
+
+
+def test_pipeline_collects_mc_worst_case_equity_metadata():
+    df = _make_df(200)
+    strat = _make_strategy()
+    cfg = PipelineConfig(mc_iterations=10, mc_base_seed=42)
+
+    result = run_validation_pipeline(df, strat, config=cfg, commission=2.0)
+    mc = result.monte_carlo_summary or {}
+
+    if result.baseline_metrics.get("total_trades", 0) == 0:
+        assert "worst_case_equity_curve" not in mc
+        return
+
+    assert mc["worst_case_equity_curve"][0] >= 0.0
+    assert mc["worst_case_equity_curve_type"] == "trade_step"
+    assert any("trade-step" in w for w in mc.get("warnings", []))

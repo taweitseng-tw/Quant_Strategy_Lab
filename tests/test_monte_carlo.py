@@ -7,9 +7,11 @@ import pandas as pd
 import pytest
 
 from core.models.strategy import Condition, Strategy, StrategyBlock
+from core.models.backtest_result import BacktestResult, Trade
 from backtest_engine.runner import run_backtest
 from validation_engine.monte_carlo import (
     MonteCarloResult,
+    _is_worse_iteration,
     run_missed_trade_monte_carlo,
     run_slippage_monte_carlo,
     run_combined_monte_carlo,
@@ -669,3 +671,148 @@ def test_bootstrap_mc_existing_mc_unchanged():
     assert isinstance(r, MonteCarloResult)
     assert r.confidence_intervals is None  # not set by non-bootstrap MC
 
+
+
+# ---------------------------------------------------------------------------
+# Worst-case equity curve (Task 063D-Impl)
+# ---------------------------------------------------------------------------
+
+
+def test_worst_case_equity_default_none():
+    """MonteCarloResult.worst_case_equity_curve must be None by default."""
+    r = MonteCarloResult(test_name="test", iterations=0)
+    assert r.worst_case_equity_curve is None
+
+
+def test_worst_case_equity_collected_when_enabled():
+    """Opt-in collect_worst_case_equity=True must populate the curve."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy(10)
+    baseline = run_backtest(strat, df, commission=2.0)
+    r = run_missed_trade_monte_carlo(
+        baseline,
+        iterations=10,
+        miss_probability=0.1,
+        base_seed=42,
+        collect_worst_case_equity=True,
+    )
+    assert r.worst_case_equity_curve is not None
+    assert len(r.worst_case_equity_curve) >= 1
+    assert r.worst_case_equity_curve[0] >= 0.0  # initial capital
+    assert r.worst_case_equity_curve_type == "trade_step"
+    assert any("trade-step" in w for w in r.warnings)
+
+
+def test_worst_case_equity_not_collected_when_disabled():
+    """Default collect_worst_case_equity=False must NOT populate the curve."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy(10)
+    baseline = run_backtest(strat, df, commission=2.0)
+    r = run_missed_trade_monte_carlo(
+        baseline,
+        iterations=10,
+        miss_probability=0.1,
+        base_seed=42,
+        collect_worst_case_equity=False,
+    )
+    assert r.worst_case_equity_curve is None
+
+
+def test_worst_case_equity_deterministic():
+    """Same seed must produce identical worst-case equity curves."""
+    df = _make_test_df(200)
+    strat = _make_sma_strategy(10)
+    baseline = run_backtest(strat, df, commission=2.0)
+    r1 = run_missed_trade_monte_carlo(
+        baseline, iterations=10, miss_probability=0.1,
+        base_seed=42, collect_worst_case_equity=True,
+    )
+    r2 = run_missed_trade_monte_carlo(
+        baseline, iterations=10, miss_probability=0.1,
+        base_seed=42, collect_worst_case_equity=True,
+    )
+    assert r1.worst_case_equity_curve == r2.worst_case_equity_curve
+
+
+def test_worst_case_equity_zero_trades_vacuously_empty():
+    """Zero-trade baseline should not crash."""
+    df = _make_test_df(50)
+    strat = Strategy(name="empty")
+    baseline = run_backtest(strat, df)
+    r = run_missed_trade_monte_carlo(
+        baseline, iterations=5, miss_probability=0.1,
+        base_seed=42, collect_worst_case_equity=True,
+    )
+    assert r.worst_case_equity_curve is None
+
+
+def test_worst_iteration_tie_break_prefers_lower_pnl_then_higher_drawdown():
+    """Worst selection must use PnL first, then absolute drawdown."""
+    current = {"total_pnl": -100.0, "max_drawdown_pnl": 25.0}
+
+    assert _is_worse_iteration(
+        {"total_pnl": -101.0, "max_drawdown_pnl": 1.0},
+        current,
+    )
+    assert _is_worse_iteration(
+        {"total_pnl": -100.0, "max_drawdown_pnl": 30.0},
+        current,
+    )
+    assert not _is_worse_iteration(
+        {"total_pnl": -100.0, "max_drawdown_pnl": 25.0},
+        current,
+    )
+
+
+def test_worst_case_equity_uses_trade_step_curve_for_selected_worst_iteration(monkeypatch):
+    """Collection must keep the selected worst iteration curve, not a percentile curve."""
+    trades = [
+        Trade(pd.Timestamp("2024-01-01"), pd.Timestamp("2024-01-01 00:01"), "long", 1.0, 1.0, pnl=10.0),
+        Trade(pd.Timestamp("2024-01-01"), pd.Timestamp("2024-01-01 00:02"), "long", 1.0, 1.0, pnl=-50.0),
+    ]
+    baseline = BacktestResult(
+        trades=trades,
+        metrics={"total_trades": 2, "total_pnl": -40.0, "max_drawdown_pnl": 50.0},
+        assumptions={"initial_capital": 1000.0},
+    )
+    calls = [
+        {"total_trades": 2, "total_pnl": 10.0, "max_drawdown_pnl": 5.0},
+        {"total_trades": 1, "total_pnl": -50.0, "max_drawdown_pnl": 50.0},
+        {"total_trades": 2, "total_pnl": -50.0, "max_drawdown_pnl": 60.0},
+    ]
+
+    def fake_stress_random_missed_trades(_baseline, *, miss_probability, seed):
+        from types import SimpleNamespace
+        metrics = calls[seed]
+        if seed == 1:
+            assumptions = {"stressed_trade_count": 1, "baseline_trade_count": 2}
+        else:
+            assumptions = {"stressed_trade_count": 2, "baseline_trade_count": 2}
+        return SimpleNamespace(stressed_metrics=metrics, assumptions=assumptions)
+
+    random_sequences = {
+        0: [0.2, 0.2],  # both trades survive -> 1000, 1010, 960
+        1: [0.0, 0.2],  # only second survives -> 1000, 950
+        2: [0.2, 0.2],  # both survive; tie on PnL, worse DD -> selected
+    }
+
+    class FakeRandom:
+        def __init__(self, seed):
+            self.values = iter(random_sequences[seed])
+
+        def random(self):
+            return next(self.values)
+
+    monkeypatch.setattr("validation_engine.monte_carlo.stress_random_missed_trades", fake_stress_random_missed_trades)
+    monkeypatch.setattr("validation_engine.monte_carlo.random.Random", FakeRandom)
+
+    result = run_missed_trade_monte_carlo(
+        baseline,
+        iterations=3,
+        miss_probability=0.1,
+        base_seed=0,
+        collect_worst_case_equity=True,
+    )
+
+    assert result.worst_case_equity_curve == [1000.0, 1010.0, 960.0]
+    assert result.worst_case_equity_curve_type == "trade_step"

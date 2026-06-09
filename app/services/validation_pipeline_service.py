@@ -252,6 +252,7 @@ def run_validation_pipeline(
         iterations=cfg.mc_iterations,
         miss_probability=cfg.mc_miss_probability,
         base_seed=cfg.mc_base_seed,
+        collect_worst_case_equity=True,
     )
     mc_summary = _mc_to_dict(mc)
 
@@ -358,11 +359,18 @@ def _stress_to_dict(sr) -> dict:
 
 
 def _mc_to_dict(mc) -> dict:
-    return {
+    d = {
         "iterations": mc.iterations,
         "percentile_summary": mc.percentile_summary,
         "worst_case": mc.worst_case,
     }
+    if mc.worst_case_equity_curve is not None:
+        d["worst_case_equity_curve"] = mc.worst_case_equity_curve
+        if getattr(mc, "worst_case_equity_curve_type", None):
+            d["worst_case_equity_curve_type"] = mc.worst_case_equity_curve_type
+    if getattr(mc, "warnings", None):
+        d["warnings"] = list(mc.warnings)
+    return d
 
 
 def _bootstrap_mc_to_dict(mc) -> dict | None:

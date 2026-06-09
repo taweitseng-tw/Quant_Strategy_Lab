@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
+from math import isclose
 
 import numpy as np
 import pandas as pd
@@ -39,6 +40,8 @@ class MonteCarloResult:
     percentiles_used: tuple[float, ...] = field(default_factory=lambda: (5.0, 25.0, 50.0, 75.0, 95.0))
     stability_score: float | None = None
     confidence_intervals: dict[str, dict[str, float]] | None = None
+    worst_case_equity_curve: list[float] | None = None
+    worst_case_equity_curve_type: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -53,6 +56,7 @@ def run_missed_trade_monte_carlo(
     miss_probability: float = 0.1,
     base_seed: int = 42,
     percentiles: tuple[float, ...] = (5.0, 25.0, 50.0, 75.0, 95.0),
+    collect_worst_case_equity: bool = False,
 ) -> MonteCarloResult:
     """Run *iterations* random-missed-trade simulations.
 
@@ -69,6 +73,8 @@ def run_missed_trade_monte_carlo(
         Probability [0, 1] of missing any given trade.
     base_seed : int
         Seed for iteration 0; iteration *i* uses ``base_seed + i``.
+    collect_worst_case_equity : bool
+        When True, captures a trade-step equity curve for the worst iteration.
 
     Returns
     -------
@@ -82,16 +88,28 @@ def run_missed_trade_monte_carlo(
             warnings=["Baseline has zero trades — Monte Carlo is vacuously empty."],
         )
 
+    initial_capital = float(baseline.assumptions.get("initial_capital", 100000.0))
+
     metrics: list[dict] = []
+    worst_metric: dict | None = None
+    worst_equity_curve: list[float] | None = None
     for i in range(iterations):
         result = stress_random_missed_trades(
             baseline,
             miss_probability=miss_probability,
             seed=base_seed + i,
         )
-        metrics.append(dict(result.stressed_metrics))
+        metric = dict(result.stressed_metrics)
+        metrics.append(metric)
+        if collect_worst_case_equity:
+            rng = random.Random(base_seed + i)
+            surviving_trades = [t for t in baseline.trades if rng.random() >= miss_probability]
+            equity_curve = _trade_step_equity_curve(surviving_trades, initial_capital)
+            if worst_metric is None or _is_worse_iteration(metric, worst_metric):
+                worst_metric = metric
+                worst_equity_curve = equity_curve
 
-    return _build_mc_result(
+    result = _build_mc_result(
         test_name="missed_trade_mc",
         iterations=iterations,
         baseline_metrics=baseline.metrics,
@@ -103,6 +121,16 @@ def run_missed_trade_monte_carlo(
         },
         percentiles=percentiles,
     )
+
+    if collect_worst_case_equity and worst_equity_curve is not None:
+        result.worst_case_equity_curve = worst_equity_curve
+        result.worst_case_equity_curve_type = "trade_step"
+        result.warnings.append(
+            "worst_case_equity_curve is a trade-step curve reconstructed from surviving trades, "
+            "not a bar-by-bar equity curve."
+        )
+
+    return result
 
 
 def run_slippage_monte_carlo(
@@ -353,6 +381,32 @@ _METRIC_KEYS = (
     "total_trades", "total_pnl", "profit_factor",
     "max_drawdown_pnl", "win_rate", "avg_trade",
 )
+
+
+def _trade_step_equity_curve(trades: list, initial_capital: float) -> list[float]:
+    """Return an initial-capital plus per-surviving-trade equity path."""
+    equity = [initial_capital]
+    for trade in trades:
+        equity.append(equity[-1] + float(getattr(trade, "pnl", 0.0)))
+    return equity
+
+
+def _is_worse_iteration(candidate: dict, current: dict) -> bool:
+    """Return True when candidate is worse by PnL, then absolute drawdown.
+
+    Ties intentionally keep the current iteration so the lower iteration index
+    wins without carrying indices through the comparison.
+    """
+    candidate_pnl = float(candidate.get("total_pnl", 0.0))
+    current_pnl = float(current.get("total_pnl", 0.0))
+    if candidate_pnl < current_pnl and not isclose(candidate_pnl, current_pnl, rel_tol=0.0, abs_tol=1e-12):
+        return True
+    if not isclose(candidate_pnl, current_pnl, rel_tol=0.0, abs_tol=1e-12):
+        return False
+
+    candidate_dd = abs(float(candidate.get("max_drawdown_pnl", 0.0)))
+    current_dd = abs(float(current.get("max_drawdown_pnl", 0.0)))
+    return candidate_dd > current_dd and not isclose(candidate_dd, current_dd, rel_tol=0.0, abs_tol=1e-12)
 
 
 def _build_mc_result(
