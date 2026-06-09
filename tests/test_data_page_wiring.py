@@ -346,14 +346,33 @@ def test_import_button_disabled_during_import(qapp, tmp_dir):
     mock_critical.assert_not_called()
 
 
-def test_import_button_enabled_after_success(qapp, tmp_dir):
-    """Import button must be re-enabled after successful import."""
+def test_import_success_resets_validation_state(qapp, tmp_dir):
+    """After successful import, validation state must be cleared even if prior validation existed."""
+    from app.services.validation_pipeline_service import PipelineResult
+
     window = MainWindow()
     csv_file = tmp_dir / "sample_ok.csv"
     pd.DataFrame({
         "Date": ["2026/01/01"], "Time": ["09:00"], "Open": [100.0],
         "High": [101.0], "Low": [99.0], "Close": [100.5], "TotalVolume": [1000],
     }).to_csv(csv_file, index=False)
+
+    stale_dataset = pd.DataFrame({"Close": [1.0]})
+    stale_meta = object()
+    stale_quality = object()
+    window._loaded_dataset = stale_dataset
+    window._active_dataset_meta = stale_meta
+    window._active_dataset_quality = stale_quality
+
+    # Simulate prior successful validation state.
+    window.latest_validation_result = PipelineResult(
+        baseline_metrics={"total_pnl": 100},
+        elimination_result={"passed": True},
+    )
+    window.export_action.setEnabled(True)
+    window.export_action.setToolTip("Export the latest validation report.")
+    window.validation_status_label.setText("Validation completed.")
+    window.validation_status_label.show()
 
     try:
         with (
@@ -368,8 +387,26 @@ def test_import_button_enabled_after_success(qapp, tmp_dir):
     finally:
         window.close()
 
+    # Button restored.
     assert window.btn_import_data.isEnabled(), "Import button must be enabled after success"
     assert window.btn_import_data.text() == "Import OHLCV Data File"
+
+    # Dataset state replaced (not None — import succeeded).
+    assert window._loaded_dataset is not None, "Loaded dataset must be set after success"
+    assert window._active_dataset_meta is not None, "Active dataset meta must be set"
+    assert window._active_dataset_quality is not None, "Active dataset quality must be set"
+    assert window._loaded_dataset is not stale_dataset
+    assert window._active_dataset_meta is not stale_meta
+    assert window._active_dataset_quality is not stale_quality
+
+    # Validation state reset (via _reset_validation_state).
+    assert window.latest_validation_result is None, "Validation result must be cleared"
+    assert not window.export_action.isEnabled(), "Export must be disabled after new import"
+    assert "run validation" in window.export_action.toolTip().lower(), (
+        "Export tooltip must explain why disabled"
+    )
+    assert window.validation_status_label.isHidden(), "Status label must be hidden"
+    assert window.validation_status_label.text() == "", "Status text must be empty"
 
 
 def test_import_failure_clears_all_state(qapp, tmp_dir):
