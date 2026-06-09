@@ -253,6 +253,7 @@ class MainWindow(QMainWindow):
                 self.btn_export_python.clicked.connect(self._handle_export_code)
                 
                 self.btn_export_json = QPushButton("Export JSON")
+                self.btn_export_json.setObjectName("btnExportJson")
                 self.btn_export_json.setStyleSheet("""
                     QPushButton {
                         background-color: #fbc02d;

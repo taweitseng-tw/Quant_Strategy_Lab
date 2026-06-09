@@ -97,3 +97,9 @@ def test_json_import_preview_cancel_flow(mock_open, main_window):
     
     # Should not crash, and should not show any message
     win._handle_import_json_preview()
+
+
+def test_export_json_button_has_object_name(main_window):
+    """Export JSON button must have a stable objectName."""
+    assert hasattr(main_window, "btn_export_json")
+    assert main_window.btn_export_json.objectName() == "btnExportJson"
