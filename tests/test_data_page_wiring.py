@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import tempfile
 import shutil
+from contextlib import contextmanager
 from pathlib import Path
 import pandas as pd
 import numpy as np
@@ -24,6 +25,37 @@ def _write_valid_ohlcv_csv(path: Path) -> None:
         "Date": ["2026/01/01"], "Time": ["09:00"], "Open": [100.0],
         "High": [101.0], "Low": [99.0], "Close": [100.5], "TotalVolume": [1000],
     }).to_csv(path, index=False)
+
+
+@contextmanager
+def _patch_file_dialog(path: str):
+    """Context manager that patches QFileDialog.getOpenFileName to return *path*."""
+    with patch(
+        "PySide6.QtWidgets.QFileDialog.getOpenFileName",
+        return_value=(path, ""),
+    ):
+        yield
+
+
+@contextmanager
+def _patch_import_success(path: str):
+    """Context manager patching file dialog + info/critical message boxes for a successful import."""
+    with (
+        patch("PySide6.QtWidgets.QFileDialog.getOpenFileName", return_value=(str(path), "")),
+        patch("PySide6.QtWidgets.QMessageBox.information"),
+        patch("PySide6.QtWidgets.QMessageBox.critical"),
+    ):
+        yield
+
+
+@contextmanager
+def _patch_import_failure(path: str):
+    """Context manager patching file dialog + critical message box for a failed import."""
+    with (
+        patch("PySide6.QtWidgets.QFileDialog.getOpenFileName", return_value=(str(path), "")),
+        patch("PySide6.QtWidgets.QMessageBox.critical"),
+    ):
+        yield
 
 
 @pytest.fixture(scope="module")
@@ -378,14 +410,7 @@ def test_import_success_resets_validation_state(qapp, tmp_dir):
     window.validation_status_label.show()
 
     try:
-        with (
-            patch(
-                "PySide6.QtWidgets.QFileDialog.getOpenFileName",
-                return_value=(str(csv_file), ""),
-            ),
-            patch("PySide6.QtWidgets.QMessageBox.information"),
-            patch("PySide6.QtWidgets.QMessageBox.critical"),
-        ):
+        with _patch_import_success(csv_file):
             window._handle_import_ohlcv_data()
     finally:
         window.close()
@@ -435,13 +460,7 @@ def test_import_failure_clears_all_state(qapp, tmp_dir):
     window.export_action.setToolTip("Export the latest validation report.")
 
     try:
-        with (
-            patch(
-                "PySide6.QtWidgets.QFileDialog.getOpenFileName",
-                return_value=(str(missing), ""),
-            ),
-            patch("PySide6.QtWidgets.QMessageBox.critical"),
-        ):
+        with _patch_import_failure(missing):
             window._handle_import_ohlcv_data()
     finally:
         window.close()
@@ -566,14 +585,7 @@ def test_data_status_label_after_successful_import(qapp, tmp_dir):
     _write_valid_ohlcv_csv(csv_file)
 
     try:
-        with (
-            patch(
-                "PySide6.QtWidgets.QFileDialog.getOpenFileName",
-                return_value=(str(csv_file), ""),
-            ),
-            patch("PySide6.QtWidgets.QMessageBox.information"),
-            patch("PySide6.QtWidgets.QMessageBox.critical"),
-        ):
+        with _patch_import_success(csv_file):
             window._handle_import_ohlcv_data()
 
         text = window.data_status_label.text()
@@ -591,13 +603,7 @@ def test_data_status_label_after_import_failure(qapp, tmp_dir):
     missing = tmp_dir / "nonexistent.csv"
 
     try:
-        with (
-            patch(
-                "PySide6.QtWidgets.QFileDialog.getOpenFileName",
-                return_value=(str(missing), ""),
-            ),
-            patch("PySide6.QtWidgets.QMessageBox.critical"),
-        ):
+        with _patch_import_failure(missing):
             window._handle_import_ohlcv_data()
 
         text = window.data_status_label.text()
@@ -612,10 +618,7 @@ def test_data_status_label_preserved_on_cancel(qapp):
     window = MainWindow()
     original_text = window.data_status_label.text()
 
-    with patch(
-        "PySide6.QtWidgets.QFileDialog.getOpenFileName",
-        return_value=("", ""),
-    ):
+    with _patch_file_dialog(""):
         window._handle_import_ohlcv_data()
 
     try:
@@ -687,14 +690,7 @@ def test_import_button_tooltip_restored_after_success(qapp, tmp_dir):
     csv_file = tmp_dir / "sample_ok.csv"
     _write_valid_ohlcv_csv(csv_file)
 
-    with (
-        patch(
-            "PySide6.QtWidgets.QFileDialog.getOpenFileName",
-            return_value=(str(csv_file), ""),
-        ),
-        patch("PySide6.QtWidgets.QMessageBox.information"),
-        patch("PySide6.QtWidgets.QMessageBox.critical"),
-    ):
+    with _patch_import_success(csv_file):
         window._handle_import_ohlcv_data()
 
     try:
@@ -712,13 +708,7 @@ def test_import_button_tooltip_restored_after_failure(qapp, tmp_dir):
     window = MainWindow()
     missing = tmp_dir / "nonexistent.csv"
 
-    with (
-        patch(
-            "PySide6.QtWidgets.QFileDialog.getOpenFileName",
-            return_value=(str(missing), ""),
-        ),
-        patch("PySide6.QtWidgets.QMessageBox.critical"),
-    ):
+    with _patch_import_failure(missing):
         window._handle_import_ohlcv_data()
 
     try:
@@ -736,10 +726,7 @@ def test_import_button_tooltip_restored_after_cancel(qapp):
     window = MainWindow()
     original_tip = window.btn_import_data.toolTip()
 
-    with patch(
-        "PySide6.QtWidgets.QFileDialog.getOpenFileName",
-        return_value=("", ""),
-    ):
+    with _patch_file_dialog(""):
         window._handle_import_ohlcv_data()
 
     try:
