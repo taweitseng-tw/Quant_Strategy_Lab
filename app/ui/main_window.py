@@ -1293,6 +1293,9 @@ class MainWindow(QMainWindow):
                 self.data_status_label.setStyleSheet("color: #26a69a; font-weight: bold; font-size: 12px;")
             else:
                 self.data_status_label.setStyleSheet("color: #ef5350; font-weight: bold; font-size: 12px;")
+            self.data_status_label.setToolTip(
+                DataService.format_quality_evidence(quality)
+            )
             
             self.log_panel.add_message(
                 "INFO",

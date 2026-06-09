@@ -161,6 +161,32 @@ class DataService:
             "Check that the file is a valid OHLCV CSV/TXT file with the expected format."
         )
 
+    @staticmethod
+    def format_quality_evidence(quality: DataQualityReport) -> str:
+        """Format a DataQualityReport into a compact multi-line summary string.
+
+        Returns a tooltip-ready string with pass/fail status, warning/error
+        counts, and the first few issue descriptions.
+        """
+        lines: list[str] = []
+        if quality.passed:
+            lines.append("Quality: Passed")
+        else:
+            lines.append(f"Quality: Failed ({len(quality.errors)} error(s))")
+        if quality.warnings:
+            lines.append(f"{len(quality.warnings)} warning(s):")
+            for w in quality.warnings[:3]:
+                lines.append(f"  - {w}")
+            if len(quality.warnings) > 3:
+                lines.append(f"  ... and {len(quality.warnings) - 3} more")
+        if not quality.passed:
+            lines.append(f"{len(quality.errors)} error(s):")
+            for e in quality.errors[:3]:
+                lines.append(f"  - {e}")
+            if len(quality.errors) > 3:
+                lines.append(f"  ... and {len(quality.errors) - 3} more")
+        return "\n".join(lines)
+
 
 def _timeframe_to_minutes(tf: str) -> int | None:
     """Convert a timeframe string like '1min' or '5min' to integer minutes."""

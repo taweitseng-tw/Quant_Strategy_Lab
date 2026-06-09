@@ -15,6 +15,7 @@ from unittest.mock import patch
 
 from app.ui.main_window import MainWindow
 from app.services.data_service import DataService
+from data_engine.quality_checker import DataQualityReport
 from app.widgets.candlestick_chart import CandlestickChart, PYQTGRAPH_AVAILABLE
 
 
@@ -731,5 +732,125 @@ def test_import_button_tooltip_restored_after_cancel(qapp):
 
     try:
         assert window.btn_import_data.toolTip() == original_tip
+    finally:
+        window.close()
+
+
+# ---------------------------------------------------------------------------
+# Data quality evidence surface tests (Task 105A-105C)
+# ---------------------------------------------------------------------------
+
+
+class TestFormatQualityEvidence:
+    """Unit tests for DataService.format_quality_evidence()."""
+
+    def test_clean_quality(self):
+        """Clean report must show 'Passed' with no issues."""
+        report = DataQualityReport(passed=True)
+        text = DataService.format_quality_evidence(report)
+        assert "Passed" in text
+        assert "error" not in text.lower()
+        assert "warning" not in text.lower()
+
+    def test_quality_with_warnings(self):
+        """Report with warnings must list them."""
+        report = DataQualityReport(
+            passed=True,
+            warnings=["Found 3 time gap(s) > 2 min", "Found 2 large jumps"],
+        )
+        text = DataService.format_quality_evidence(report)
+        assert "Passed" in text
+        assert "warning" in text.lower()
+        assert "time gap" in text
+        assert "large jump" in text
+
+    def test_quality_with_errors(self):
+        """Failed report must list errors."""
+        report = DataQualityReport(
+            passed=False,
+            errors=["Found 5 row(s) where high < low", "Column 'volume' has 2 null value(s)"],
+        )
+        text = DataService.format_quality_evidence(report)
+        assert "Failed" in text
+        assert "error" in text.lower()
+        assert "high < low" in text
+
+    def test_quality_with_both(self):
+        """Failed report with both errors and warnings must show both."""
+        report = DataQualityReport(
+            passed=False,
+            errors=["Column 'volume' has nulls"],
+            warnings=["Found 3 time gap(s)"],
+        )
+        text = DataService.format_quality_evidence(report)
+        assert "Failed" in text
+        assert "error" in text.lower()
+        assert "warning" in text.lower()
+        assert "nulls" in text
+        assert "time gap" in text
+
+    def test_quality_with_many_issues_truncated(self):
+        """More than 3 errors/warnings must show count of remaining."""
+        report = DataQualityReport(
+            passed=False,
+            errors=[f"Error {i}" for i in range(5)],
+            warnings=[f"Warning {i}" for i in range(5)],
+        )
+        text = DataService.format_quality_evidence(report)
+        assert "2 more" in text  # truncation indicator
+        assert "and 2 more" in text
+
+
+# ---------------------------------------------------------------------------
+# Integration: quality tooltip on data status label after import
+# ---------------------------------------------------------------------------
+
+
+def test_quality_tooltip_on_clean_import(qapp, tmp_dir):
+    """After clean import, status label tooltip must show quality passed."""
+    window = MainWindow()
+    csv_file = tmp_dir / "sample_clean.csv"
+    _write_valid_ohlcv_csv(csv_file)
+
+    with _patch_import_success(csv_file):
+        window._handle_import_ohlcv_data()
+
+    try:
+        tip = window.data_status_label.toolTip()
+        assert tip, "Tooltip must contain quality evidence on successful import"
+        assert "Passed" in tip
+        assert "Quality" in tip
+    finally:
+        window.close()
+
+
+def test_quality_tooltip_on_warning_import(qapp, tmp_dir):
+    """After import with warnings, tooltip must mention warnings."""
+    window = MainWindow()
+    csv_file = tmp_dir / "sample_gappy.csv"
+    # Write a CSV with a time gap to trigger a warning.
+    pd.DataFrame({
+        "Date": ["2026/01/01", "2026/01/02"],
+        "Time": ["09:00", "09:00"],
+        "Open": [100.0, 101.0],
+        "High": [101.0, 102.0],
+        "Low": [99.0, 100.0],
+        "Close": [100.5, 101.5],
+        "TotalVolume": [1000, 1100],
+    }).to_csv(csv_file, index=False)
+
+    with _patch_import_success(csv_file):
+        window._handle_import_ohlcv_data()
+
+    try:
+        tip = window.data_status_label.toolTip()
+        # With default check_quality(..., outlier_pct_threshold=5.0), the
+        # second bar's 1% close change is within threshold, but the gap
+        # between two bars on different dates with expected 1min frequency
+        # will trigger a time gap warning.
+        assert tip, "Tooltip must exist"
+        assert "Passed" in tip
+        assert "warning" in tip.lower()
+        assert "time gap" in tip.lower()
     finally:
         window.close()

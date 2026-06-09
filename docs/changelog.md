@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-10 - Task 105A-105C: Data Quality Evidence Surface
+
+### Added
+- `DataService.format_quality_evidence()` formats `DataQualityReport` status, warning count, error count, and first issues for UI display.
+- Data page status label tooltip now shows quality evidence after successful import.
+- `tests/test_data_page_wiring.py`: Added focused formatting and tooltip coverage for clean, warning, and failed quality reports.
+
+### Changed
+- `docs/task_board.md`: Added Task 105A-105C to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_data_page_wiring.py -q` - 37 passed.
+- `git diff --check` passes with CRLF warnings only.
+
 ## 2026-06-09 - Agent Loop Same-Round Fix Attempts
 
 ### Added
