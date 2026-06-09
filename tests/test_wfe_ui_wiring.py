@@ -711,6 +711,11 @@ def test_run_button_reenabled_after_error(mock_run, main_window):
 # ---------------------------------------------------------------------------
 
 
+def test_export_button_disabled_by_default(main_window):
+    """Export button must be disabled until validation succeeds."""
+    assert not main_window.export_action.isEnabled()
+
+
 def test_export_button_disabled_during_pipeline(main_window):
     """Export button must be disabled before the pipeline service is called."""
     captured = {}

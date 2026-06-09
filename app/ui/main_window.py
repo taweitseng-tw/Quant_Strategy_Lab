@@ -105,7 +105,7 @@ class MainWindow(QMainWindow):
                 action.triggered.connect(self._handle_run)
                 self.run_action = action
             elif label == "Export Report":
-                action.setEnabled(True)
+                action.setEnabled(False)
                 action.triggered.connect(self._handle_export_report)
                 self.export_action = action
             else:
