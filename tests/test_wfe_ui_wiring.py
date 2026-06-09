@@ -993,3 +993,26 @@ def test_export_archive_button_has_object_name(main_window):
     """Export Archive button must have a stable objectName."""
     assert hasattr(main_window, "btn_export_archive")
     assert main_window.btn_export_archive.objectName() == "btnExportArchive"
+
+
+# ---------------------------------------------------------------------------
+# Validate page config control objectName (Task 096A-096F)
+# ---------------------------------------------------------------------------
+
+
+def test_wfe_checkbox_has_object_name(main_window):
+    """WFE checkbox must have a stable objectName."""
+    assert hasattr(main_window, "wfe_checkbox")
+    assert main_window.wfe_checkbox.objectName() == "chkWFE"
+
+
+def test_price_noise_checkbox_has_object_name(main_window):
+    """Price-Noise checkbox must have a stable objectName."""
+    assert hasattr(main_window, "price_noise_checkbox")
+    assert main_window.price_noise_checkbox.objectName() == "chkPriceNoise"
+
+
+def test_precheck_checkbox_has_object_name(main_window):
+    """Precheck checkbox must have a stable objectName."""
+    assert hasattr(main_window, "precheck_checkbox")
+    assert main_window.precheck_checkbox.objectName() == "chkPrecheck"

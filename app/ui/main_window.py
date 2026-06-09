@@ -329,6 +329,7 @@ class MainWindow(QMainWindow):
                 self.validation_summary = ValidationSummary()
                 from PySide6.QtWidgets import QCheckBox
                 self.wfe_checkbox = QCheckBox("Calculate WFE")
+                self.wfe_checkbox.setObjectName("chkWFE")
                 self.wfe_checkbox.setToolTip("Runs an extra in-sample backtest per walk-forward window. Slower; diagnostic only.")
                 
                 page = QFrame()
@@ -429,6 +430,7 @@ class MainWindow(QMainWindow):
 
                 # Price-noise stress controls.
                 self.price_noise_checkbox = QCheckBox("Price-Noise Stress")
+                self.price_noise_checkbox.setObjectName("chkPriceNoise")
                 self.price_noise_checkbox.setToolTip(
                     "Adds Gaussian noise to OHLC prices. "
                     "Helps detect overfit strategies. Off by default."
@@ -481,6 +483,7 @@ class MainWindow(QMainWindow):
 
                 # IS Baseline Quality Precheck controls.
                 self.precheck_checkbox = QCheckBox("IS Baseline Quality Precheck")
+                self.precheck_checkbox.setObjectName("chkPrecheck")
                 self.precheck_checkbox.setToolTip(
                     "Skips stress/MC/WF when baseline has zero trades. Opt-in."
                 )
