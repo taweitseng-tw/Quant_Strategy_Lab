@@ -744,8 +744,47 @@ def test_export_button_reenabled_after_success(mock_run, main_window):
 
 
 @patch("app.ui.main_window.run_validation_pipeline")
-def test_export_button_reenabled_after_error(mock_run, main_window):
-    """Export button must be re-enabled after pipeline error."""
+def test_export_button_disabled_after_error(mock_run, main_window):
+    """Export button must remain disabled after pipeline error."""
+    main_window.export_action.setEnabled(True)
     mock_run.side_effect = ValueError("Pipeline failure")
     main_window._handle_run()
-    assert main_window.export_action.isEnabled(), "Export button must be enabled after error"
+    assert not main_window.export_action.isEnabled(), "Export must stay disabled after error"
+
+
+# ---------------------------------------------------------------------------
+# Validation state reset on dataset change (Task 075A-075F)
+# ---------------------------------------------------------------------------
+
+
+def test_reset_validation_state_clears_status(main_window):
+    """_reset_validation_state must hide label, clear text, and clear result."""
+    # Simulate a successful run state
+    main_window.validation_status_label.setText("Validation completed.")
+    main_window.validation_status_label.show()
+    main_window.latest_validation_result = PipelineResult(
+        baseline_metrics={"total_pnl": 100},
+        elimination_result={"passed": True},
+    )
+    main_window.export_action.setEnabled(True)
+
+    # Reset
+    main_window._reset_validation_state()
+
+    assert main_window.validation_status_label.isHidden()
+    assert main_window.validation_status_label.text() == ""
+    assert main_window.latest_validation_result is None
+
+
+def test_reset_validation_state_disables_export(main_window):
+    """_reset_validation_state must disable the export button."""
+    main_window.export_action.setEnabled(True)
+    main_window._reset_validation_state()
+    assert not main_window.export_action.isEnabled(), "Export must be disabled after reset"
+
+
+def test_reset_validation_state_does_not_touch_run(main_window):
+    """_reset_validation_state must not affect the run button."""
+    main_window.run_action.setEnabled(True)
+    main_window._reset_validation_state()
+    assert main_window.run_action.isEnabled(), "Run button must remain enabled"

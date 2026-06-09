@@ -644,7 +644,6 @@ class MainWindow(QMainWindow):
                 "Export Successful",
                 f"The backtest report has been successfully exported to:\n{file_path}"
             )
-            
         except Exception as e:
             self.log_panel.add_message("ERROR", f"Failed to export report: {e}")
             QMessageBox.critical(
@@ -1230,6 +1229,7 @@ class MainWindow(QMainWindow):
             self._loaded_dataset = df
             self._active_dataset_meta = meta
             self._active_dataset_quality = quality
+            self._reset_validation_state()
 
             # Display normalized data in candlestick chart
             self.data_chart.set_data(df, is_mock=False)
@@ -1268,6 +1268,7 @@ class MainWindow(QMainWindow):
             self._loaded_dataset = None
             self._active_dataset_meta = None
             self._active_dataset_quality = None
+            self._reset_validation_state()
             self.data_status_label.setText("Historical Research Data: None loaded (Using default mock data)")
             self.data_status_label.setStyleSheet("color: #ffb300; font-weight: bold; font-size: 12px;")
             user_msg = DataService.get_actionable_import_error(e)
@@ -1323,6 +1324,7 @@ class MainWindow(QMainWindow):
             self._loaded_dataset = None
             self._active_dataset_meta = None
             self._active_dataset_quality = None
+            self._reset_validation_state()
             self.data_status_label.setText("Historical Research Data: None loaded (Using default mock data)")
             self.data_status_label.setStyleSheet("color: #ffb300; font-weight: bold; font-size: 12px;")
             
@@ -1378,6 +1380,7 @@ class MainWindow(QMainWindow):
             self._loaded_dataset = None
             self._active_dataset_meta = None
             self._active_dataset_quality = None
+            self._reset_validation_state()
             self.data_status_label.setText("Historical Research Data: None loaded (Using default mock data)")
             self.data_status_label.setStyleSheet("color: #ffb300; font-weight: bold; font-size: 12px;")
             
@@ -1442,6 +1445,13 @@ class MainWindow(QMainWindow):
         from app.services.strategy_persistence_service import StrategyPersistenceService
         return StrategyPersistenceService(self.project_service.repository.db)
 
+    def _reset_validation_state(self) -> None:
+        """Clear stale validation UI state when dataset or project changes."""
+        self.validation_status_label.hide()
+        self.validation_status_label.setText("")
+        self.latest_validation_result = None
+        self.export_action.setEnabled(False)
+
     def _handle_run(self) -> None:
         """Execute the validation pipeline on current data/strategy."""
         import pandas as pd
@@ -1481,7 +1491,6 @@ class MainWindow(QMainWindow):
                 self.validation_status_label.hide()
                 QApplication.processEvents()
                 self.run_action.setEnabled(True)
-                self.export_action.setEnabled(True)
                 return
             source_label = self._active_dataset_meta.name if self._active_dataset_meta else "Loaded data"
             self.log_panel.add_message("INFO", f"Using active dataset: {source_label}")
@@ -1610,6 +1619,7 @@ class MainWindow(QMainWindow):
                 f"Baseline PnL: {result.baseline_metrics.get('total_pnl', 0):.0f}\n"
                 f"Elimination: {'✓ Passed' if result.elimination_result and result.elimination_result['passed'] else '✗ Eliminated'}"
             )
+            self.export_action.setEnabled(True)
         except Exception as e:
             self.log_panel.add_message("ERROR", f"Validation pipeline failed: {e}")
             self.inspector_label.setText(
@@ -1624,7 +1634,6 @@ class MainWindow(QMainWindow):
             QApplication.processEvents()
         finally:
             self.run_action.setEnabled(True)
-            self.export_action.setEnabled(True)
             QApplication.processEvents()
 
     def _handle_save(self) -> None:
