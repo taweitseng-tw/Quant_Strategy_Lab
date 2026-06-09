@@ -599,3 +599,38 @@ def test_data_format_guide_label_exists(main_window):
     label = main_window.data_format_guide_label
     assert label.text() != ""
     assert "CSV" in label.text() or "csv" in label.text() or "Date" in label.text()
+
+
+# ---------------------------------------------------------------------------
+# Validation run progress indicator (Task 071A-071F)
+# ---------------------------------------------------------------------------
+
+
+def test_validation_status_label_exists_and_hidden_by_default(main_window):
+    """Status label must exist on the Validate page and be hidden initially."""
+    assert hasattr(main_window, "validation_status_label")
+    label = main_window.validation_status_label
+    assert label.isHidden(), "Status must be hidden by default"
+
+
+
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_validation_status_shows_completed_on_success(mock_run, main_window):
+    """Status label must show completion message after success."""
+    mock_run.return_value = PipelineResult(
+        baseline_metrics={"total_pnl": 1000, "profit_factor": 1.5, "total_trades": 10},
+        elimination_result={"passed": True},
+    )
+    main_window._handle_run()
+    assert not main_window.validation_status_label.isHidden()
+    assert "completed" in main_window.validation_status_label.text().lower()
+
+
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_validation_status_shows_error_on_failure(mock_run, main_window):
+    """Status label must show error message when pipeline raises."""
+    mock_run.side_effect = ValueError("Test pipeline crash")
+    main_window._handle_run()
+    assert not main_window.validation_status_label.isHidden()
+    assert "failed" in main_window.validation_status_label.text().lower()
+    assert "Test pipeline crash" in main_window.validation_status_label.text()

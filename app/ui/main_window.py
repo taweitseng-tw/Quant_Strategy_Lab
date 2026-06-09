@@ -494,6 +494,14 @@ class MainWindow(QMainWindow):
                 precheck_layout.addStretch()
                 layout.addLayout(precheck_layout)
 
+                # Validation run progress / status indicator.
+                self.validation_status_label = QLabel()
+                self.validation_status_label.setStyleSheet(
+                    "font-weight: bold; font-size: 12px; padding: 4px 0;"
+                )
+                self.validation_status_label.hide()
+                layout.addWidget(self.validation_status_label)
+
                 layout.addWidget(self.validation_summary)
                 self.workspace.addWidget(page)
             elif page_name == "Settings":
@@ -1441,6 +1449,14 @@ class MainWindow(QMainWindow):
 
         self.log_panel.add_message("INFO", "Validation pipeline started.")
 
+        # Show progress indicator.
+        self.validation_status_label.setText("Running validation pipeline...")
+        self.validation_status_label.setStyleSheet(
+            "color: #ffb300; font-weight: bold; font-size: 12px; padding: 4px 0;"
+        )
+        self.validation_status_label.show()
+        QApplication.processEvents()
+
         # Determine dataset — use loaded data or fall back to mock.
         df = self._loaded_dataset
         is_mock = df is None
@@ -1457,6 +1473,8 @@ class MainWindow(QMainWindow):
                     "Pipeline Aborted",
                     "Cannot run validation pipeline. The active dataset has failed quality checks."
                 )
+                self.validation_status_label.hide()
+                QApplication.processEvents()
                 return
             source_label = self._active_dataset_meta.name if self._active_dataset_meta else "Loaded data"
             self.log_panel.add_message("INFO", f"Using active dataset: {source_label}")
@@ -1572,6 +1590,12 @@ class MainWindow(QMainWindow):
             self.log_panel.add_message("INFO",
                 f"Validation pipeline completed successfully"
                 f"{' (mock data)' if is_mock else ' (loaded data)'}.")
+            # Clear progress indicator on success.
+            self.validation_status_label.setText("Validation completed.")
+            self.validation_status_label.setStyleSheet(
+                "color: #4caf50; font-weight: bold; font-size: 12px; padding: 4px 0;"
+            )
+            QApplication.processEvents()
             self.inspector_label.setText(
                 "Validate Inspector\n\n"
                 f"Last run: {source_label},\n"
@@ -1586,6 +1610,12 @@ class MainWindow(QMainWindow):
                 "Validate Inspector\n\nValidation pipeline encountered an error.\n"
                 f"Details: {e}"
             )
+            # Show error state on status indicator.
+            self.validation_status_label.setText(f"Validation failed: {e}")
+            self.validation_status_label.setStyleSheet(
+                "color: #ef5350; font-weight: bold; font-size: 12px; padding: 4px 0;"
+            )
+            QApplication.processEvents()
 
     def _handle_save(self) -> None:
         from PySide6.QtWidgets import QMessageBox
