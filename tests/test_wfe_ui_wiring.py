@@ -12,6 +12,27 @@ from unittest.mock import patch
 from data_engine.quality_checker import DataQualityReport
 
 
+def _success_result(total_pnl: int = 1000) -> PipelineResult:
+    """Return a minimal PipelineResult that passes elimination."""
+    return PipelineResult(
+        baseline_metrics={
+            "total_pnl": total_pnl,
+            "profit_factor": 1.5,
+            "total_trades": 10,
+        },
+        elimination_result={"passed": True},
+    )
+
+
+def _set_prior_validation_state(window: MainWindow, total_pnl: int = 1000) -> None:
+    """Set up a prior successful validation state on *window*."""
+    window.latest_validation_result = _success_result(total_pnl=total_pnl)
+    window.export_action.setEnabled(True)
+    window.export_action.setToolTip("Export the latest validation report.")
+    window.validation_status_label.setText("Validation completed.")
+    window.validation_status_label.show()
+
+
 @pytest.fixture
 def app():
     app = QApplication.instance()
@@ -623,10 +644,7 @@ def test_validation_status_set_before_pipeline_call(main_window):
         # Capture label state at the moment the mock is called.
         captured["text"] = main_window.validation_status_label.text()
         captured["hidden"] = main_window.validation_status_label.isHidden()
-        return PipelineResult(
-            baseline_metrics={"total_pnl": 1000, "profit_factor": 1.5, "total_trades": 10},
-            elimination_result={"passed": True},
-        )
+        return _success_result()
 
     patcher = patch("app.ui.main_window.run_validation_pipeline", side_effect=_side_effect)
     patcher.start()
@@ -644,10 +662,7 @@ def test_validation_status_set_before_pipeline_call(main_window):
 @patch("app.ui.main_window.run_validation_pipeline")
 def test_validation_status_shows_completed_on_success(mock_run, main_window):
     """Status label must show completion message after success."""
-    mock_run.return_value = PipelineResult(
-        baseline_metrics={"total_pnl": 1000, "profit_factor": 1.5, "total_trades": 10},
-        elimination_result={"passed": True},
-    )
+    mock_run.return_value = _success_result()
     main_window._handle_run()
     assert not main_window.validation_status_label.isHidden()
     assert "completed" in main_window.validation_status_label.text().lower()
@@ -674,10 +689,7 @@ def test_run_button_disabled_during_pipeline(main_window):
 
     def _side_effect(*args, **kwargs):
         captured["enabled"] = main_window.run_action.isEnabled()
-        return PipelineResult(
-            baseline_metrics={"total_pnl": 1000, "profit_factor": 1.5, "total_trades": 10},
-            elimination_result={"passed": True},
-        )
+        return _success_result()
 
     patcher = patch("app.ui.main_window.run_validation_pipeline", side_effect=_side_effect)
     patcher.start()
@@ -692,10 +704,7 @@ def test_run_button_disabled_during_pipeline(main_window):
 @patch("app.ui.main_window.run_validation_pipeline")
 def test_run_button_reenabled_after_success(mock_run, main_window):
     """Run button must be re-enabled after successful pipeline completion."""
-    mock_run.return_value = PipelineResult(
-        baseline_metrics={"total_pnl": 1000, "profit_factor": 1.5, "total_trades": 10},
-        elimination_result={"passed": True},
-    )
+    mock_run.return_value = _success_result()
     main_window._handle_run()
     assert main_window.run_action.isEnabled(), "Run button must be enabled after success"
 
@@ -724,10 +733,7 @@ def test_export_button_disabled_during_pipeline(main_window):
 
     def _side_effect(*args, **kwargs):
         captured["enabled"] = main_window.export_action.isEnabled()
-        return PipelineResult(
-            baseline_metrics={"total_pnl": 1000, "profit_factor": 1.5, "total_trades": 10},
-            elimination_result={"passed": True},
-        )
+        return _success_result()
 
     patcher = patch("app.ui.main_window.run_validation_pipeline", side_effect=_side_effect)
     patcher.start()
@@ -742,10 +748,7 @@ def test_export_button_disabled_during_pipeline(main_window):
 @patch("app.ui.main_window.run_validation_pipeline")
 def test_export_button_reenabled_after_success(mock_run, main_window):
     """Export button must be re-enabled after successful pipeline completion."""
-    mock_run.return_value = PipelineResult(
-        baseline_metrics={"total_pnl": 1000, "profit_factor": 1.5, "total_trades": 10},
-        elimination_result={"passed": True},
-    )
+    mock_run.return_value = _success_result()
     main_window._handle_run()
     assert main_window.export_action.isEnabled(), "Export button must be enabled after success"
 
@@ -811,10 +814,7 @@ def test_export_action_default_tooltip(main_window):
 @patch("app.ui.main_window.run_validation_pipeline")
 def test_export_tooltip_updated_after_success(mock_run, main_window):
     """Tooltip must indicate export is available after successful validation."""
-    mock_run.return_value = PipelineResult(
-        baseline_metrics={"total_pnl": 1000, "profit_factor": 1.5, "total_trades": 10},
-        elimination_result={"passed": True},
-    )
+    mock_run.return_value = _success_result()
     main_window._handle_run()
     tip = main_window.export_action.toolTip()
     assert "export" in tip.lower() and "report" in tip.lower(), (
@@ -880,14 +880,7 @@ def test_new_project_resets_validation_state(main_window, tmp_path, monkeypatch)
     from PySide6.QtWidgets import QInputDialog, QFileDialog, QMessageBox
 
     # Simulate prior successful validation run.
-    main_window.validation_status_label.setText("Validation completed.")
-    main_window.validation_status_label.show()
-    main_window.latest_validation_result = PipelineResult(
-        baseline_metrics={"total_pnl": 100},
-        elimination_result={"passed": True},
-    )
-    main_window.export_action.setEnabled(True)
-    main_window.export_action.setToolTip("Export the latest validation report.")
+    _set_prior_validation_state(main_window, total_pnl=100)
 
     # Patch Qt dialogs to return fake values.
     monkeypatch.setattr(QInputDialog, "getText", lambda *a, **k: ("test_project", True))
@@ -933,14 +926,7 @@ def test_open_project_resets_validation_state(main_window, tmp_path, monkeypatch
     from PySide6.QtWidgets import QFileDialog, QMessageBox
 
     # Simulate prior successful validation run.
-    main_window.validation_status_label.setText("Validation completed.")
-    main_window.validation_status_label.show()
-    main_window.latest_validation_result = PipelineResult(
-        baseline_metrics={"total_pnl": 100},
-        elimination_result={"passed": True},
-    )
-    main_window.export_action.setEnabled(True)
-    main_window.export_action.setToolTip("Export the latest validation report.")
+    _set_prior_validation_state(main_window, total_pnl=100)
 
     # Patch Qt dialogs.
     monkeypatch.setattr(
