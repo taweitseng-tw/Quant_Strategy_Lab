@@ -351,6 +351,7 @@ class MainWindow(QMainWindow):
                 # Remove-best-N stress controls.
                 from PySide6.QtWidgets import QSpinBox, QDoubleSpinBox
                 self.remove_best_n_checkbox = QCheckBox("Remove Best N Trades Stress")
+                self.remove_best_n_checkbox.setObjectName("chkRemoveBestN")
                 self.remove_best_n_checkbox.setToolTip(
                     "Removes the top N best-performing trades and rechecks performance. "
                     "Requires >N trades to be meaningful. Off by default."
@@ -390,6 +391,7 @@ class MainWindow(QMainWindow):
 
                 # Bootstrap MC controls.
                 self.bootstrap_checkbox = QCheckBox("Bootstrap Monte Carlo")
+                self.bootstrap_checkbox.setObjectName("chkBootstrap")
                 self.bootstrap_checkbox.setToolTip(
                     "Resamples trades with replacement to compute 95% confidence intervals. "
                     "Heavier (200 iterations). Off by default."

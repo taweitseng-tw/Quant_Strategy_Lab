@@ -1016,3 +1016,15 @@ def test_precheck_checkbox_has_object_name(main_window):
     """Precheck checkbox must have a stable objectName."""
     assert hasattr(main_window, "precheck_checkbox")
     assert main_window.precheck_checkbox.objectName() == "chkPrecheck"
+
+
+def test_remove_best_n_checkbox_has_object_name(main_window):
+    """Remove Best N checkbox must have a stable objectName."""
+    assert hasattr(main_window, "remove_best_n_checkbox")
+    assert main_window.remove_best_n_checkbox.objectName() == "chkRemoveBestN"
+
+
+def test_bootstrap_checkbox_has_object_name(main_window):
+    """Bootstrap checkbox must have a stable objectName."""
+    assert hasattr(main_window, "bootstrap_checkbox")
+    assert main_window.bootstrap_checkbox.objectName() == "chkBootstrap"
