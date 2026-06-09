@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Task 113A-113C - InstrumentService Config Isolation Smoke
 - [x] Task 112A-112C - ProjectService Config Boundary Smoke
 - [x] Task 111A-111C - Project Config Open-Preserve Tests
 - [x] Task 110A-110C - Project Config Template Integrity Tests

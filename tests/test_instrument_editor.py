@@ -170,6 +170,43 @@ def test_instrument_service_disk_persistence(tmp_project_dir) -> None:
     assert not any(item["symbol"] == "MY_SYM" for item in after_delete_data)
 
 
+def test_instrument_service_save_preserves_unrelated_config_files(tmp_project_dir) -> None:
+    """Saving instrument profiles must not mutate sessions or app settings."""
+    sessions_path = tmp_project_dir / "config" / "sessions.json"
+    settings_path = tmp_project_dir / "config" / "app_settings.json"
+    sessions_data = [{"name": "custom_session", "start": "09:00", "end": "13:30"}]
+    settings_data = {
+        "execution_model": "next_bar_open",
+        "same_bar_ambiguity": "stop_loss_first",
+        "custom_key": "preserve-me",
+    }
+    sessions_path.write_text(json.dumps(sessions_data, indent=2), encoding="utf-8")
+    settings_path.write_text(json.dumps(settings_data, indent=2), encoding="utf-8")
+
+    service = InstrumentService(tmp_project_dir)
+    profile = InstrumentProfile(
+        symbol="QSL",
+        name="QSL Test",
+        market="Test",
+        tick_size=0.5,
+        point_value=10.0,
+        commission_value=1.0,
+        slippage_ticks=1.0,
+        currency="USD",
+        session_template="custom_session",
+    )
+    service.save_profile(profile)
+
+    instruments_path = tmp_project_dir / "config" / "instruments.json"
+    instruments = json.loads(instruments_path.read_text(encoding="utf-8"))
+    assert any(item["symbol"] == "QSL" for item in instruments)
+    assert json.loads(sessions_path.read_text(encoding="utf-8")) == sessions_data
+    assert json.loads(settings_path.read_text(encoding="utf-8")) == settings_data
+
+    reloaded = InstrumentService(tmp_project_dir)
+    assert any(p.symbol == "QSL" for p in reloaded.get_profiles())
+
+
 # ---------------------------------------------------------------------------
 # InstrumentEditor UI Widget Tests
 # ---------------------------------------------------------------------------

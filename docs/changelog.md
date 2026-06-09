@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Task 113A-113C: InstrumentService Config Isolation Smoke
+
+### Added
+- `tests/test_instrument_editor.py`: Added InstrumentService project-mode test proving profile save writes valid instruments JSON, preserves `sessions.json` and `app_settings.json`, and reloads the saved profile.
+
+### Changed
+- `docs/task_board.md`: Added Task 113A-113C to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_instrument_editor.py -q` - 9 passed.
+- `git diff --check` passes with CRLF warnings only.
+
 ## 2026-06-10 - Task 112A-112C: ProjectService Config Boundary Smoke
 
 ### Added
