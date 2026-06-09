@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-06-10 - Task 107A-107C: Data Quality Tooltip Reset Hardening
+
+### Fixed
+- Data page status tooltip now clears stale quality evidence after import exceptions, new project, and open project flows while preserving state on canceled import.
+
+### Added
+- `tests/test_data_page_wiring.py`: Added focused stale tooltip reset coverage for failed import, cancel, new project, and open project paths.
+
+### Changed
+- `docs/task_board.md`: Added Task 107A-107C to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_data_page_wiring.py -q` - 42 passed.
+- `git diff --check` passes with CRLF warnings only.
+
 ## 2026-06-10 - Task 106A-106C: Data Quality Failure Evidence Hardening
 
 ### Added

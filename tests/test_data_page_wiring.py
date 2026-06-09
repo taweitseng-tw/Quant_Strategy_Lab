@@ -913,3 +913,117 @@ def test_quality_tooltip_on_failed_quality(qapp, tmp_dir):
         assert "Failed" in text, f"Status label should show Failed, got: {text!r}"
     finally:
         window.close()
+
+
+# ---------------------------------------------------------------------------
+# Stale tooltip reset tests (Task 107A-107C)
+# ---------------------------------------------------------------------------
+
+
+def test_import_failure_clears_quality_tooltip(qapp, tmp_dir):
+    """After import exception, quality tooltip must be cleared."""
+    from app.services.validation_pipeline_service import PipelineResult
+
+    window = MainWindow()
+
+    # Simulate a prior successful import with quality evidence.
+    window.data_status_label.setToolTip("Previous quality evidence")
+
+    # Also set stale validation state to verify it gets cleared.
+    window.latest_validation_result = PipelineResult(
+        baseline_metrics={"total_pnl": 100},
+        elimination_result={"passed": True},
+    )
+    window.export_action.setEnabled(True)
+
+    missing = tmp_dir / "nonexistent.csv"
+    with _patch_import_failure(missing):
+        window._handle_import_ohlcv_data()
+
+    try:
+        assert window.data_status_label.toolTip() == "", (
+            f"Tooltip must be empty after import failure, got: {window.data_status_label.toolTip()!r}"
+        )
+    finally:
+        window.close()
+
+
+def test_cancel_import_preserves_quality_tooltip(qapp):
+    """Canceling import must preserve existing quality tooltip."""
+    window = MainWindow()
+    window.data_status_label.setToolTip("Stale quality evidence to keep")
+
+    with _patch_file_dialog(""):
+        window._handle_import_ohlcv_data()
+
+    try:
+        assert window.data_status_label.toolTip() == "Stale quality evidence to keep", (
+            "Tooltip must not change on cancel"
+        )
+    finally:
+        window.close()
+
+
+def test_new_project_clears_quality_tooltip(qapp, tmp_path, monkeypatch):
+    """New project must clear stale quality tooltip."""
+    from pathlib import Path
+    from PySide6.QtWidgets import QInputDialog, QFileDialog, QMessageBox
+    from core.models.project import ProjectMeta
+
+    window = MainWindow()
+    window.data_status_label.setToolTip("Stale quality evidence")
+
+    monkeypatch.setattr(QInputDialog, "getText", lambda *a, **k: ("test_proj", True))
+    monkeypatch.setattr(QFileDialog, "getExistingDirectory", lambda *a, **k: str(tmp_path))
+    monkeypatch.setattr(QMessageBox, "question", lambda *a, **k: QMessageBox.StandardButton.No)
+    monkeypatch.setattr(QMessageBox, "information", lambda *a, **k: None)
+    monkeypatch.setattr(QMessageBox, "critical", lambda *a, **k: None)
+    monkeypatch.setattr(window.data_service, "set_db", lambda db: None)
+    monkeypatch.setattr(
+        window.project_service, "create_project",
+        lambda name, root_path, overwrite=False: ProjectMeta(
+            name="test_proj", root_path=Path(tmp_path / "test_proj"),
+        ),
+    )
+    object.__setattr__(window.project_service.repository, "_db", "mock://db")
+    monkeypatch.setattr(window.instrument_service, "get_active_profile", lambda: None)
+
+    window._handle_new_project()
+
+    try:
+        assert window.data_status_label.toolTip() == "", (
+            f"Tooltip must be empty after new project, got: {window.data_status_label.toolTip()!r}"
+        )
+    finally:
+        window.close()
+
+
+def test_open_project_clears_quality_tooltip(qapp, tmp_path, monkeypatch):
+    """Open project must clear stale quality tooltip."""
+    from pathlib import Path
+    from PySide6.QtWidgets import QFileDialog, QMessageBox
+    from core.models.project import ProjectMeta
+
+    window = MainWindow()
+    window.data_status_label.setToolTip("Stale quality evidence")
+
+    monkeypatch.setattr(QFileDialog, "getExistingDirectory", lambda *a, **k: str(tmp_path / "test_proj"))
+    monkeypatch.setattr(QMessageBox, "information", lambda *a, **k: None)
+    monkeypatch.setattr(QMessageBox, "critical", lambda *a, **k: None)
+    monkeypatch.setattr(window.data_service, "set_db", lambda db: None)
+    monkeypatch.setattr(window, "_get_strategy_persistence_service", lambda: None)
+    monkeypatch.setattr(
+        window.project_service, "open_project",
+        lambda project_dir: ProjectMeta(name="test_proj", root_path=Path(tmp_path / "test_proj")),
+    )
+    object.__setattr__(window.project_service.repository, "_db", "mock://db")
+    monkeypatch.setattr(window.instrument_service, "get_active_profile", lambda: None)
+
+    window._handle_open_project()
+
+    try:
+        assert window.data_status_label.toolTip() == "", (
+            f"Tooltip must be empty after open project, got: {window.data_status_label.toolTip()!r}"
+        )
+    finally:
+        window.close()

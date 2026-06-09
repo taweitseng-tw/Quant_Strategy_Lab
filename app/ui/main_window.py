@@ -1314,6 +1314,7 @@ class MainWindow(QMainWindow):
             self._reset_validation_state()
             self.data_status_label.setText("Historical Research Data: None loaded (Using default mock data)")
             self.data_status_label.setStyleSheet("color: #ffb300; font-weight: bold; font-size: 12px;")
+            self.data_status_label.setToolTip("")
             user_msg = DataService.get_actionable_import_error(e)
             self.log_panel.add_message("ERROR", f"Failed to import data file: {user_msg}")
             QMessageBox.critical(
@@ -1369,6 +1370,7 @@ class MainWindow(QMainWindow):
             self._reset_validation_state()
             self.data_status_label.setText("Historical Research Data: None loaded (Using default mock data)")
             self.data_status_label.setStyleSheet("color: #ffb300; font-weight: bold; font-size: 12px;")
+            self.data_status_label.setToolTip("")
             
             # Reset GA / GP / Imported strategy state for the new project
             self._latest_ga_strategy = None
@@ -1425,6 +1427,7 @@ class MainWindow(QMainWindow):
             self._reset_validation_state()
             self.data_status_label.setText("Historical Research Data: None loaded (Using default mock data)")
             self.data_status_label.setStyleSheet("color: #ffb300; font-weight: bold; font-size: 12px;")
+            self.data_status_label.setToolTip("")
             
             # Reset GA / GP / Imported strategy state; load GA best from DB if present
             self._latest_ga_strategy = None
