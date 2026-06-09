@@ -444,6 +444,7 @@ class MainWindow(QMainWindow):
                 self.price_noise_checkbox.setChecked(False)
 
                 self.price_noise_pct_spin = QDoubleSpinBox()
+                self.price_noise_pct_spin.setObjectName("spnPriceNoisePct")
                 self.price_noise_pct_spin.setMinimum(0.001)
                 self.price_noise_pct_spin.setMaximum(0.05)
                 self.price_noise_pct_spin.setSingleStep(0.001)
@@ -455,6 +456,7 @@ class MainWindow(QMainWindow):
                 self.price_noise_pct_spin.setEnabled(False)
 
                 self.price_noise_iter_spin = QSpinBox()
+                self.price_noise_iter_spin.setObjectName("spnPriceNoiseIterations")
                 self.price_noise_iter_spin.setMinimum(10)
                 self.price_noise_iter_spin.setMaximum(500)
                 self.price_noise_iter_spin.setSingleStep(10)
@@ -463,6 +465,7 @@ class MainWindow(QMainWindow):
                 self.price_noise_iter_spin.setEnabled(False)
 
                 self.price_noise_seed_spin = QSpinBox()
+                self.price_noise_seed_spin.setObjectName("spnPriceNoiseSeed")
                 self.price_noise_seed_spin.setMinimum(1)
                 self.price_noise_seed_spin.setMaximum(9999)
                 self.price_noise_seed_spin.setValue(42)
@@ -496,6 +499,7 @@ class MainWindow(QMainWindow):
                 self.precheck_checkbox.setChecked(False)
 
                 self.precheck_nonpositive_checkbox = QCheckBox("Fail on non-positive PnL")
+                self.precheck_nonpositive_checkbox.setObjectName("chkPrecheckNonpositive")
                 self.precheck_nonpositive_checkbox.setToolTip(
                     "Also fails strategies with total_pnl <= 0. "
                     "Works only when precheck is enabled."

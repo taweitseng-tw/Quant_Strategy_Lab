@@ -1052,3 +1052,27 @@ def test_bootstrap_conf_spin_has_object_name(main_window):
     """Bootstrap confidence spinbox must have a stable objectName."""
     assert hasattr(main_window, "bootstrap_conf_spin")
     assert main_window.bootstrap_conf_spin.objectName() == "spnBootstrapConfidence"
+
+
+def test_price_noise_pct_spin_has_object_name(main_window):
+    """Price-noise fraction spinbox must have a stable objectName."""
+    assert hasattr(main_window, "price_noise_pct_spin")
+    assert main_window.price_noise_pct_spin.objectName() == "spnPriceNoisePct"
+
+
+def test_price_noise_iter_spin_has_object_name(main_window):
+    """Price-noise iterations spinbox must have a stable objectName."""
+    assert hasattr(main_window, "price_noise_iter_spin")
+    assert main_window.price_noise_iter_spin.objectName() == "spnPriceNoiseIterations"
+
+
+def test_price_noise_seed_spin_has_object_name(main_window):
+    """Price-noise seed spinbox must have a stable objectName."""
+    assert hasattr(main_window, "price_noise_seed_spin")
+    assert main_window.price_noise_seed_spin.objectName() == "spnPriceNoiseSeed"
+
+
+def test_precheck_nonpositive_checkbox_has_object_name(main_window):
+    """Precheck non-positive PnL checkbox must have a stable objectName."""
+    assert hasattr(main_window, "precheck_nonpositive_checkbox")
+    assert main_window.precheck_nonpositive_checkbox.objectName() == "chkPrecheckNonpositive"
