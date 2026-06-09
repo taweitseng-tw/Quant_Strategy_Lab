@@ -92,14 +92,17 @@ class MainWindow(QMainWindow):
                 action.setEnabled(True)
                 action.triggered.connect(self._handle_new_project)
                 self.new_project_action = action
+                self.new_project_action.setObjectName("actionNewProject")
             elif label == "Open Project":
                 action.setEnabled(True)
                 action.triggered.connect(self._handle_open_project)
                 self.open_project_action = action
+                self.open_project_action.setObjectName("actionOpenProject")
             elif label == "Save":
                 action.setEnabled(True)
                 action.triggered.connect(self._handle_save)
                 self.save_action = action
+                self.save_action.setObjectName("actionSave")
             elif label == "Run":
                 action.setEnabled(True)
                 action.triggered.connect(self._handle_run)

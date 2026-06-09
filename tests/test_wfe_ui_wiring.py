@@ -1076,3 +1076,21 @@ def test_precheck_nonpositive_checkbox_has_object_name(main_window):
     """Precheck non-positive PnL checkbox must have a stable objectName."""
     assert hasattr(main_window, "precheck_nonpositive_checkbox")
     assert main_window.precheck_nonpositive_checkbox.objectName() == "chkPrecheckNonpositive"
+
+
+def test_new_project_action_has_object_name(main_window):
+    """New Project action must have a stable objectName."""
+    assert hasattr(main_window, "new_project_action")
+    assert main_window.new_project_action.objectName() == "actionNewProject"
+
+
+def test_open_project_action_has_object_name(main_window):
+    """Open Project action must have a stable objectName."""
+    assert hasattr(main_window, "open_project_action")
+    assert main_window.open_project_action.objectName() == "actionOpenProject"
+
+
+def test_save_action_has_object_name(main_window):
+    """Save action must have a stable objectName."""
+    assert hasattr(main_window, "save_action")
+    assert main_window.save_action.objectName() == "actionSave"
