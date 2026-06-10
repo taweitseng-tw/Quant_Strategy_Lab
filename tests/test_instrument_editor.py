@@ -299,3 +299,85 @@ def test_instrument_editor_selection_and_active_switching(qapp, monkeypatch) -> 
             break
     assert new_nq_item is not None
     assert "[Active]" in new_nq_item.text()
+
+
+# ---------------------------------------------------------------------------
+# Malformed/empty instruments.json recovery - Task 114A-114C
+# ---------------------------------------------------------------------------
+
+
+def test_recovers_from_malformed_instruments_json(tmp_project_dir) -> None:
+    """Malformed instruments.json must recover to DEFAULT_PROFILES and
+    rewrite the file as valid JSON."""
+    cfg = tmp_project_dir / "config" / "instruments.json"
+    cfg.write_text("not valid json", encoding="utf-8")
+
+    service = InstrumentService(tmp_project_dir)
+    profiles = service.get_profiles()
+    assert len(profiles) == len(DEFAULT_PROFILES), "Must recover to default profiles"
+    assert profiles[0].symbol == DEFAULT_PROFILES[0].symbol
+
+    # File must now be valid JSON.
+    data = json.loads(cfg.read_text(encoding="utf-8"))
+    assert isinstance(data, list)
+    assert len(data) == len(DEFAULT_PROFILES)
+    assert data[0]["symbol"] == "ES"
+
+
+def test_recovers_from_empty_list_instruments_json(tmp_project_dir) -> None:
+    """Empty list in instruments.json must initialize DEFAULT_PROFILES and
+    write valid JSON."""
+    cfg = tmp_project_dir / "config" / "instruments.json"
+    cfg.write_text("[]", encoding="utf-8")
+    sessions_path = tmp_project_dir / "config" / "sessions.json"
+    settings_path = tmp_project_dir / "config" / "app_settings.json"
+    sessions_data = [{"name": "empty_list_session"}]
+    settings_data = {"execution_model": "next_bar_open", "custom_key": "keep"}
+    sessions_path.write_text(json.dumps(sessions_data, indent=2), encoding="utf-8")
+    settings_path.write_text(json.dumps(settings_data, indent=2), encoding="utf-8")
+
+    service = InstrumentService(tmp_project_dir)
+    profiles = service.get_profiles()
+    assert len(profiles) == len(DEFAULT_PROFILES), "Must recover to default profiles"
+    assert profiles[0].symbol == "ES"
+
+    # File must now contain the full default list.
+    data = json.loads(cfg.read_text(encoding="utf-8"))
+    assert len(data) == len(DEFAULT_PROFILES)
+    assert json.loads(sessions_path.read_text(encoding="utf-8")) == sessions_data
+    assert json.loads(settings_path.read_text(encoding="utf-8")) == settings_data
+
+
+def test_recovery_preserves_sessions_json(tmp_project_dir) -> None:
+    """Recovery from malformed instruments.json must not mutate sessions.json."""
+    cfg = tmp_project_dir / "config" / "instruments.json"
+    cfg.write_text("not json", encoding="utf-8")
+
+    sessions_path = tmp_project_dir / "config" / "sessions.json"
+    sessions_path.write_text(
+        json.dumps([{"name": "preserved_session"}], indent=2), encoding="utf-8"
+    )
+
+    _ = InstrumentService(tmp_project_dir)
+
+    saved = json.loads(sessions_path.read_text(encoding="utf-8"))
+    assert saved == [{"name": "preserved_session"}], "sessions.json must be preserved"
+
+
+def test_recovery_preserves_app_settings_custom_keys(tmp_project_dir) -> None:
+    """Recovery from malformed instruments.json must preserve custom keys in
+    app_settings.json."""
+    cfg = tmp_project_dir / "config" / "instruments.json"
+    cfg.write_text("not json", encoding="utf-8")
+
+    settings_path = tmp_project_dir / "config" / "app_settings.json"
+    settings_path.write_text(
+        json.dumps({"execution_model": "next_bar_open", "my_custom_key": "survive"}, indent=2),
+        encoding="utf-8",
+    )
+
+    _ = InstrumentService(tmp_project_dir)
+
+    saved = json.loads(settings_path.read_text(encoding="utf-8"))
+    assert saved.get("execution_model") == "next_bar_open"
+    assert saved.get("my_custom_key") == "survive", "Custom keys must be preserved"

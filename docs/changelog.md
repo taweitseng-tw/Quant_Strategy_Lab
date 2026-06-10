@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Task 114A-114C: InstrumentService Malformed Config Recovery Isolation
+
+### Added
+- `tests/test_instrument_editor.py`: Added malformed and empty `instruments.json` recovery tests proving default profile rewrite and preservation of `sessions.json` and `app_settings.json`.
+
+### Changed
+- `docs/task_board.md`: Added Task 114A-114C to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_instrument_editor.py -q` - 13 passed.
+- `git diff --check` passes with CRLF warnings only.
+
 ## 2026-06-10 - Task 113A-113C: InstrumentService Config Isolation Smoke
 
 ### Added
