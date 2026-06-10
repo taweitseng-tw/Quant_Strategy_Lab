@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 205-210 - Archive Config Snapshot Read-only Restore Plan Preview
 - [x] Tasks 199-204 - Archive Import Preview Service Mixed Evidence Hardening
 - [x] Tasks 193-198 - Archive Import Preview Service Collision Support
 - [x] Tasks 187-192 - Archive Import Preview Service Facade

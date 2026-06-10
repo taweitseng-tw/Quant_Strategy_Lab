@@ -25,6 +25,8 @@ from archive.importer import (
     summarize_config_comparisons,
     config_evidence_to_dict,
     archive_preview_to_dict,
+    ConfigSnapshotRestorePlanEntry,
+    build_config_restore_plan,
 )
 
 
@@ -1033,6 +1035,7 @@ def test_config_evidence_to_dict_omitted(tmp_path, fake_source, snapshot_file):
         "total": 0, "match": 0, "different": 0,
         "missing_current": 0, "no_archive_evidence": 0,
     }
+    assert d["config_snapshot_restore_plan"] == []
     json.dumps(d)
 
 
@@ -1222,7 +1225,11 @@ def test_archive_preview_to_dict_all_match_config(tmp_path, fake_source, snapsho
     comparison_by_name = {
         item["filename"]: item for item in data["config"]["config_snapshot_comparisons"]
     }
+    plan_by_name = {
+        item["filename"]: item for item in data["config"]["config_snapshot_restore_plan"]
+    }
     assert comparison_by_name["instruments.json"]["status"] == "match"
+    assert plan_by_name["instruments.json"]["recommended_action"] == "no_action_for_match"
     json.dumps(data)
 
 
@@ -1266,3 +1273,88 @@ def test_archive_preview_to_dict_is_plain_copy(tmp_path, fake_source, snapshot_f
 
     assert "mutated.txt" not in preview.plan.files
     assert preview.strategy_uid == "strat-001"
+
+
+# ---------------------------------------------------------------------------
+# Config restore plan preview (Tasks 205-210)
+# ---------------------------------------------------------------------------
+
+
+def test_restore_plan_entry_match():
+    """Match comparison must produce no_action_for_match recommendation."""
+    c = ConfigSnapshotComparison(filename="i.json", status="match")
+    plan = build_config_restore_plan((c,))
+    assert len(plan) == 1
+    e = plan[0]
+    assert isinstance(e, ConfigSnapshotRestorePlanEntry)
+    assert e.filename == "i.json"
+    assert e.comparison_status == "match"
+    assert e.recommended_action == "no_action_for_match"
+    assert "no action needed" in e.reason.lower()
+
+
+def test_restore_plan_entry_different():
+    """Different comparison must produce review_difference recommendation."""
+    c = ConfigSnapshotComparison(filename="i.json", status="different")
+    e = build_config_restore_plan((c,))[0]
+    assert e.recommended_action == "review_difference"
+    assert "differs" in e.reason.lower()
+
+
+def test_restore_plan_entry_missing_current():
+    """Missing_current comparison must produce can_restore_missing_current."""
+    c = ConfigSnapshotComparison(filename="i.json", status="missing_current")
+    e = build_config_restore_plan((c,))[0]
+    assert e.recommended_action == "can_restore_missing_current"
+    assert "can be restored" in e.reason.lower()
+
+
+def test_restore_plan_entry_no_archive():
+    """No_archive_evidence comparison must produce no_archive_snapshot."""
+    c = ConfigSnapshotComparison(filename="i.json", status="no_archive_evidence")
+    e = build_config_restore_plan((c,))[0]
+    assert e.recommended_action == "no_archive_snapshot"
+    assert "not affected" in e.reason.lower()
+
+
+def test_restore_plan_mixed_set():
+    """A mixed set of comparisons must produce correct plan entries."""
+    comparisons = (
+        ConfigSnapshotComparison(filename="a", status="match"),
+        ConfigSnapshotComparison(filename="b", status="different"),
+        ConfigSnapshotComparison(filename="c", status="missing_current"),
+        ConfigSnapshotComparison(filename="d", status="no_archive_evidence"),
+    )
+    plan = build_config_restore_plan(comparisons)
+    actions = {e.filename: e.recommended_action for e in plan}
+    assert actions["a"] == "no_action_for_match"
+    assert actions["b"] == "review_difference"
+    assert actions["c"] == "can_restore_missing_current"
+    assert actions["d"] == "no_archive_snapshot"
+    assert len(plan) == 4
+
+
+def test_restore_plan_in_config_evidence_to_dict(tmp_path, fake_source, snapshot_file):
+    """config_evidence_to_dict must include restore plan entries."""
+    config_dir = tmp_path / "cfg_restore"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"s":"ES"}', encoding="utf-8")
+
+    output_dir = tmp_path / "export_restore"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="R",
+        output_dir=output_dir,
+        config_sources={"instruments.json": str(config_dir / "instruments.json")},
+    )
+
+    preview = ArchiveImporter(output_dir).build_preview(project_config_dir=config_dir)
+    d = config_evidence_to_dict(preview)
+    plan = d["config_snapshot_restore_plan"]
+
+    assert len(plan) == 3
+    instr = [p for p in plan if p["filename"] == "instruments.json"][0]
+    assert instr["recommended_action"] == "no_action_for_match"

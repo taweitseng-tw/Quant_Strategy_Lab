@@ -90,6 +90,32 @@ class ConfigSnapshotComparisonSummary:
 
 
 @dataclass(frozen=True)
+class ConfigSnapshotRestorePlanEntry:
+    """Read-only evidence entry describing a recommended action for one
+    config snapshot file during a future restore.
+
+    Fields
+    ------
+    filename : str
+        The config filename (e.g. instruments.json).
+    comparison_status : str
+        The raw comparison status from ``ConfigSnapshotComparison``.
+    recommended_action : str
+        One of:
+        ``no_action_for_match``
+        ``review_difference``
+        ``can_restore_missing_current``
+        ``no_archive_snapshot``
+    reason : str
+        Human-readable explanation of the recommendation.
+    """
+    filename: str
+    comparison_status: str
+    recommended_action: str
+    reason: str
+
+
+@dataclass(frozen=True)
 class ArchiveImportPreview:
     """Immutable preview summary of an archive import dry-run.
 
@@ -303,6 +329,49 @@ def _comparison_to_dict(c: ConfigSnapshotComparison) -> dict[str, Any]:
     }
 
 
+_RECOMMENDED_ACTION: dict[str, str] = {
+    "match": "no_action_for_match",
+    "different": "review_difference",
+    "missing_current": "can_restore_missing_current",
+    "no_archive_evidence": "no_archive_snapshot",
+}
+
+_REASON: dict[str, str] = {
+    "match": "Archived config matches current project config; no action needed.",
+    "different": "Archived config differs from current project config. Manual review recommended.",
+    "missing_current": "Config file exists in the archive snapshot but is missing from the current project. Can be restored.",
+    "no_archive_evidence": "No archived config snapshot exists for this file. Current project config is not affected.",
+}
+
+
+def build_config_restore_plan(
+    comparisons: tuple[ConfigSnapshotComparison, ...],
+) -> tuple[ConfigSnapshotRestorePlanEntry, ...]:
+    """Derive a read-only restore-plan preview from config snapshot comparisons.
+
+    Each comparison is mapped to a recommended action without writing any files.
+
+    Parameters
+    ----------
+    comparisons : tuple[ConfigSnapshotComparison, ...]
+        Comparison results from ``compare_config_snapshots()``.
+
+    Returns
+    -------
+    tuple[ConfigSnapshotRestorePlanEntry, ...]
+        One entry per comparison, in the same order.
+    """
+    return tuple(
+        ConfigSnapshotRestorePlanEntry(
+            filename=c.filename,
+            comparison_status=c.status,
+            recommended_action=_RECOMMENDED_ACTION.get(c.status, "unknown"),
+            reason=_REASON.get(c.status, "No recommendation available."),
+        )
+        for c in comparisons
+    )
+
+
 def _evidence_to_dict(e: ConfigSnapshotEvidence) -> dict[str, str]:
     """Serialize one ConfigSnapshotEvidence to a plain dict."""
     return {"filename": e.filename, "sha256": e.sha256}
@@ -345,6 +414,15 @@ def config_evidence_to_dict(
             _comparison_to_dict(c) for c in preview.config_snapshot_comparisons
         ],
         "config_snapshot_summary": _summary_to_dict(preview.config_snapshot_summary),
+        "config_snapshot_restore_plan": [
+            {
+                "filename": e.filename,
+                "comparison_status": e.comparison_status,
+                "recommended_action": e.recommended_action,
+                "reason": e.reason,
+            }
+            for e in build_config_restore_plan(preview.config_snapshot_comparisons)
+        ],
     }
 
 

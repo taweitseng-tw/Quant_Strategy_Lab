@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-10 - Tasks 205-210: Archive Config Snapshot Read-only Restore Plan Preview
+
+### Added
+- `archive/importer.py`: Added `ConfigSnapshotRestorePlanEntry`, `build_config_restore_plan()`, and serialized `config_snapshot_restore_plan` evidence for read-only config restore preview actions.
+- `archive/__init__.py`: Exported the restore plan entry and helper.
+- `tests/test_archive_importer.py`: Added restore plan coverage for match, different, missing current, no archive evidence, mixed comparisons, and dict serialization.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 205-210 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_importer.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py tests/test_archive_import_preview_service.py -q` - 73 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 199-204: Archive Import Preview Service Mixed Evidence Hardening
 
 ### Added
