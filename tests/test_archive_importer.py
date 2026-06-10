@@ -753,3 +753,110 @@ def test_compare_config_no_archive_evidence(fake_source, snapshot_file, tmp_path
         )
         assert r.archive_sha256 is None
         assert r.current_sha256 is None
+
+
+# ---------------------------------------------------------------------------
+# Config snapshot comparisons in import preview (Tasks 163-168)
+# ---------------------------------------------------------------------------
+
+
+def test_build_preview_config_comparisons_omitted_by_default(
+    fake_source, snapshot_file, tmp_path
+):
+    """build_preview must preserve old behavior when project_config_dir is omitted."""
+    output_dir = tmp_path / "preview_no_compare"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+    )
+
+    preview = ArchiveImporter(output_dir).build_preview()
+
+    assert preview.config_snapshot_comparisons == ()
+
+
+def test_build_preview_config_comparisons_match(tmp_path, fake_source, snapshot_file):
+    """build_preview must expose match comparisons when current config matches archive."""
+    config_dir = tmp_path / "config_src"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"symbol":"ES"}', encoding="utf-8")
+
+    output_dir = tmp_path / "preview_match"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+        config_sources={"instruments.json": str(config_dir / "instruments.json")},
+    )
+
+    preview = ArchiveImporter(output_dir).build_preview(project_config_dir=config_dir)
+    comparisons = {item.filename: item for item in preview.config_snapshot_comparisons}
+
+    assert comparisons["instruments.json"].status == "match"
+    assert comparisons["instruments.json"].archive_sha256 == comparisons[
+        "instruments.json"
+    ].current_sha256
+    with pytest.raises(AttributeError):
+        preview.config_snapshot_comparisons[0].status = "different"
+
+
+def test_build_preview_config_comparisons_different(tmp_path, fake_source, snapshot_file):
+    """build_preview must expose different comparisons when current config diverges."""
+    config_dir = tmp_path / "config_src"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"symbol":"ES"}', encoding="utf-8")
+
+    output_dir = tmp_path / "preview_different"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+        config_sources={"instruments.json": str(config_dir / "instruments.json")},
+    )
+    (config_dir / "instruments.json").write_text(
+        '{"symbol":"CHANGED"}', encoding="utf-8"
+    )
+
+    preview = ArchiveImporter(output_dir).build_preview(project_config_dir=config_dir)
+    comparisons = {item.filename: item for item in preview.config_snapshot_comparisons}
+
+    assert comparisons["instruments.json"].status == "different"
+
+
+def test_build_preview_config_comparisons_missing_current(
+    tmp_path, fake_source, snapshot_file
+):
+    """build_preview must expose missing_current when archive config has no current file."""
+    config_dir = tmp_path / "config_src"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"symbol":"ES"}', encoding="utf-8")
+
+    output_dir = tmp_path / "preview_missing"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+        config_sources={"instruments.json": str(config_dir / "instruments.json")},
+    )
+    empty_config_dir = tmp_path / "empty_config"
+    empty_config_dir.mkdir()
+
+    preview = ArchiveImporter(output_dir).build_preview(
+        project_config_dir=empty_config_dir
+    )
+    comparisons = {item.filename: item for item in preview.config_snapshot_comparisons}
+
+    assert comparisons["instruments.json"].status == "missing_current"

@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Tasks 163-168: Archive Import Preview Optional Config Comparison
+
+### Added
+- `archive/importer.py`: Added optional `project_config_dir` support to `ArchiveImporter.build_preview()` and immutable config snapshot comparison evidence on `ArchiveImportPreview`.
+- `tests/test_archive_importer.py`: Added preview comparison coverage for omitted config directory, match, different, and missing current config cases.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 163-168 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_importer.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py -q` - 40 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 157-162: Archive Config Snapshot Read-only Compare Helper
 
 ### Added

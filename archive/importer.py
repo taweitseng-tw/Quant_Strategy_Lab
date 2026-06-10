@@ -89,6 +89,10 @@ class ArchiveImportPreview:
         True if the strategy UID already exists in the workspace.
     dataset_collision : bool
         True if the dataset already exists.
+    config_snapshot_comparisons : tuple[ConfigSnapshotComparison, ...]
+        Optional read-only comparison between archived config snapshots and
+        current project config files. Empty when no project config directory
+        is provided.
     """
     plan: ArchiveImportPlan
     strategy_uid: str
@@ -99,6 +103,7 @@ class ArchiveImportPreview:
     validation_passed: bool
     strategy_collision: bool
     dataset_collision: bool
+    config_snapshot_comparisons: tuple[ConfigSnapshotComparison, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -300,13 +305,21 @@ class ArchiveImporter:
             ),
         )
 
-    def build_preview(self, collision_detector: IImportCollisionDetector | None = None) -> ArchiveImportPreview:
+    def build_preview(
+        self,
+        collision_detector: IImportCollisionDetector | None = None,
+        *,
+        project_config_dir: str | Path | None = None,
+    ) -> ArchiveImportPreview:
         """Verify the archive and build a read-only import preview/dry-run summary.
 
         Parameters
         ----------
         collision_detector : IImportCollisionDetector or None
             Optional read-only collision detector to check strategy and dataset status.
+        project_config_dir : str, Path, or None
+            Optional active project config directory for read-only config
+            snapshot comparison evidence.
 
         Returns
         -------
@@ -372,6 +385,12 @@ class ArchiveImporter:
                 dataset_id, dataset_symbol, dataset_timeframe
             )
 
+        config_snapshot_comparisons = ()
+        if project_config_dir is not None:
+            config_snapshot_comparisons = compare_config_snapshots(
+                plan, Path(project_config_dir)
+            )
+
         return ArchiveImportPreview(
             plan=plan,
             strategy_uid=strategy_uid,
@@ -382,4 +401,5 @@ class ArchiveImporter:
             validation_passed=validation_passed,
             strategy_collision=strategy_collision,
             dataset_collision=dataset_collision,
+            config_snapshot_comparisons=config_snapshot_comparisons,
         )
