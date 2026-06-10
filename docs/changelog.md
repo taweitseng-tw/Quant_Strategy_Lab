@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Tasks 337-342: Release Candidate Tag Checklist
+
+### Added
+- `docs/release_candidate_tag_checklist_337_342.md`: Added an ASCII pre-tag checklist for the recommended `v0.3.0-dev` developer release-candidate tag, including verification commands, observed results, release notes draft, known limits, and tag commands for later approval.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 337-342 to Done and set Tasks 343-348 as the next recommended task.
+
+### Verification
+- `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build_package.ps1` - build succeeded and packaged exe launch smoke passed with exit code 0.
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py tests/test_archive_import_preview_contract_acceptance.py -q` - 16 passed.
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 331-336: Formal Release Readiness Packet
 
 ### Added
