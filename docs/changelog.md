@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-10 - Tasks 283-288: Developer Alpha Acceptance Packet
+
+### Added
+- `docs/developer_alpha_acceptance_packet_283_288.md`: Added an ASCII developer-alpha acceptance packet with PASS recommendation for developer alpha, NOT PASS recommendation for formal desktop release, concrete smoke evidence, and next formal-release tasks.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 283-288 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py tests/test_archive_import_preview_contract_acceptance.py -q` - 16 passed.
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 277-282: Hold Artifact Final Decision
 
 ### Added

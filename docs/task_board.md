@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 283-288 - Developer Alpha Acceptance Packet
 - [x] Tasks 277-282 - Hold Artifact Final Decision
 - [x] Tasks 271-276 - Desktop Evaluator Walkthrough
 - [x] Tasks 265-270 - Sample Data Workflow Smoke
