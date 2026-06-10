@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-11 - Tasks 379-384: v0.3.0-dev Evaluator Share Message
+
+### Added
+- `docs/v0.3.0-dev_evaluator_share_message_379_384.md`: Added an ASCII ready-to-paste evaluator share message for the local `v0.3.0-dev` Windows developer pre-release zip, including run steps, known limits, feedback prompts, and research-only disclaimer.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 379-384 to Done.
+
+### Verification
+- `release_artifacts/QuantStrategyLab-v0.3.0-dev-windows-onedir.zip` exists locally and is gitignored.
+- Zip size is `128,770,261` bytes / `122.8 MiB`.
+- `git diff --check` passed.
+- No upload, push, or remote configuration was executed.
 ## 2026-06-11 - Tasks 373-378: v0.3.0-dev External Sharing Decision
 
 ### Added
