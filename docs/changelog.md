@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-06-10 - Tasks 277-282: Hold Artifact Final Decision
+
+### Added
+- `docs/hold_artifact_decision_277_282.md`: Added an ASCII hold-artifact decision document that keeps local agent-loop artifacts untracked for developer alpha and excludes them from formal release by default.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 277-282 to Done.
+
+### Verification
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 271-276: Desktop Evaluator Walkthrough
 
 ### Added
