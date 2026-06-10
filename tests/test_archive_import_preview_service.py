@@ -243,3 +243,106 @@ def test_service_collision_detector_both_false(tmp_path):
     assert result["strategy_collision"] is False
     assert result["dataset_collision"] is False
     assert detector.calls == ["strategy:svc-test", "dataset:1:ES:1min"]
+
+
+# ---------------------------------------------------------------------------
+# Mixed config evidence (Task 199)
+# ---------------------------------------------------------------------------
+
+
+def test_service_build_preview_mixed_config_evidence(tmp_path):
+    """Service must return correct summary counts for mixed config statuses."""
+    # Archive has instruments.json (different content) and sessions.json (missing current).
+    # Archive does NOT have app_settings.json.
+    archive_cfg = tmp_path / "archive_cfg"
+    archive_cfg.mkdir()
+    (archive_cfg / "instruments.json").write_text(
+        '{"symbol":"ORIGINAL"}', encoding="utf-8"
+    )
+    (archive_cfg / "sessions.json").write_text("[]", encoding="utf-8")
+
+    output_dir = tmp_path / "export_mixed"
+    _export_minimal_archive(
+        output_dir,
+        config_sources={
+            "instruments.json": str(archive_cfg / "instruments.json"),
+            "sessions.json": str(archive_cfg / "sessions.json"),
+        },
+    )
+
+    # Current config: instruments.json is different, sessions.json is missing,
+    # and app_settings.json has no archive evidence.
+    current_cfg = tmp_path / "current_cfg"
+    current_cfg.mkdir()
+    (current_cfg / "instruments.json").write_text(
+        '{"symbol":"CHANGED"}', encoding="utf-8"
+    )
+
+    result = ArchiveImportPreviewService().build_preview(
+        output_dir,
+        project_config_dir=current_cfg,
+    )
+    summary = result["config"]["config_snapshot_summary"]
+    comparisons = {
+        c["filename"]: c for c in result["config"]["config_snapshot_comparisons"]
+    }
+
+    assert summary["total"] == 3
+    assert summary["match"] == 0
+    assert summary["different"] == 1  # instruments.json
+    assert summary["missing_current"] == 1  # sessions.json
+    assert summary["no_archive_evidence"] == 1  # app_settings.json
+
+    assert comparisons["instruments.json"]["status"] == "different"
+    assert comparisons["sessions.json"]["status"] == "missing_current"
+    assert comparisons["app_settings.json"]["status"] == "no_archive_evidence"
+
+    assert comparisons["instruments.json"]["archive_sha256"] != comparisons[
+        "instruments.json"
+    ]["current_sha256"]
+    assert json.dumps(result)
+
+
+# ---------------------------------------------------------------------------
+# No file writes (Task 200)
+# ---------------------------------------------------------------------------
+
+
+def test_service_build_preview_does_not_modify_config_files(tmp_path):
+    """Service must not change bytes of config files on disk."""
+    cfg_dir = tmp_path / "cfg"
+    cfg_dir.mkdir()
+    cfg_path = cfg_dir / "instruments.json"
+    original_content = '{"symbol":"PRESERVE"}'
+    cfg_path.write_text(original_content, encoding="utf-8")
+
+    output_dir = tmp_path / "export_nowrite"
+    _export_minimal_archive(
+        output_dir,
+        config_sources={"instruments.json": str(cfg_path)},
+    )
+
+    ArchiveImportPreviewService().build_preview(
+        output_dir,
+        project_config_dir=cfg_dir,
+    )
+
+    assert cfg_path.read_text(encoding="utf-8") == original_content
+
+
+# ---------------------------------------------------------------------------
+# Error cause preservation (Task 201)
+# ---------------------------------------------------------------------------
+
+
+def test_service_error_preserves_cause(tmp_path):
+    """ArchiveImportPreviewServiceError must preserve the underlying exception in __cause__."""
+    invalid_dir = tmp_path / "missing_manifest"
+    invalid_dir.mkdir()
+
+    svc = ArchiveImportPreviewService()
+    with pytest.raises(ArchiveImportPreviewServiceError) as exc_info:
+        svc.build_preview(invalid_dir)
+
+    assert exc_info.value.__cause__ is not None, "__cause__ must be preserved"
+    assert "manifest" in str(exc_info.value.__cause__).lower()

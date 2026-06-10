@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-10 - Tasks 199-204: Archive Import Preview Service Mixed Evidence Hardening
+
+### Added
+- `tests/test_archive_import_preview_service.py`: Added service hardening tests for mixed config evidence, no file writes, and error cause preservation.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 199-204 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_import_preview_service.py tests/test_archive_importer.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py -q` - 67 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 193-198: Archive Import Preview Service Collision Support
 
 ### Added
