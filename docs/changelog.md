@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Tasks 247-252: Desktop Startup Import Smoke
+
+### Added
+- `tests/test_app_startup_smoke.py`: Added headless startup smoke coverage for `app.main.main`, `MainWindow` import, project-root import path, and offscreen `MainWindow` construct/close without starting the event loop.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 247-252 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py -q` - 4 passed.
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_import_preview_contract_acceptance.py tests/test_archive_importer.py tests/test_archive_import_preview_service.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py -q` - 105 passed.
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 241-246: Archive Import Preview Contract Negative Acceptance
 
 ### Added

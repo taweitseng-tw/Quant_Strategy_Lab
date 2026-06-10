@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 247-252 - Desktop Startup Import Smoke
 - [x] Tasks 241-246 - Archive Import Preview Contract Negative Acceptance
 - [x] Tasks 235-240 - Archive Import Preview Contract Acceptance Snapshot
 - [x] Tasks 229-234 - Archive Import Preview Schema Public Contract Hardening
