@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-10 - Tasks 241-246: Archive Import Preview Contract Negative Acceptance
+
+### Added
+- `tests/test_archive_import_preview_contract_acceptance.py`: Added negative and edge acceptance tests for invalid archive error cause preservation, no-config exact preview shape, and unknown restore action manual-review summary behavior.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 241-246 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_import_preview_contract_acceptance.py tests/test_archive_importer.py tests/test_archive_import_preview_service.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py -q` - 105 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 235-240: Archive Import Preview Contract Acceptance Snapshot
 
 ### Added

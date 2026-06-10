@@ -9,15 +9,21 @@ read-only behavior — all in one place.
 from __future__ import annotations
 
 import json
+import tempfile
 from pathlib import Path
+
+import pytest
 
 from archive import (
     ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION,
     ArchiveBuilder,
     ArchiveExporter,
+    ConfigSnapshotRestorePlanEntry,
+    summarize_config_restore_plan,
 )
 from app.services.archive_import_preview_service import (
     ArchiveImportPreviewService,
+    ArchiveImportPreviewServiceError,
 )
 
 
@@ -58,14 +64,8 @@ class FakeCollisionDetector:
         return self.dataset_exists_value
 
 
-# ---------------------------------------------------------------------------
-# Contract tests
-# ---------------------------------------------------------------------------
-
-
-def test_full_contract_acceptance(tmp_path):
-    """Full archive import preview contract: all layers exercised in one test."""
-    # -- 1. Build archive with mixed config --------------------------------
+def _make_contract_source() -> FakeDataSource:
+    """Build a minimal archive data source for acceptance tests."""
     src = FakeDataSource()
     src.strategies["ctrct-001"] = {
         "strategy_uid": "ctrct-001",
@@ -81,20 +81,20 @@ def test_full_contract_acceptance(tmp_path):
     src.validations["ctrct-001"] = {
         "passed": True, "elimination_result": {"passed": True},
     }
+    return src
 
-    # Archive config: instruments.json (will differ from current),
-    # sessions.json (will be missing from current), no app_settings.json.
-    archive_cfg = tmp_path / "archive_cfg"
-    archive_cfg.mkdir()
-    (archive_cfg / "instruments.json").write_text('{"symbol":"ORIG"}', encoding="utf-8")
-    (archive_cfg / "sessions.json").write_text("[]", encoding="utf-8")
 
-    import tempfile
+def _export_contract_archive(
+    output_dir: Path,
+    *,
+    config_sources: dict[str, str] | None = None,
+) -> None:
+    """Export a minimal valid archive for contract tests."""
+    src = _make_contract_source()
     with tempfile.NamedTemporaryFile(suffix=".csv", delete=False, mode="w") as f:
         f.write("o,h,l,c,v\n100,102,99,101,1000\n")
         snap = f.name
 
-    export_dir = tmp_path / "acceptance_export"
     try:
         builder = ArchiveBuilder(src)
         exporter = ArchiveExporter(builder, src)
@@ -102,14 +102,36 @@ def test_full_contract_acceptance(tmp_path):
             strategy_uid="ctrct-001",
             dataset_snapshot_path=snap,
             disclaimer_text="Research only. Not financial advice.",
-            output_dir=export_dir,
-            config_sources={
-                "instruments.json": str(archive_cfg / "instruments.json"),
-                "sessions.json": str(archive_cfg / "sessions.json"),
-            },
+            output_dir=output_dir,
+            config_sources=config_sources,
         )
     finally:
         Path(snap).unlink(missing_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# Contract tests
+# ---------------------------------------------------------------------------
+
+
+def test_full_contract_acceptance(tmp_path):
+    """Full archive import preview contract: all layers exercised in one test."""
+    # -- 1. Build archive with mixed config --------------------------------
+    # Archive config: instruments.json (will differ from current),
+    # sessions.json (will be missing from current), no app_settings.json.
+    archive_cfg = tmp_path / "archive_cfg"
+    archive_cfg.mkdir()
+    (archive_cfg / "instruments.json").write_text('{"symbol":"ORIG"}', encoding="utf-8")
+    (archive_cfg / "sessions.json").write_text("[]", encoding="utf-8")
+
+    export_dir = tmp_path / "acceptance_export"
+    _export_contract_archive(
+        export_dir,
+        config_sources={
+            "instruments.json": str(archive_cfg / "instruments.json"),
+            "sessions.json": str(archive_cfg / "sessions.json"),
+        },
+    )
 
     # -- 2. Create "current project config" with mixed status -------------
     current_cfg = tmp_path / "current_cfg"
@@ -256,3 +278,86 @@ def test_full_contract_acceptance(tmp_path):
         '{"symbol":"CHANGED"}'
     )
     assert not (current_cfg / "sessions.json").exists()
+
+
+def test_invalid_archive_preserves_service_error_cause(tmp_path):
+    """Invalid archive preview must preserve the underlying error cause."""
+    invalid_dir = tmp_path / "invalid_archive"
+    invalid_dir.mkdir()
+
+    with pytest.raises(ArchiveImportPreviewServiceError) as exc_info:
+        ArchiveImportPreviewService().build_preview(invalid_dir)
+
+    assert exc_info.value.__cause__ is not None
+    assert "manifest" in str(exc_info.value.__cause__).lower()
+
+
+def test_no_config_preview_contract_acceptance(tmp_path):
+    """No-config preview must keep exact schema with empty config evidence."""
+    export_dir = tmp_path / "no_config_export"
+    _export_contract_archive(export_dir)
+
+    result = ArchiveImportPreviewService().build_preview(export_dir)
+
+    expected_top_keys = {
+        "archive_import_preview_schema_version",
+        "plan", "strategy_uid", "strategy_name",
+        "dataset_id", "dataset_symbol", "dataset_timeframe",
+        "validation_passed", "strategy_collision", "dataset_collision",
+        "config",
+    }
+    assert result.keys() == expected_top_keys
+    assert result["archive_import_preview_schema_version"] == (
+        ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION
+    )
+
+    config = result["config"]
+    assert config.keys() == {
+        "config_snapshot_files",
+        "config_snapshot_evidence",
+        "config_snapshot_comparisons",
+        "config_snapshot_summary",
+        "config_snapshot_restore_plan",
+        "config_snapshot_restore_plan_summary",
+    }
+    assert config["config_snapshot_files"] == []
+    assert config["config_snapshot_evidence"] == []
+    assert config["config_snapshot_comparisons"] == []
+    assert config["config_snapshot_restore_plan"] == []
+    assert config["config_snapshot_summary"] == {
+        "total": 0,
+        "match": 0,
+        "different": 0,
+        "missing_current": 0,
+        "no_archive_evidence": 0,
+    }
+    assert config["config_snapshot_restore_plan_summary"] == {
+        "total": 0,
+        "no_action_for_match": 0,
+        "review_difference": 0,
+        "can_restore_missing_current": 0,
+        "no_archive_snapshot": 0,
+        "unknown": 0,
+        "manual_review_required": 0,
+    }
+    json.dumps(result)
+
+
+def test_unknown_restore_action_is_manual_review_required():
+    """Unknown restore action must be counted as unknown and manual-review-required."""
+    plan = (
+        ConfigSnapshotRestorePlanEntry(
+            filename="unknown.json",
+            comparison_status="unknown_status",
+            recommended_action="unexpected_action",
+            reason="Unknown action",
+            severity="none",
+            requires_manual_review=False,
+        ),
+    )
+
+    summary = summarize_config_restore_plan(plan)
+
+    assert summary.total == 1
+    assert summary.unknown == 1
+    assert summary.manual_review_required == 1
