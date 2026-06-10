@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 361-366 - Optional Local Release Zip Creation Checklist
 - [x] Tasks 355-360 - Release Artifact Archive Plan
 - [x] Tasks 349-354 - Push or Archive v0.3.0-dev Decision
 - [x] Tasks 343-348 - Create v0.3.0-dev Release Candidate Tag

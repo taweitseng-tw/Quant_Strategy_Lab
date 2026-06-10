@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Tasks 361-366: Optional Local Release Zip Checklist
+
+### Added
+- `docs/local_release_zip_checklist_361_366.md`: Added an ASCII documentation-only checklist for manually building, zipping, verifying, and cleaning the local `v0.3.0-dev` Windows onedir package outside git.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 361-366 to Done.
+
+### Verification
+- `git status --short` checked current dirty scope.
+- `git diff --check` passed.
+- No build, zip, push, upload, or generated artifact was created.
 ## 2026-06-10 - Tasks 355-360: Release Artifact Archive Plan
 
 ### Added
