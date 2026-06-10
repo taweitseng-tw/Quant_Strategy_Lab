@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-06-10 - Tasks 349-354: v0.3.0-dev Publish or Archive Decision
+
+### Added
+- `docs/v0.3.0-dev_publish_or_archive_decision_349_354.md`: Added an ASCII decision document recording the local `v0.3.0-dev` tag object, target commit, no-remote state, no-push decision, later push command, and remaining archive/publish risks.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 349-354 to Done and set Tasks 355-360 as the next recommended task.
+
+### Verification
+- `git status --short` was clean before this decision change.
+- `git rev-parse v0.3.0-dev` returned `ed34d2b5373c3fb8417839b9f06b67e2f706cebe`.
+- `git rev-list -n 1 v0.3.0-dev` returned `bd94e90bd82839f8e47d21bbda5dc80cc04c8003`.
+- `git remote -v` showed no configured remote.
+- `git diff --check` passed.
+- No push was executed.
 ## 2026-06-10 - Tasks 343-348: Create v0.3.0-dev Release Candidate Tag
 
 ### Added
