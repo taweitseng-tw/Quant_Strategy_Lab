@@ -43,6 +43,9 @@ test.pdf
 .reasonix/
 .codegraph/
 .ai_loop/
+AGENT_LOOP_README.md
+scripts/agent_loop.ps1
+tools/agent_loop.py
 /nul
 1/
 2/

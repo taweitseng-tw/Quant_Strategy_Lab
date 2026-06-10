@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-10 - Tasks 331-336: Formal Release Readiness Packet
+
+### Added
+- `docs/formal_release_readiness_packet_331_336.md`: Added an ASCII release readiness packet separating developer-alpha readiness, packaged Windows release-candidate readiness, public release limits, verification evidence, hold artifact policy, and final tag checklist guidance.
+
+### Changed
+- `.gitignore`: Added precise ignore rules for local hold artifacts excluded from release scope.
+- `docs/task_board.md`: Added Tasks 331-336 to Done and set Tasks 337-342 as the next recommended task.
+
+### Verification
+- `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build_package.ps1` - build succeeded and packaged exe launch smoke passed with exit code 0.
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py tests/test_archive_import_preview_contract_acceptance.py -q` - 16 passed.
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 325-330: Packaged App Quickstart
 
 ### Added

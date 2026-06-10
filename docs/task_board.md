@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 331-336 - Formal Release Hygiene and Readiness Packet
 - [x] Tasks 325-330 - Packaged App Walkthrough and Quickstart Draft
 - [x] Tasks 319-324 - PyInstaller Build Script and Artifact Hygiene
 - [x] Tasks 313-318 - PyInstaller Onedir Build Spike
@@ -115,7 +116,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next
 
-- [ ] Tasks 331-336 - Formal Release Hygiene and Readiness Packet
+- [ ] Tasks 337-342 - Release Candidate Tag Checklist
 
 *(Remaining v0.2 PRD items pending task prioritization)*
 - Proposed Task 055 - Agent Workflow Automation
