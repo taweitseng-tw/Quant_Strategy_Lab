@@ -20,7 +20,9 @@ from archive.importer import (
     ArchiveImportPreview,
     ConfigSnapshotEvidence,
     ConfigSnapshotComparison,
+    ConfigSnapshotComparisonSummary,
     compare_config_snapshots,
+    summarize_config_comparisons,
 )
 
 
@@ -860,3 +862,143 @@ def test_build_preview_config_comparisons_missing_current(
     comparisons = {item.filename: item for item in preview.config_snapshot_comparisons}
 
     assert comparisons["instruments.json"].status == "missing_current"
+
+
+# ---------------------------------------------------------------------------
+# Config snapshot summary evidence (Tasks 169-174)
+# ---------------------------------------------------------------------------
+
+
+def test_summarize_comparisons_empty():
+    """Empty comparisons must produce zero-count summary."""
+    summary = summarize_config_comparisons(())
+    assert isinstance(summary, ConfigSnapshotComparisonSummary)
+    assert summary.total == 0
+    assert summary.match == 0
+    assert summary.different == 0
+    assert summary.missing_current == 0
+    assert summary.no_archive_evidence == 0
+    with pytest.raises(AttributeError):
+        summary.total = 1
+
+
+def test_summarize_comparisons_all_match():
+    """All-match comparisons must yield match==3 and others==0."""
+    comparisons = (
+        ConfigSnapshotComparison(filename="a", status="match"),
+        ConfigSnapshotComparison(filename="b", status="match"),
+        ConfigSnapshotComparison(filename="c", status="match"),
+    )
+    summary = summarize_config_comparisons(comparisons)
+    assert summary.total == 3
+    assert summary.match == 3
+    assert summary.different == 0
+    assert summary.missing_current == 0
+    assert summary.no_archive_evidence == 0
+
+
+def test_summarize_comparisons_mixed():
+    """Mixed status comparisons must yield correct per-status counts."""
+    comparisons = (
+        ConfigSnapshotComparison(filename="a", status="match"),
+        ConfigSnapshotComparison(filename="b", status="different"),
+        ConfigSnapshotComparison(filename="c", status="missing_current"),
+    )
+    summary = summarize_config_comparisons(comparisons)
+    assert summary.total == 3
+    assert summary.match == 1
+    assert summary.different == 1
+    assert summary.missing_current == 1
+    assert summary.no_archive_evidence == 0
+
+
+def test_build_preview_summary_omitted_by_default(tmp_path, fake_source, snapshot_file):
+    """build_preview without project_config_dir must produce zero summary."""
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    output_dir = tmp_path / "export_summary_omit"
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+    )
+    preview = ArchiveImporter(output_dir).build_preview()
+    s = preview.config_snapshot_summary
+    assert s.total == 0 and s.match == 0 and s.different == 0
+    assert s.missing_current == 0 and s.no_archive_evidence == 0
+
+
+def test_build_preview_summary_populated(tmp_path, fake_source, snapshot_file):
+    """build_preview with project_config_dir must populate summary counts."""
+    config_dir = tmp_path / "config_src"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"symbol":"ES"}', encoding="utf-8")
+    (config_dir / "sessions.json").write_text('[{"name":"day"}]', encoding="utf-8")
+    (config_dir / "app_settings.json").write_text(
+        '{"execution_model":"next_bar_open"}', encoding="utf-8"
+    )
+    output_dir = tmp_path / "export_summary_pop"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+        config_sources={
+            "instruments.json": str(config_dir / "instruments.json"),
+            "sessions.json": str(config_dir / "sessions.json"),
+            "app_settings.json": str(config_dir / "app_settings.json"),
+        },
+    )
+    preview = ArchiveImporter(output_dir).build_preview(project_config_dir=config_dir)
+    s = preview.config_snapshot_summary
+    assert s.total == 3
+    assert s.match == 3
+    assert s.different == 0
+    assert s.missing_current == 0
+    assert s.no_archive_evidence == 0
+
+
+def test_build_preview_summary_mixed_statuses(tmp_path, fake_source, snapshot_file):
+    """build_preview summary must count different, missing, and no-evidence statuses."""
+    archive_config_dir = tmp_path / "archive_config"
+    archive_config_dir.mkdir()
+    (archive_config_dir / "instruments.json").write_text(
+        '{"symbol":"ES"}', encoding="utf-8"
+    )
+    (archive_config_dir / "sessions.json").write_text(
+        '[{"name":"day"}]', encoding="utf-8"
+    )
+
+    output_dir = tmp_path / "export_summary_mixed"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+        config_sources={
+            "instruments.json": str(archive_config_dir / "instruments.json"),
+            "sessions.json": str(archive_config_dir / "sessions.json"),
+        },
+    )
+
+    current_config_dir = tmp_path / "current_config"
+    current_config_dir.mkdir()
+    (current_config_dir / "instruments.json").write_text(
+        '{"symbol":"CHANGED"}', encoding="utf-8"
+    )
+
+    preview = ArchiveImporter(output_dir).build_preview(
+        project_config_dir=current_config_dir
+    )
+    summary = preview.config_snapshot_summary
+
+    assert summary.total == 3
+    assert summary.match == 0
+    assert summary.different == 1
+    assert summary.missing_current == 1
+    assert summary.no_archive_evidence == 1

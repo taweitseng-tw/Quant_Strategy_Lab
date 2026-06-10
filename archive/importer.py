@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, Any
 
@@ -66,6 +66,30 @@ class ConfigSnapshotComparison:
 
 
 @dataclass(frozen=True)
+class ConfigSnapshotComparisonSummary:
+    """Immutable summary counts for config snapshot comparisons.
+
+    Fields
+    ------
+    total : int
+        Total number of known config filenames compared (always 3).
+    match : int
+        Count of comparisons with status ``match``.
+    different : int
+        Count of comparisons with status ``different``.
+    missing_current : int
+        Count of comparisons with status ``missing_current``.
+    no_archive_evidence : int
+        Count of comparisons with status ``no_archive_evidence``.
+    """
+    total: int = 0
+    match: int = 0
+    different: int = 0
+    missing_current: int = 0
+    no_archive_evidence: int = 0
+
+
+@dataclass(frozen=True)
 class ArchiveImportPreview:
     """Immutable preview summary of an archive import dry-run.
 
@@ -93,6 +117,9 @@ class ArchiveImportPreview:
         Optional read-only comparison between archived config snapshots and
         current project config files. Empty when no project config directory
         is provided.
+    config_snapshot_summary : ConfigSnapshotComparisonSummary
+        Immutable summary counts derived from *config_snapshot_comparisons*.
+        Zero counts when no project config directory is provided.
     """
     plan: ArchiveImportPlan
     strategy_uid: str
@@ -104,6 +131,9 @@ class ArchiveImportPreview:
     strategy_collision: bool
     dataset_collision: bool
     config_snapshot_comparisons: tuple[ConfigSnapshotComparison, ...] = ()
+    config_snapshot_summary: ConfigSnapshotComparisonSummary = field(
+        default_factory=ConfigSnapshotComparisonSummary
+    )
 
 
 @dataclass(frozen=True)
@@ -231,6 +261,36 @@ def compare_config_snapshots(
         ))
 
     return tuple(results)
+
+
+def summarize_config_comparisons(
+    comparisons: tuple[ConfigSnapshotComparison, ...],
+) -> ConfigSnapshotComparisonSummary:
+    """Derive summary counts from a tuple of config snapshot comparisons.
+
+    Parameters
+    ----------
+    comparisons : tuple[ConfigSnapshotComparison, ...]
+        Comparison results from ``compare_config_snapshots()``.
+
+    Returns
+    -------
+    ConfigSnapshotComparisonSummary
+        Immutable summary with counts for each status.
+    """
+    match = sum(1 for c in comparisons if c.status == "match")
+    different = sum(1 for c in comparisons if c.status == "different")
+    missing_current = sum(1 for c in comparisons if c.status == "missing_current")
+    no_archive_evidence = sum(
+        1 for c in comparisons if c.status == "no_archive_evidence"
+    )
+    return ConfigSnapshotComparisonSummary(
+        total=len(comparisons),
+        match=match,
+        different=different,
+        missing_current=missing_current,
+        no_archive_evidence=no_archive_evidence,
+    )
 
 
 class ArchiveImporter:
@@ -391,6 +451,12 @@ class ArchiveImporter:
                 plan, Path(project_config_dir)
             )
 
+        config_snapshot_summary = (
+            summarize_config_comparisons(config_snapshot_comparisons)
+            if config_snapshot_comparisons
+            else ConfigSnapshotComparisonSummary()
+        )
+
         return ArchiveImportPreview(
             plan=plan,
             strategy_uid=strategy_uid,
@@ -402,4 +468,5 @@ class ArchiveImporter:
             strategy_collision=strategy_collision,
             dataset_collision=dataset_collision,
             config_snapshot_comparisons=config_snapshot_comparisons,
+            config_snapshot_summary=config_snapshot_summary,
         )

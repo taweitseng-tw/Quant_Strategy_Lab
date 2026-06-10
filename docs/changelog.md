@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-10 - Tasks 169-174: Archive Config Comparison Summary Evidence
+
+### Added
+- `archive/importer.py`: Added immutable config snapshot comparison summary evidence and summary helper.
+- `archive/__init__.py`: Exported `ConfigSnapshotComparisonSummary` and `summarize_config_comparisons` through the archive package API.
+- `tests/test_archive_importer.py`: Added summary coverage for empty, all-match, mixed, omitted config dir, populated all-match, and mixed preview scenarios.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 169-174 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_importer.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py -q` - 46 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 163-168: Archive Import Preview Optional Config Comparison
 
 ### Added

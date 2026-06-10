@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 169-174 - Archive Config Comparison Summary Evidence
 - [x] Tasks 163-168 - Archive Import Preview Optional Config Comparison
 - [x] Tasks 157-162 - Archive Config Snapshot Read-only Compare Helper
 - [x] Tasks 151-156 - Archive Config Snapshot Immutable Hash Evidence
