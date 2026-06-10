@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-10 - Tasks 307-312: Packaging Path Spike
+
+### Added
+- `docs/packaging_path_spike_307_312.md`: Added an ASCII packaging decision spike comparing PyInstaller, Nuitka, and pip entrypoint options, recommending a first PyInstaller `--onedir` build spike for Windows desktop release validation.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 307-312 to Done and set Tasks 313-318 as the next recommended task.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py tests/test_archive_import_preview_contract_acceptance.py -q` - 16 passed.
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 301-306: Formal Release Blocker Triage
 
 ### Added
