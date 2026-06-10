@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Tasks 325-330: Packaged App Quickstart
+
+### Added
+- `docs/packaged_app_quickstart_325_330.md`: Added an ASCII user-facing Windows onedir package quickstart covering build, launch, sample data location, troubleshooting, current limits, and research-only disclaimer.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 325-330 to Done and set Tasks 331-336 as the next recommended task.
+
+### Verification
+- `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build_package.ps1` - build succeeded and packaged exe launch smoke passed with exit code 0.
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py tests/test_archive_import_preview_contract_acceptance.py -q` - 16 passed.
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 319-324: PyInstaller Build Script and Artifact Hygiene
 
 ### Added
