@@ -44,7 +44,7 @@ Engine code must not import PySide6. UI must not contain trading/strategy/backte
 
 ## Open Capabilities / Current Gaps
 
-- Next post-v0.2 engineering task is not yet selected. Do not reassign Task 065A or 065B; both are complete.
+- Project/instrument config foundation complete: repo create/open, config template integrity, InstrumentService recovery (Tasks 110-120). The next post-v0.2 engineering task should be selected before assigning implementation.
 - MC worst-case equity is trade-step evidence for missed-trade MC, not bar-by-bar equity and not all MC runner types.
 - Context/document hygiene remains active: handoff docs must avoid stale claims.
 - Data import is not currently considered blocked; focused data workflow tests pass and Tasks 065A/065B completed format guidance, actionable error text, and import error smoke coverage.

@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-06-10 - Tasks 121-126: Config Foundation Acceptance and Next Slice Selection
+
+### Changed
+- `docs/context_brief.md`: Marked project/instrument config foundation complete and clarified that the next post-v0.2 engineering task must be selected.
+- `docs/task_board.md`: Added Tasks 121-126 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_project_repo.py tests/test_project_service.py tests/test_instrument_editor.py -q` - 42 passed.
+- `git diff --check` passes with CRLF warnings only.
+
 ## 2026-06-10 - Tasks 115-120: Reproducibility Config Foundation Continuation
 
 ### Added

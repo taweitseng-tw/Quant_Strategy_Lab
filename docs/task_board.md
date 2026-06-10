@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 121-126 - Config Foundation Acceptance and Next Slice Selection
 - [x] Tasks 115-120 - Reproducibility Config Foundation Continuation
 - [x] Task 114A-114C - InstrumentService Malformed Config Recovery Isolation
 - [x] Task 113A-113C - InstrumentService Config Isolation Smoke
