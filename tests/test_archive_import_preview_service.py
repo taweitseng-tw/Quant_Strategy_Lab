@@ -438,3 +438,91 @@ def test_service_restore_plan_summary_mixed(tmp_path):
 
     # Plan entries present
     assert len(result["config"]["config_snapshot_restore_plan"]) == 3
+
+
+# ---------------------------------------------------------------------------
+# Restore plan UI-readiness flags service tests (Tasks 217-222)
+# ---------------------------------------------------------------------------
+
+
+def test_service_restore_plan_flags_omitted_config(tmp_path):
+    """Service must return empty flags when no project_config_dir."""
+    output_dir = tmp_path / "export_flags_omit"
+    _export_minimal_archive(output_dir)
+
+    result = ArchiveImportPreviewService().build_preview(output_dir)
+    plan = result["config"]["config_snapshot_restore_plan"]
+    summary = result["config"]["config_snapshot_restore_plan_summary"]
+
+    assert plan == []
+    assert summary["manual_review_required"] == 0
+
+
+def test_service_restore_plan_flags_all_match(tmp_path):
+    """Service must return match flags for all-match config."""
+    cfg_dir = tmp_path / "cfg_flags_all"
+    cfg_dir.mkdir()
+    (cfg_dir / "instruments.json").write_text('{"s":"ES"}', encoding="utf-8")
+    (cfg_dir / "sessions.json").write_text("[]", encoding="utf-8")
+    (cfg_dir / "app_settings.json").write_text("{}", encoding="utf-8")
+
+    output_dir = tmp_path / "export_flags_all"
+    _export_minimal_archive(
+        output_dir,
+        config_sources={
+            "instruments.json": str(cfg_dir / "instruments.json"),
+            "sessions.json": str(cfg_dir / "sessions.json"),
+            "app_settings.json": str(cfg_dir / "app_settings.json"),
+        },
+    )
+
+    result = ArchiveImportPreviewService().build_preview(
+        output_dir, project_config_dir=cfg_dir,
+    )
+    plan = result["config"]["config_snapshot_restore_plan"]
+    summary = result["config"]["config_snapshot_restore_plan_summary"]
+
+    assert len(plan) == 3
+    for entry in plan:
+        assert entry["severity"] == "none"
+        assert entry["requires_manual_review"] is False
+
+    assert summary["manual_review_required"] == 0
+
+
+def test_service_restore_plan_flags_mixed(tmp_path):
+    """Service must return correct flags for mixed config evidence."""
+    archive_cfg = tmp_path / "acfg_flags"
+    archive_cfg.mkdir()
+    (archive_cfg / "instruments.json").write_text('{"s":"A"}', encoding="utf-8")
+    (archive_cfg / "sessions.json").write_text("[]", encoding="utf-8")
+
+    output_dir = tmp_path / "export_flags_mixed"
+    _export_minimal_archive(
+        output_dir,
+        config_sources={
+            "instruments.json": str(archive_cfg / "instruments.json"),
+            "sessions.json": str(archive_cfg / "sessions.json"),
+        },
+    )
+
+    current_cfg = tmp_path / "ccfg_flags"
+    current_cfg.mkdir()
+    (current_cfg / "instruments.json").write_text('{"s":"B"}', encoding="utf-8")
+
+    result = ArchiveImportPreviewService().build_preview(
+        output_dir, project_config_dir=current_cfg,
+    )
+    plan = {e["filename"]: e for e in result["config"]["config_snapshot_restore_plan"]}
+    summary = result["config"]["config_snapshot_restore_plan_summary"]
+
+    assert plan["instruments.json"]["severity"] == "warning"
+    assert plan["instruments.json"]["requires_manual_review"] is True
+
+    assert plan["sessions.json"]["severity"] == "info"
+    assert plan["sessions.json"]["requires_manual_review"] is True
+
+    assert plan["app_settings.json"]["severity"] == "none"
+    assert plan["app_settings.json"]["requires_manual_review"] is False
+
+    assert summary["manual_review_required"] == 2

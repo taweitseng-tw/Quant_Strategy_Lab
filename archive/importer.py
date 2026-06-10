@@ -108,11 +108,17 @@ class ConfigSnapshotRestorePlanEntry:
         ``no_archive_snapshot``
     reason : str
         Human-readable explanation of the recommendation.
+    severity : str
+        UI-readiness severity level: ``none``, ``info``, or ``warning``.
+    requires_manual_review : bool
+        ``True`` when the action needs user confirmation before applying.
     """
     filename: str
     comparison_status: str
     recommended_action: str
     reason: str
+    severity: str = "none"
+    requires_manual_review: bool = False
 
 
 @dataclass(frozen=True)
@@ -133,6 +139,8 @@ class ConfigSnapshotRestorePlanSummary:
         Count of entries with action ``no_archive_snapshot``.
     unknown : int
         Count of entries with any other action string.
+    manual_review_required : int
+        Count of entries where ``requires_manual_review`` is ``True``.
     """
     total: int = 0
     no_action_for_match: int = 0
@@ -140,6 +148,7 @@ class ConfigSnapshotRestorePlanSummary:
     can_restore_missing_current: int = 0
     no_archive_snapshot: int = 0
     unknown: int = 0
+    manual_review_required: int = 0
 
 
 @dataclass(frozen=True)
@@ -370,6 +379,20 @@ _REASON: dict[str, str] = {
     "no_archive_evidence": "No archived config snapshot exists for this file. Current project config is not affected.",
 }
 
+_SEVERITY: dict[str, str] = {
+    "match": "none",
+    "different": "warning",
+    "missing_current": "info",
+    "no_archive_evidence": "none",
+}
+
+_REQUIRES_MANUAL_REVIEW: dict[str, bool] = {
+    "match": False,
+    "different": True,
+    "missing_current": True,
+    "no_archive_evidence": False,
+}
+
 
 def build_config_restore_plan(
     comparisons: tuple[ConfigSnapshotComparison, ...],
@@ -394,6 +417,8 @@ def build_config_restore_plan(
             comparison_status=c.status,
             recommended_action=_RECOMMENDED_ACTION.get(c.status, "unknown"),
             reason=_REASON.get(c.status, "No recommendation available."),
+            severity=_SEVERITY.get(c.status, "warning"),
+            requires_manual_review=_REQUIRES_MANUAL_REVIEW.get(c.status, True),
         )
         for c in comparisons
     )
@@ -420,6 +445,11 @@ def summarize_config_restore_plan(
     no_archive = sum(1 for e in plan if e.recommended_action == "no_archive_snapshot")
     known = no_action_for_match + review_difference + can_restore + no_archive
     unknown = len(plan) - known
+    manual_review_required = sum(
+        1
+        for e in plan
+        if e.requires_manual_review or e.recommended_action not in _RECOMMENDED_ACTION.values()
+    )
     return ConfigSnapshotRestorePlanSummary(
         total=len(plan),
         no_action_for_match=no_action_for_match,
@@ -427,6 +457,7 @@ def summarize_config_restore_plan(
         can_restore_missing_current=can_restore,
         no_archive_snapshot=no_archive,
         unknown=unknown,
+        manual_review_required=manual_review_required,
     )
 
 
@@ -480,6 +511,8 @@ def config_evidence_to_dict(
                 "comparison_status": e.comparison_status,
                 "recommended_action": e.recommended_action,
                 "reason": e.reason,
+                "severity": e.severity,
+                "requires_manual_review": e.requires_manual_review,
             }
             for e in restore_plan
         ],
@@ -490,6 +523,7 @@ def config_evidence_to_dict(
             "can_restore_missing_current": restore_summary.can_restore_missing_current,
             "no_archive_snapshot": restore_summary.no_archive_snapshot,
             "unknown": restore_summary.unknown,
+            "manual_review_required": restore_summary.manual_review_required,
         },
     }
 

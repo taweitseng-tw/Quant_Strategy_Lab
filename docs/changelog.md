@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-10 - Tasks 217-222: Archive Config Restore Plan UI-Readiness Flags
+
+### Added
+- `archive/importer.py`: Added `severity` and `requires_manual_review` fields to restore plan entries, plus `manual_review_required` summary evidence. Codex also hardened unknown action summary handling so unknown actions require manual review by default.
+- `tests/test_archive_importer.py`: Added importer-level tests for flag mappings, unknown behavior, summary count, and serialization.
+- `tests/test_archive_import_preview_service.py`: Added service-level tests for omitted config, all-match config, and mixed config flag behavior.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 217-222 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_importer.py tests/test_archive_import_preview_service.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py -q` - 91 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 211-216: Archive Config Restore Plan Service Summary Hardening
 
 ### Added

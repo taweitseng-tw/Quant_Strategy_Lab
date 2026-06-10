@@ -1421,6 +1421,7 @@ def test_restore_plan_summary_unknown_action():
     assert summary.total == 2
     assert summary.no_action_for_match == 1
     assert summary.unknown == 1
+    assert summary.manual_review_required == 1
     assert summary.review_difference == 0
     assert summary.can_restore_missing_current == 0
     assert summary.no_archive_snapshot == 0
@@ -1456,3 +1457,96 @@ def test_restore_plan_summary_in_config_evidence_to_dict(tmp_path, fake_source, 
     assert summary["review_difference"] == 0
     assert summary["can_restore_missing_current"] == 0
     assert summary["no_archive_snapshot"] == 1  # sessions.json has no archive evidence
+
+
+# ---------------------------------------------------------------------------
+# Restore plan UI-readiness flags tests (Tasks 217-222)
+# ---------------------------------------------------------------------------
+
+
+class TestRestorePlanUIFlags:
+    """Tests for severity and requires_manual_review fields on restore plan entries."""
+
+    def test_match_flags(self):
+        """Match must have severity=none, requires_manual_review=false."""
+        c = ConfigSnapshotComparison(filename="a", status="match")
+        plan = build_config_restore_plan((c,))
+        e = plan[0]
+        assert e.severity == "none"
+        assert e.requires_manual_review is False
+
+    def test_different_flags(self):
+        """Different must have severity=warning, requires_manual_review=true."""
+        c = ConfigSnapshotComparison(filename="a", status="different")
+        plan = build_config_restore_plan((c,))
+        e = plan[0]
+        assert e.severity == "warning"
+        assert e.requires_manual_review is True
+
+    def test_missing_current_flags(self):
+        """Missing_current must have severity=info, requires_manual_review=true."""
+        c = ConfigSnapshotComparison(filename="a", status="missing_current")
+        plan = build_config_restore_plan((c,))
+        e = plan[0]
+        assert e.severity == "info"
+        assert e.requires_manual_review is True
+
+    def test_no_archive_flags(self):
+        """No_archive_evidence must have severity=none, requires_manual_review=false."""
+        c = ConfigSnapshotComparison(filename="a", status="no_archive_evidence")
+        plan = build_config_restore_plan((c,))
+        e = plan[0]
+        assert e.severity == "none"
+        assert e.requires_manual_review is False
+
+    def test_unknown_flags(self):
+        """Unknown status must have severity=warning, requires_manual_review=true."""
+        c = ConfigSnapshotComparison(filename="a", status="unknown_status")
+        plan = build_config_restore_plan((c,))
+        e = plan[0]
+        assert e.recommended_action == "unknown"
+        assert e.severity == "warning"
+        assert e.requires_manual_review is True
+
+    def test_summary_manual_review_count(self):
+        """Summary must count manual_review_required correctly."""
+        comparisons = (
+            ConfigSnapshotComparison(filename="a", status="match"),
+            ConfigSnapshotComparison(filename="b", status="different"),
+            ConfigSnapshotComparison(filename="c", status="missing_current"),
+            ConfigSnapshotComparison(filename="d", status="no_archive_evidence"),
+        )
+        plan = build_config_restore_plan(comparisons)
+        summary = summarize_config_restore_plan(plan)
+        assert summary.manual_review_required == 2  # different + missing_current
+        assert summary.total == 4
+
+    def test_serialization_includes_flags(self, tmp_path, fake_source, snapshot_file):
+        """config_evidence_to_dict must include severity and requires_manual_review."""
+        config_dir = tmp_path / "cfg_flags"
+        config_dir.mkdir()
+        (config_dir / "instruments.json").write_text('{"s":"A"}', encoding="utf-8")
+
+        output_dir = tmp_path / "export_flags"
+        builder = ArchiveBuilder(fake_source)
+        exporter = ArchiveExporter(builder, fake_source)
+        exporter.export(
+            strategy_uid="strat-001",
+            dataset_snapshot_path=snapshot_file,
+            disclaimer_text="R",
+            output_dir=output_dir,
+            config_sources={"instruments.json": str(config_dir / "instruments.json")},
+        )
+
+        preview = ArchiveImporter(output_dir).build_preview(project_config_dir=config_dir)
+        d = config_evidence_to_dict(preview)
+        entry = d["config_snapshot_restore_plan"][0]
+
+        assert "severity" in entry
+        assert "requires_manual_review" in entry
+        assert entry["severity"] == "none"
+        assert entry["requires_manual_review"] is False
+
+        summary = d["config_snapshot_restore_plan_summary"]
+        assert "manual_review_required" in summary
+        assert isinstance(summary["manual_review_required"], int)
