@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 301-306 - Formal Release Blocker Triage
 - [x] Tasks 295-300 - CI Smoke Workflow Implementation
 - [x] Tasks 289-294 - CI Smoke Pipeline Design
 - [x] Tasks 283-288 - Developer Alpha Acceptance Packet
@@ -110,7 +111,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next
 
-- [ ] None
+- [ ] Tasks 307-312 - Packaging Path Spike (recommended by formal release blocker triage)
 
 *(Remaining v0.2 PRD items pending task prioritization)*
 - Proposed Task 055 - Agent Workflow Automation

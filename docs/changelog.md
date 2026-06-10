@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-10 - Tasks 301-306: Formal Release Blocker Triage
+
+### Added
+- `docs/formal_release_blocker_triage_301_306.md`: Added an ASCII formal-release blocker triage separating must-fix release blockers, post-release gaps, sufficient developer-alpha evidence, and the next packaging spike.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 301-306 to Done and set Tasks 307-312 as the next recommended task.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py tests/test_archive_import_preview_contract_acceptance.py -q` - 16 passed.
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 295-300: CI Smoke Workflow Implementation
 
 ### Added
