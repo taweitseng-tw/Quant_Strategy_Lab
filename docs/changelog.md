@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-10 - Tasks 367-372: Local Release Zip Evidence
+
+### Added
+- `docs/local_release_zip_evidence_367_372.md`: Added an ASCII evidence record for the local `v0.3.0-dev` zip archive, including build result, launch smoke result, zip path, exact zip size, ignore status, and cleanup state.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 367-372 to Done.
+
+### Verification
+- `release_artifacts/QuantStrategyLab-v0.3.0-dev-windows-onedir.zip` exists locally and is gitignored.
+- Zip size is `128,770,261` bytes / `122.8 MiB`.
+- `git check-ignore` confirmed the zip is ignored.
+- `git diff --check` passed.
+- No push or upload was executed.
 ## 2026-06-10 - Tasks 361-366: Optional Local Release Zip Checklist
 
 ### Added
