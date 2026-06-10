@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-10 - Tasks 139-144: Archive Config Snapshot Import Readiness Smoke
+
+### Added
+- `tests/test_archive_roundtrip_acceptance.py`: Added export-verify-import roundtrip smoke coverage for archives containing project config snapshots.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 139-144 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_roundtrip_acceptance.py tests/test_archive_exporter.py tests/test_archive_verifier.py -q` - 20 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 133-138: Archive Config Snapshot Verification Smoke
 
 ### Added
