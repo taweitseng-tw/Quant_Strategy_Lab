@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Tasks 187-192: Archive Import Preview Service Facade
+
+### Added
+- `app/services/archive_import_preview_service.py`: Added a read-only application service facade that returns full `archive_preview_to_dict()` data.
+- `tests/test_archive_import_preview_service.py`: Added service tests for omitted config, config comparison, invalid archive errors, no-archive evidence, JSON compatibility, and no PySide import.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 187-192 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_import_preview_service.py tests/test_archive_importer.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py -q` - 60 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 181-186: Archive Import Preview Full Dict Serialization
 
 ### Added

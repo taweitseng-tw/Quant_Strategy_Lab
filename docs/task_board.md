@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 187-192 - Archive Import Preview Service Facade
 - [x] Tasks 181-186 - Archive Import Preview Full Dict Serialization
 - [x] Tasks 175-180 - Archive Import Preview Dict Serialization for Config Evidence
 - [x] Tasks 169-174 - Archive Config Comparison Summary Evidence
