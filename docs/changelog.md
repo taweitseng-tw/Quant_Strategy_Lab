@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-10 - Tasks 289-294: CI Smoke Pipeline Design
+
+### Added
+- `docs/ci_smoke_pipeline_design_289_294.md`: Added an ASCII CI smoke pipeline design for a Windows Python 3.11 GitHub Actions workflow targeting the current 16-test developer-alpha smoke set.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 289-294 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py tests/test_archive_import_preview_contract_acceptance.py -q` - 16 passed.
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 283-288: Developer Alpha Acceptance Packet
 
 ### Added
