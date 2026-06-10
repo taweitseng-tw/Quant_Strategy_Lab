@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Tasks 193-198: Archive Import Preview Service Collision Support
+
+### Added
+- `app/services/archive_import_preview_service.py`: Added optional collision detector pass-through to `ArchiveImportPreviewService.build_preview()`.
+- `tests/test_archive_import_preview_service.py`: Added service collision tests for omitted detector, strategy collision, dataset collision, and both-false detector results.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 193-198 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_import_preview_service.py tests/test_archive_importer.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py -q` - 64 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 187-192: Archive Import Preview Service Facade
 
 ### Added

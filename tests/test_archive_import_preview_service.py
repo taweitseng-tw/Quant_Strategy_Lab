@@ -31,6 +31,23 @@ class FakeDataSource:
         return self.validations.get(uid)
 
 
+class FakeCollisionDetector:
+    """Read-only collision detector test double."""
+
+    def __init__(self, *, strategy_exists: bool, dataset_exists: bool) -> None:
+        self.strategy_exists_value = strategy_exists
+        self.dataset_exists_value = dataset_exists
+        self.calls: list[str] = []
+
+    def strategy_exists(self, strategy_uid: str) -> bool:
+        self.calls.append(f"strategy:{strategy_uid}")
+        return self.strategy_exists_value
+
+    def dataset_exists(self, dataset_id: int, symbol: str, timeframe: str) -> bool:
+        self.calls.append(f"dataset:{dataset_id}:{symbol}:{timeframe}")
+        return self.dataset_exists_value
+
+
 def _export_minimal_archive(
     output_dir: Path,
     *,
@@ -167,3 +184,62 @@ def test_service_does_not_import_pyside():
         if mn:
             import_names.add(mn.split(".")[0])
     assert "PySide6" not in import_names
+
+
+def test_service_collision_detector_omitted_defaults_false(tmp_path):
+    """Service must preserve no-detector collision defaults."""
+    output_dir = tmp_path / "export_collision_omitted"
+    _export_minimal_archive(output_dir)
+
+    result = ArchiveImportPreviewService().build_preview(output_dir)
+
+    assert result["strategy_collision"] is False
+    assert result["dataset_collision"] is False
+
+
+def test_service_strategy_collision_true(tmp_path):
+    """Service must pass through strategy collision detector result."""
+    output_dir = tmp_path / "export_strategy_collision"
+    _export_minimal_archive(output_dir)
+    detector = FakeCollisionDetector(strategy_exists=True, dataset_exists=False)
+
+    result = ArchiveImportPreviewService().build_preview(
+        output_dir,
+        collision_detector=detector,
+    )
+
+    assert result["strategy_collision"] is True
+    assert result["dataset_collision"] is False
+    assert "strategy:svc-test" in detector.calls
+
+
+def test_service_dataset_collision_true(tmp_path):
+    """Service must pass through dataset collision detector result."""
+    output_dir = tmp_path / "export_dataset_collision"
+    _export_minimal_archive(output_dir)
+    detector = FakeCollisionDetector(strategy_exists=False, dataset_exists=True)
+
+    result = ArchiveImportPreviewService().build_preview(
+        output_dir,
+        collision_detector=detector,
+    )
+
+    assert result["strategy_collision"] is False
+    assert result["dataset_collision"] is True
+    assert "dataset:1:ES:1min" in detector.calls
+
+
+def test_service_collision_detector_both_false(tmp_path):
+    """Service must pass through false collision detector results."""
+    output_dir = tmp_path / "export_collision_false"
+    _export_minimal_archive(output_dir)
+    detector = FakeCollisionDetector(strategy_exists=False, dataset_exists=False)
+
+    result = ArchiveImportPreviewService().build_preview(
+        output_dir,
+        collision_detector=detector,
+    )
+
+    assert result["strategy_collision"] is False
+    assert result["dataset_collision"] is False
+    assert detector.calls == ["strategy:svc-test", "dataset:1:ES:1min"]

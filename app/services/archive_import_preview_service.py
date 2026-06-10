@@ -12,6 +12,7 @@ from pathlib import Path
 from archive.importer import (
     ArchiveImporter,
     ArchiveImporterError,
+    IImportCollisionDetector,
     IncompatibleSchemaError,
     archive_preview_to_dict,
 )
@@ -36,6 +37,7 @@ class ArchiveImportPreviewService:
         self,
         archive_dir: str | Path,
         *,
+        collision_detector: IImportCollisionDetector | None = None,
         project_config_dir: str | Path | None = None,
     ) -> dict:
         """Verify an archive and return plain dict preview evidence.
@@ -44,6 +46,8 @@ class ArchiveImportPreviewService:
         ----------
         archive_dir : str or Path
             Path to the archive folder root.
+        collision_detector : IImportCollisionDetector or None
+            Optional read-only detector for strategy and dataset collisions.
         project_config_dir : str, Path, or None
             Optional active project config directory for read-only config
             snapshot comparison evidence.
@@ -61,7 +65,10 @@ class ArchiveImportPreviewService:
         """
         try:
             importer = ArchiveImporter(archive_dir)
-            preview = importer.build_preview(project_config_dir=project_config_dir)
+            preview = importer.build_preview(
+                collision_detector,
+                project_config_dir=project_config_dir,
+            )
             return archive_preview_to_dict(preview)
         except (
             ArchiveImporterError,
