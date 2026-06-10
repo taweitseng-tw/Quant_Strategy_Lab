@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 343-348 - Create v0.3.0-dev Release Candidate Tag
 - [x] Tasks 337-342 - Release Candidate Tag Checklist
 - [x] Tasks 331-336 - Formal Release Hygiene and Readiness Packet
 - [x] Tasks 325-330 - Packaged App Walkthrough and Quickstart Draft
@@ -117,7 +118,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next
 
-- [ ] Tasks 343-348 - Codex Create v0.3.0-dev Tag
+- [ ] Tasks 349-354 - Push or Archive v0.3.0-dev Release Candidate
 
 *(Remaining v0.2 PRD items pending task prioritization)*
 - Proposed Task 055 - Agent Workflow Automation

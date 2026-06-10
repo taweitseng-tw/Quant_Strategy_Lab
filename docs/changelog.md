@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-10 - Tasks 343-348: Create v0.3.0-dev Release Candidate Tag
+
+### Added
+- `docs/release_notes_v0.3.0-dev.md`: Added ASCII release notes for the `v0.3.0-dev` developer-oriented packaged release candidate.
+- Local annotated git tag `v0.3.0-dev` created after the release notes commit.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 343-348 to Done and set Tasks 349-354 as the next recommended task.
+
+### Verification
+- `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build_package.ps1` - build succeeded and packaged exe launch smoke passed with exit code 0.
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py tests/test_archive_import_preview_contract_acceptance.py -q` - 16 passed.
+- `git diff --check` passed.
+- Tag is local only and was not pushed.
 ## 2026-06-10 - Tasks 337-342: Release Candidate Tag Checklist
 
 ### Added
