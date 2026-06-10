@@ -35,6 +35,7 @@ exports/
 logs/
 project_reports/
 config/
+release_artifacts/
 
 # Ephemeral & Scratch
 scratch*.py

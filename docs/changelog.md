@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-10 - Tasks 355-360: Release Artifact Archive Plan
+
+### Added
+- `docs/release_artifact_archive_plan_355_360.md`: Added an ASCII archive plan comparing local-only, manual local zip, later remote tag push, and future release artifact upload paths for sharing the `v0.3.0-dev` package.
+
+### Changed
+- `.gitignore`: Added `release_artifacts/` so local zip archives stay out of source control.
+- `docs/task_board.md`: Added Tasks 355-360 to Done and set Next to None.
+
+### Verification
+- `git status --short` checked current dirty scope.
+- `git remote -v` showed no configured remote.
+- `git diff --check` passed.
+- No push, upload, zip archive, or build artifact was created.
 ## 2026-06-10 - Tasks 349-354: v0.3.0-dev Publish or Archive Decision
 
 ### Added
