@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-10 - Tasks 211-216: Archive Config Restore Plan Service Summary Hardening
+
+### Added
+- `archive/importer.py`: Added `ConfigSnapshotRestorePlanSummary`, `summarize_config_restore_plan()`, and serialized `config_snapshot_restore_plan_summary` evidence.
+- `archive/__init__.py`: Exported the restore plan summary and helper.
+- `tests/test_archive_importer.py`: Added restore plan summary tests for empty, all actions, mixed, unknown, and dict integration cases.
+- `tests/test_archive_import_preview_service.py`: Added service summary tests for omitted config, all-match config, and mixed config evidence.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 211-216 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_importer.py tests/test_archive_import_preview_service.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py -q` - 81 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 205-210: Archive Config Snapshot Read-only Restore Plan Preview
 
 ### Added

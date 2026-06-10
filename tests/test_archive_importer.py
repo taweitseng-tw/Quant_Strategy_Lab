@@ -26,7 +26,9 @@ from archive.importer import (
     config_evidence_to_dict,
     archive_preview_to_dict,
     ConfigSnapshotRestorePlanEntry,
+    ConfigSnapshotRestorePlanSummary,
     build_config_restore_plan,
+    summarize_config_restore_plan,
 )
 
 
@@ -1358,3 +1360,99 @@ def test_restore_plan_in_config_evidence_to_dict(tmp_path, fake_source, snapshot
     assert len(plan) == 3
     instr = [p for p in plan if p["filename"] == "instruments.json"][0]
     assert instr["recommended_action"] == "no_action_for_match"
+
+
+# ---------------------------------------------------------------------------
+# Restore plan summary tests (Tasks 211-216)
+# ---------------------------------------------------------------------------
+
+
+def test_restore_plan_summary_empty():
+    """Empty restore plan must produce zero-count summary."""
+    summary = summarize_config_restore_plan(())
+    assert summary.total == 0
+    assert summary.no_action_for_match == 0
+    assert summary.review_difference == 0
+    assert summary.can_restore_missing_current == 0
+    assert summary.no_archive_snapshot == 0
+    assert summary.unknown == 0
+
+
+def test_restore_plan_summary_all_actions():
+    """Plan with all four known actions must produce correct counts."""
+    plan = (
+        ConfigSnapshotRestorePlanEntry("a", "match", "no_action_for_match", ""),
+        ConfigSnapshotRestorePlanEntry("b", "different", "review_difference", ""),
+        ConfigSnapshotRestorePlanEntry("c", "missing_current", "can_restore_missing_current", ""),
+        ConfigSnapshotRestorePlanEntry("d", "no_archive_evidence", "no_archive_snapshot", ""),
+    )
+    summary = summarize_config_restore_plan(plan)
+    assert summary.total == 4
+    assert summary.no_action_for_match == 1
+    assert summary.review_difference == 1
+    assert summary.can_restore_missing_current == 1
+    assert summary.no_archive_snapshot == 1
+    assert summary.unknown == 0
+
+
+def test_restore_plan_summary_mixed():
+    """Mixed actions must produce correct counts for each action type."""
+    plan = (
+        ConfigSnapshotRestorePlanEntry("a", "match", "no_action_for_match", ""),
+        ConfigSnapshotRestorePlanEntry("b", "match", "no_action_for_match", ""),
+        ConfigSnapshotRestorePlanEntry("c", "different", "review_difference", ""),
+    )
+    summary = summarize_config_restore_plan(plan)
+    assert summary.total == 3
+    assert summary.no_action_for_match == 2
+    assert summary.review_difference == 1
+    assert summary.can_restore_missing_current == 0
+    assert summary.no_archive_snapshot == 0
+    assert summary.unknown == 0
+
+
+def test_restore_plan_summary_unknown_action():
+    """Plan with unknown actions must count them separately."""
+    plan = (
+        ConfigSnapshotRestorePlanEntry("a", "match", "no_action_for_match", ""),
+        ConfigSnapshotRestorePlanEntry("b", "unknown", "some_unknown_action", ""),
+    )
+    summary = summarize_config_restore_plan(plan)
+    assert summary.total == 2
+    assert summary.no_action_for_match == 1
+    assert summary.unknown == 1
+    assert summary.review_difference == 0
+    assert summary.can_restore_missing_current == 0
+    assert summary.no_archive_snapshot == 0
+
+
+def test_restore_plan_summary_in_config_evidence_to_dict(tmp_path, fake_source, snapshot_file):
+    """config_evidence_to_dict must include restore plan summary dict."""
+    config_dir = tmp_path / "cfg_summary"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"s":"ES"}', encoding="utf-8")
+    (config_dir / "app_settings.json").write_text('{}', encoding="utf-8")
+
+    output_dir = tmp_path / "export_rs_summary"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="R",
+        output_dir=output_dir,
+        config_sources={
+            "instruments.json": str(config_dir / "instruments.json"),
+            "app_settings.json": str(config_dir / "app_settings.json"),
+        },
+    )
+
+    preview = ArchiveImporter(output_dir).build_preview(project_config_dir=config_dir)
+    d = config_evidence_to_dict(preview)
+    summary = d["config_snapshot_restore_plan_summary"]
+
+    assert summary["total"] == 3
+    assert summary["no_action_for_match"] == 2
+    assert summary["review_difference"] == 0
+    assert summary["can_restore_missing_current"] == 0
+    assert summary["no_archive_snapshot"] == 1  # sessions.json has no archive evidence

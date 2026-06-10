@@ -116,6 +116,33 @@ class ConfigSnapshotRestorePlanEntry:
 
 
 @dataclass(frozen=True)
+class ConfigSnapshotRestorePlanSummary:
+    """Immutable summary counts for a restore plan.
+
+    Fields
+    ------
+    total : int
+        Total number of restore plan entries.
+    no_action_for_match : int
+        Count of entries with action ``no_action_for_match``.
+    review_difference : int
+        Count of entries with action ``review_difference``.
+    can_restore_missing_current : int
+        Count of entries with action ``can_restore_missing_current``.
+    no_archive_snapshot : int
+        Count of entries with action ``no_archive_snapshot``.
+    unknown : int
+        Count of entries with any other action string.
+    """
+    total: int = 0
+    no_action_for_match: int = 0
+    review_difference: int = 0
+    can_restore_missing_current: int = 0
+    no_archive_snapshot: int = 0
+    unknown: int = 0
+
+
+@dataclass(frozen=True)
 class ArchiveImportPreview:
     """Immutable preview summary of an archive import dry-run.
 
@@ -372,6 +399,37 @@ def build_config_restore_plan(
     )
 
 
+def summarize_config_restore_plan(
+    plan: tuple[ConfigSnapshotRestorePlanEntry, ...],
+) -> ConfigSnapshotRestorePlanSummary:
+    """Derive action-count summary from a restore plan.
+
+    Parameters
+    ----------
+    plan : tuple[ConfigSnapshotRestorePlanEntry, ...]
+        Restore plan entries from ``build_config_restore_plan()``.
+
+    Returns
+    -------
+    ConfigSnapshotRestorePlanSummary
+        Immutable summary with counts for each known action type.
+    """
+    no_action_for_match = sum(1 for e in plan if e.recommended_action == "no_action_for_match")
+    review_difference = sum(1 for e in plan if e.recommended_action == "review_difference")
+    can_restore = sum(1 for e in plan if e.recommended_action == "can_restore_missing_current")
+    no_archive = sum(1 for e in plan if e.recommended_action == "no_archive_snapshot")
+    known = no_action_for_match + review_difference + can_restore + no_archive
+    unknown = len(plan) - known
+    return ConfigSnapshotRestorePlanSummary(
+        total=len(plan),
+        no_action_for_match=no_action_for_match,
+        review_difference=review_difference,
+        can_restore_missing_current=can_restore,
+        no_archive_snapshot=no_archive,
+        unknown=unknown,
+    )
+
+
 def _evidence_to_dict(e: ConfigSnapshotEvidence) -> dict[str, str]:
     """Serialize one ConfigSnapshotEvidence to a plain dict."""
     return {"filename": e.filename, "sha256": e.sha256}
@@ -405,6 +463,8 @@ def config_evidence_to_dict(
         ``{filename: ..., sha256: ..., comparisons: [...], summary: {...}}``
         All values are plain Python dicts/lists; no dataclasses.
     """
+    restore_plan = build_config_restore_plan(preview.config_snapshot_comparisons)
+    restore_summary = summarize_config_restore_plan(restore_plan)
     return {
         "config_snapshot_files": list(preview.plan.config_snapshot_files),
         "config_snapshot_evidence": [
@@ -421,8 +481,16 @@ def config_evidence_to_dict(
                 "recommended_action": e.recommended_action,
                 "reason": e.reason,
             }
-            for e in build_config_restore_plan(preview.config_snapshot_comparisons)
+            for e in restore_plan
         ],
+        "config_snapshot_restore_plan_summary": {
+            "total": restore_summary.total,
+            "no_action_for_match": restore_summary.no_action_for_match,
+            "review_difference": restore_summary.review_difference,
+            "can_restore_missing_current": restore_summary.can_restore_missing_current,
+            "no_archive_snapshot": restore_summary.no_archive_snapshot,
+            "unknown": restore_summary.unknown,
+        },
     }
 
 

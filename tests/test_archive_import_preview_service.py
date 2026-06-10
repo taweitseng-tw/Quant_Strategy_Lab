@@ -346,3 +346,95 @@ def test_service_error_preserves_cause(tmp_path):
 
     assert exc_info.value.__cause__ is not None, "__cause__ must be preserved"
     assert "manifest" in str(exc_info.value.__cause__).lower()
+
+
+# ---------------------------------------------------------------------------
+# Restore plan summary service tests (Tasks 211-216)
+# ---------------------------------------------------------------------------
+
+
+def test_service_restore_plan_summary_omitted_config(tmp_path):
+    """Service must return empty restore plan summary when no project_config_dir."""
+    output_dir = tmp_path / "export_rs_omit"
+    _export_minimal_archive(output_dir)
+
+    result = ArchiveImportPreviewService().build_preview(output_dir)
+    summary = result["config"]["config_snapshot_restore_plan_summary"]
+
+    assert summary["total"] == 0
+    assert summary["no_action_for_match"] == 0
+    assert summary["review_difference"] == 0
+    assert summary["can_restore_missing_current"] == 0
+    assert summary["no_archive_snapshot"] == 0
+    assert summary["unknown"] == 0
+
+
+def test_service_restore_plan_summary_all_match(tmp_path):
+    """Service must return all-match restore plan summary."""
+    cfg_dir = tmp_path / "cfg_rs_all"
+    cfg_dir.mkdir()
+    (cfg_dir / "instruments.json").write_text('{"s":"ES"}', encoding="utf-8")
+    (cfg_dir / "sessions.json").write_text("[]", encoding="utf-8")
+    (cfg_dir / "app_settings.json").write_text("{}", encoding="utf-8")
+
+    output_dir = tmp_path / "export_rs_all"
+    _export_minimal_archive(
+        output_dir,
+        config_sources={
+            "instruments.json": str(cfg_dir / "instruments.json"),
+            "sessions.json": str(cfg_dir / "sessions.json"),
+            "app_settings.json": str(cfg_dir / "app_settings.json"),
+        },
+    )
+
+    result = ArchiveImportPreviewService().build_preview(
+        output_dir, project_config_dir=cfg_dir,
+    )
+    summary = result["config"]["config_snapshot_restore_plan_summary"]
+
+    assert summary["total"] == 3
+    assert summary["no_action_for_match"] == 3
+    assert summary["review_difference"] == 0
+    assert summary["can_restore_missing_current"] == 0
+    assert summary["no_archive_snapshot"] == 0
+    assert summary["unknown"] == 0
+
+    # Plan entries are also present.
+    assert len(result["config"]["config_snapshot_restore_plan"]) == 3
+
+
+def test_service_restore_plan_summary_mixed(tmp_path):
+    """Service must return correct summary for mixed config evidence."""
+    archive_cfg = tmp_path / "acfg_mixed"
+    archive_cfg.mkdir()
+    (archive_cfg / "instruments.json").write_text('{"s":"A"}', encoding="utf-8")
+    (archive_cfg / "sessions.json").write_text("[]", encoding="utf-8")
+
+    output_dir = tmp_path / "export_rs_mixed"
+    _export_minimal_archive(
+        output_dir,
+        config_sources={
+            "instruments.json": str(archive_cfg / "instruments.json"),
+            "sessions.json": str(archive_cfg / "sessions.json"),
+        },
+    )
+
+    current_cfg = tmp_path / "ccfg_mixed"
+    current_cfg.mkdir()
+    (current_cfg / "instruments.json").write_text('{"s":"B"}', encoding="utf-8")
+    # sessions.json and app_settings.json not created → missing_current / no_archive_evidence
+
+    result = ArchiveImportPreviewService().build_preview(
+        output_dir, project_config_dir=current_cfg,
+    )
+    summary = result["config"]["config_snapshot_restore_plan_summary"]
+
+    assert summary["total"] == 3
+    assert summary["no_action_for_match"] == 0
+    assert summary["review_difference"] == 1   # instruments differs
+    assert summary["can_restore_missing_current"] == 1  # sessions missing from current
+    assert summary["no_archive_snapshot"] == 1  # no app_settings in archive
+    assert summary["unknown"] == 0
+
+    # Plan entries present
+    assert len(result["config"]["config_snapshot_restore_plan"]) == 3
