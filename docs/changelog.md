@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-10 - Tasks 259-264: Alpha Readiness Gap Audit
+
+### Added
+- `docs/alpha_readiness_gap_audit_259_264.md`: Added an ASCII alpha readiness audit covering current runnable evidence, alpha blockers, formal release gaps, and the next three recommended engineering tasks.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 259-264 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_archive_import_preview_contract_acceptance.py -q` - 9 passed.
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 253-258: Desktop Entrypoint Subprocess Smoke
 
 ### Added
