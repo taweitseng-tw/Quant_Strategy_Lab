@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-10 - Tasks 271-276: Desktop Evaluator Walkthrough
+
+### Added
+- `docs/desktop_evaluator_walkthrough_271_276.md`: Added an ASCII developer-evaluator walkthrough from launch through sample data import, strategy workflow, validation, results inspection, and report export.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 271-276 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py -q` - 12 passed.
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 265-270: Sample Data Workflow Smoke
 
 ### Added
