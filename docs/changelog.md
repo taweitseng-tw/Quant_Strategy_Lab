@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Tasks 145-150: Archive Config Snapshot Import Preview Evidence
+
+### Added
+- `archive/importer.py`: Added read-only `config_snapshot_files` evidence to `ArchiveImportPlan`.
+- `tests/test_archive_importer.py`: Added preview/plan coverage for full, partial, and absent config snapshot files.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 145-150 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_importer.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py -q` - 29 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 139-144: Archive Config Snapshot Import Readiness Smoke
 
 ### Added

@@ -86,12 +86,17 @@ class ArchiveImportPlan:
         List of files contained in the archive.
     verified : bool
         True if all integrity checks passed.
+    config_snapshot_files : tuple[str, ...]
+        Subset of *files* that match known project config filenames
+        (instruments.json, sessions.json, app_settings.json).
+        Empty tuple when no config files are present.
     """
     archive_root: Path
     archive_version: str
     experiment_name: str
     files: tuple[str, ...]
     verified: bool
+    config_snapshot_files: tuple[str, ...] = ()
 
 
 def _get_major_version(version_str: str | None) -> int:
@@ -108,6 +113,14 @@ def _get_major_version(version_str: str | None) -> int:
         raise IncompatibleSchemaError(f"Archive version '{version_str}' has non-numeric major version.")
     
     return int(major_str)
+
+
+# Known project config filenames that may appear as archive snapshot files.
+_CONFIG_SNAPSHOT_NAMES: frozenset[str] = frozenset({
+    "instruments.json",
+    "sessions.json",
+    "app_settings.json",
+})
 
 
 class ArchiveImporter:
@@ -170,6 +183,9 @@ class ArchiveImporter:
             experiment_name=manifest.experiment_name,
             files=tuple(manifest.files),
             verified=verified,
+            config_snapshot_files=tuple(
+                f for f in manifest.files if f in _CONFIG_SNAPSHOT_NAMES
+            ),
         )
 
     def build_preview(self, collision_detector: IImportCollisionDetector | None = None) -> ArchiveImportPreview:

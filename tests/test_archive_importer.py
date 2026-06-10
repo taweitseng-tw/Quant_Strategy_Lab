@@ -415,3 +415,88 @@ def test_importer_build_preview_read_only_boundary(fake_source: FakeDataSource, 
     importer.build_preview(detector)
 
     assert set(detector.calls) == {"strategy_exists", "dataset_exists"}
+
+
+# ---------------------------------------------------------------------------
+# Config snapshot files in import plan (Tasks 145-150)
+# ---------------------------------------------------------------------------
+
+
+def test_plan_config_snapshot_files_with_config(tmp_path, fake_source, snapshot_file):
+    """Import preview plan must list config snapshot files when present in archive."""
+    config_dir = tmp_path / "config_src"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"symbol":"ES"}', encoding="utf-8")
+    (config_dir / "sessions.json").write_text('[{"name":"day"}]', encoding="utf-8")
+    (config_dir / "app_settings.json").write_text(
+        '{"execution_model":"next_bar_open"}', encoding="utf-8"
+    )
+
+    output_dir = tmp_path / "export"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+        config_sources={
+            "instruments.json": str(config_dir / "instruments.json"),
+            "sessions.json": str(config_dir / "sessions.json"),
+            "app_settings.json": str(config_dir / "app_settings.json"),
+        },
+    )
+
+    importer = ArchiveImporter(output_dir)
+    plan = importer.verify()
+    preview = importer.build_preview()
+
+    assert set(plan.config_snapshot_files) == {
+        "instruments.json",
+        "sessions.json",
+        "app_settings.json",
+    }
+    assert preview.plan.config_snapshot_files == plan.config_snapshot_files
+
+
+def test_plan_config_snapshot_files_without_config(fake_source, snapshot_file, tmp_path):
+    """Import plan must return empty config_snapshot_files when no config files present."""
+    output_dir = tmp_path / "export_no_cfg"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+    )
+
+    importer = ArchiveImporter(output_dir)
+    plan = importer.verify()
+    preview = importer.build_preview()
+
+    assert plan.config_snapshot_files == ()
+    assert preview.plan.config_snapshot_files == ()
+
+
+def test_plan_config_snapshot_files_partial(tmp_path, fake_source, snapshot_file):
+    """Partial config files (only instruments.json) must be listed without the missing ones."""
+    config_dir = tmp_path / "config_src"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"symbol":"ES"}', encoding="utf-8")
+
+    output_dir = tmp_path / "export_partial"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+        config_sources={"instruments.json": str(config_dir / "instruments.json")},
+    )
+
+    importer = ArchiveImporter(output_dir)
+    plan = importer.verify()
+
+    assert plan.config_snapshot_files == ("instruments.json",)
