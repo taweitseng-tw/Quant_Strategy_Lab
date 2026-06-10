@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-10 - Tasks 253-258: Desktop Entrypoint Subprocess Smoke
+
+### Added
+- `tests/test_app_startup_smoke.py`: Added subprocess smoke coverage for `app/main.py` with `QT_QPA_PLATFORM=offscreen`, `QSL_EXIT_AFTER_MS=100`, timeout handling, captured output, and strict Qt platform-plugin skip detection.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 253-258 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py -q` - 5 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 247-252: Desktop Startup Import Smoke
 
 ### Added
