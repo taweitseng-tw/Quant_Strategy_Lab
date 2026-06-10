@@ -293,6 +293,61 @@ def summarize_config_comparisons(
     )
 
 
+def _comparison_to_dict(c: ConfigSnapshotComparison) -> dict[str, Any]:
+    """Serialize one ConfigSnapshotComparison to a plain dict."""
+    return {
+        "filename": c.filename,
+        "status": c.status,
+        "archive_sha256": c.archive_sha256,
+        "current_sha256": c.current_sha256,
+    }
+
+
+def _evidence_to_dict(e: ConfigSnapshotEvidence) -> dict[str, str]:
+    """Serialize one ConfigSnapshotEvidence to a plain dict."""
+    return {"filename": e.filename, "sha256": e.sha256}
+
+
+def _summary_to_dict(s: ConfigSnapshotComparisonSummary) -> dict[str, int]:
+    """Serialize ConfigSnapshotComparisonSummary to a plain dict."""
+    return {
+        "total": s.total,
+        "match": s.match,
+        "different": s.different,
+        "missing_current": s.missing_current,
+        "no_archive_evidence": s.no_archive_evidence,
+    }
+
+
+def config_evidence_to_dict(
+    preview: ArchiveImportPreview,
+) -> dict[str, Any]:
+    """Serialize all config snapshot evidence from an ArchiveImportPreview
+    to a plain, JSON-compatible dict.
+
+    Parameters
+    ----------
+    preview : ArchiveImportPreview
+        The immutable import preview (e.g. from ``build_preview()``).
+
+    Returns
+    -------
+    dict
+        ``{filename: ..., sha256: ..., comparisons: [...], summary: {...}}``
+        All values are plain Python dicts/lists; no dataclasses.
+    """
+    return {
+        "config_snapshot_files": list(preview.plan.config_snapshot_files),
+        "config_snapshot_evidence": [
+            _evidence_to_dict(e) for e in preview.plan.config_snapshot_evidence
+        ],
+        "config_snapshot_comparisons": [
+            _comparison_to_dict(c) for c in preview.config_snapshot_comparisons
+        ],
+        "config_snapshot_summary": _summary_to_dict(preview.config_snapshot_summary),
+    }
+
+
 class ArchiveImporter:
     """Verification skeleton for importing reproducible strategy archives.
 

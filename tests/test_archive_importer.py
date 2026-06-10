@@ -23,6 +23,7 @@ from archive.importer import (
     ConfigSnapshotComparisonSummary,
     compare_config_snapshots,
     summarize_config_comparisons,
+    config_evidence_to_dict,
 )
 
 
@@ -1002,3 +1003,159 @@ def test_build_preview_summary_mixed_statuses(tmp_path, fake_source, snapshot_fi
     assert summary.different == 1
     assert summary.missing_current == 1
     assert summary.no_archive_evidence == 1
+
+
+# ---------------------------------------------------------------------------
+# Config evidence serialization tests (Tasks 175-180)
+# ---------------------------------------------------------------------------
+
+
+def test_config_evidence_to_dict_omitted(tmp_path, fake_source, snapshot_file):
+    """config_evidence_to_dict must produce empty containers when no config dir provided."""
+    output_dir = tmp_path / "export_ser_omit"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="R",
+        output_dir=output_dir,
+    )
+
+    preview = ArchiveImporter(output_dir).build_preview()
+    d = config_evidence_to_dict(preview)
+
+    assert d["config_snapshot_files"] == []
+    assert d["config_snapshot_evidence"] == []
+    assert d["config_snapshot_comparisons"] == []
+    assert d["config_snapshot_summary"] == {
+        "total": 0, "match": 0, "different": 0,
+        "missing_current": 0, "no_archive_evidence": 0,
+    }
+    json.dumps(d)
+
+
+def test_config_evidence_to_dict_all_match(tmp_path, fake_source, snapshot_file):
+    """config_evidence_to_dict must reflect all-match comparisons."""
+    config_dir = tmp_path / "cfg_ser"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"s":"ES"}', encoding="utf-8")
+    (config_dir / "sessions.json").write_text('[]', encoding="utf-8")
+    (config_dir / "app_settings.json").write_text('{}', encoding="utf-8")
+
+    output_dir = tmp_path / "export_ser_match"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(strategy_uid="strat-001", dataset_snapshot_path=snapshot_file,
+                    disclaimer_text="R", output_dir=output_dir,
+                    config_sources={
+                        "instruments.json": str(config_dir / "instruments.json"),
+                        "sessions.json": str(config_dir / "sessions.json"),
+                        "app_settings.json": str(config_dir / "app_settings.json"),
+                    })
+
+    preview = ArchiveImporter(output_dir).build_preview(project_config_dir=config_dir)
+    d = config_evidence_to_dict(preview)
+
+    assert len(d["config_snapshot_files"]) == 3
+    assert len(d["config_snapshot_evidence"]) == 3
+    assert len(d["config_snapshot_comparisons"]) == 3
+    assert d["config_snapshot_summary"]["match"] == 3
+
+    for c in d["config_snapshot_comparisons"]:
+        assert c["status"] == "match"
+        assert c["archive_sha256"] == c["current_sha256"]
+    json.dumps(d)
+
+
+def test_config_evidence_to_dict_no_archive(tmp_path, fake_source, snapshot_file):
+    """config_evidence_to_dict must show no_archive_evidence when archive has no config."""
+    output_dir = tmp_path / "export_ser_noarc"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(strategy_uid="strat-001", dataset_snapshot_path=snapshot_file,
+                    disclaimer_text="R", output_dir=output_dir)
+
+    config_dir = tmp_path / "cfg_ser_noarc"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{}', encoding="utf-8")
+
+    preview = ArchiveImporter(output_dir).build_preview(project_config_dir=config_dir)
+    d = config_evidence_to_dict(preview)
+
+    assert d["config_snapshot_files"] == []
+    assert d["config_snapshot_evidence"] == []
+    comparisons = d["config_snapshot_comparisons"]
+    instr = [c for c in comparisons if c["filename"] == "instruments.json"][0]
+    assert instr["status"] == "no_archive_evidence"
+
+    assert d["config_snapshot_summary"]["no_archive_evidence"] > 0
+    json.dumps(d)
+
+
+def test_config_evidence_to_dict_mixed_summary(tmp_path, fake_source, snapshot_file):
+    """Serialized dict must include mixed comparison summary counts."""
+    archive_config_dir = tmp_path / "cfg_ser_archive"
+    archive_config_dir.mkdir()
+    (archive_config_dir / "instruments.json").write_text(
+        '{"symbol":"ES"}', encoding="utf-8"
+    )
+    (archive_config_dir / "sessions.json").write_text("[]", encoding="utf-8")
+
+    output_dir = tmp_path / "export_ser_mixed"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="R",
+        output_dir=output_dir,
+        config_sources={
+            "instruments.json": str(archive_config_dir / "instruments.json"),
+            "sessions.json": str(archive_config_dir / "sessions.json"),
+        },
+    )
+
+    current_config_dir = tmp_path / "cfg_ser_current"
+    current_config_dir.mkdir()
+    (current_config_dir / "instruments.json").write_text(
+        '{"symbol":"CHANGED"}', encoding="utf-8"
+    )
+
+    preview = ArchiveImporter(output_dir).build_preview(
+        project_config_dir=current_config_dir
+    )
+    d = config_evidence_to_dict(preview)
+
+    assert d["config_snapshot_summary"] == {
+        "total": 3,
+        "match": 0,
+        "different": 1,
+        "missing_current": 1,
+        "no_archive_evidence": 1,
+    }
+    json.dumps(d)
+
+
+def test_config_evidence_to_dict_immutable(tmp_path, fake_source, snapshot_file):
+    """Serialized dict must be a plain copy; mutating it must not affect original."""
+    config_dir = tmp_path / "cfg_ser_imm"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"s":"ES"}', encoding="utf-8")
+
+    output_dir = tmp_path / "export_ser_imm"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(strategy_uid="strat-001", dataset_snapshot_path=snapshot_file,
+                    disclaimer_text="R", output_dir=output_dir,
+                    config_sources={
+                        "instruments.json": str(config_dir / "instruments.json"),
+                    })
+
+    preview = ArchiveImporter(output_dir).build_preview(project_config_dir=config_dir)
+    d = config_evidence_to_dict(preview)
+    original_summary_match = d["config_snapshot_summary"]["match"]
+
+    # Mutate the dict; it must not affect the original preview.
+    d["config_snapshot_summary"]["match"] = 999
+    assert preview.config_snapshot_summary.match == original_summary_match
