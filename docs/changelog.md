@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Tasks 133-138: Archive Config Snapshot Verification Smoke
+
+### Added
+- `tests/test_archive_exporter.py`: Added verifier smoke coverage for archives that include project config snapshots.
+- `tests/test_archive_exporter.py`: Added config snapshot tamper detection coverage through manifest hash verification.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 133-138 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_exporter.py tests/test_archive_export_service.py tests/test_archive_verifier.py -q` - 24 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 127-132: Archive Project Config Snapshot Readiness
 
 ### Added

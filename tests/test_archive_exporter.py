@@ -11,6 +11,7 @@ import pytest
 
 from archive.builder import ArchiveBuilder
 from archive.exporter import ArchiveExporter, ExportDataUnavailableError
+from archive.manifest import ArchiveIntegrityError, ArchiveManifest
 from archive.verifier import ArchiveVerifier
 
 
@@ -328,3 +329,57 @@ def test_export_without_config_sources_unchanged(fake_source: FakeDataSource, sn
     manifest = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))
     config_names = {"instruments.json", "sessions.json", "app_settings.json"}
     assert not (config_names & set(manifest["files"])), "Config files must not appear without config_sources"
+
+
+def test_export_with_config_sources_passes_verifier(fake_source: FakeDataSource, snapshot_file: str, tmp_path: Path):
+    """Archive exported with config_sources must pass ArchiveVerifier.verify_all()."""
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+
+    config_dir = tmp_path / "config_src"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"symbol":"ES"}', encoding="utf-8")
+    (config_dir / "app_settings.json").write_text('{"execution_model":"next_bar_open"}', encoding="utf-8")
+
+    output_dir = tmp_path / "verifier_ok"
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+        config_sources={
+            "instruments.json": str(config_dir / "instruments.json"),
+            "app_settings.json": str(config_dir / "app_settings.json"),
+        },
+    )
+
+    manifest = ArchiveManifest.read_from_folder(output_dir)
+    verifier = ArchiveVerifier(manifest, output_dir)
+    assert verifier.verify_all() is True, "Verifier must accept archive with config files"
+
+
+def test_export_config_tamper_detected_by_verifier(fake_source: FakeDataSource, snapshot_file: str, tmp_path: Path):
+    """Tampering with an exported config file must cause verifier.verify_all() to fail."""
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+
+    config_dir = tmp_path / "config_src"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"symbol":"ES"}', encoding="utf-8")
+
+    output_dir = tmp_path / "tamper_test"
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+        config_sources={"instruments.json": str(config_dir / "instruments.json")},
+    )
+
+    # Tamper with the exported config file.
+    (output_dir / "instruments.json").write_text('{"symbol":"TAMPERED"}', encoding="utf-8")
+
+    manifest = ArchiveManifest.read_from_folder(output_dir)
+    verifier = ArchiveVerifier(manifest, output_dir)
+    with pytest.raises(ArchiveIntegrityError, match="Hash mismatch"):
+        verifier.verify_all()

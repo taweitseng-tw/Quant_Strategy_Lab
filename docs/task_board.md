@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 133-138 - Archive Config Snapshot Verification Smoke
 - [x] Tasks 127-132 - Archive Project Config Snapshot Readiness
 - [x] Tasks 121-126 - Config Foundation Acceptance and Next Slice Selection
 - [x] Tasks 115-120 - Reproducibility Config Foundation Continuation
