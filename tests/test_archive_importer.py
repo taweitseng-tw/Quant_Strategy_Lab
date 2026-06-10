@@ -24,6 +24,7 @@ from archive.importer import (
     compare_config_snapshots,
     summarize_config_comparisons,
     config_evidence_to_dict,
+    archive_preview_to_dict,
 )
 
 
@@ -1159,3 +1160,109 @@ def test_config_evidence_to_dict_immutable(tmp_path, fake_source, snapshot_file)
     # Mutate the dict; it must not affect the original preview.
     d["config_snapshot_summary"]["match"] = 999
     assert preview.config_snapshot_summary.match == original_summary_match
+
+
+# ---------------------------------------------------------------------------
+# Full import preview serialization tests (Tasks 181-186)
+# ---------------------------------------------------------------------------
+
+
+def test_archive_preview_to_dict_omitted_config(tmp_path, fake_source, snapshot_file):
+    """archive_preview_to_dict must serialize preview metadata without config comparison."""
+    output_dir = tmp_path / "preview_dict_no_config"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="R",
+        output_dir=output_dir,
+        experiment_name="preview-dict",
+    )
+
+    preview = ArchiveImporter(output_dir).build_preview()
+    data = archive_preview_to_dict(preview)
+
+    assert data["plan"]["archive_root"] == str(output_dir)
+    assert data["plan"]["archive_version"] == "1.0.0"
+    assert data["plan"]["experiment_name"] == "preview-dict"
+    assert data["plan"]["verified"] is True
+    assert data["strategy_uid"] == "strat-001"
+    assert data["strategy_name"] == "test_strat"
+    assert data["dataset_id"] == 42
+    assert data["dataset_symbol"] == "ES"
+    assert data["dataset_timeframe"] == "1min"
+    assert data["validation_passed"] is True
+    assert data["config"]["config_snapshot_comparisons"] == []
+    json.dumps(data)
+
+
+def test_archive_preview_to_dict_all_match_config(tmp_path, fake_source, snapshot_file):
+    """archive_preview_to_dict must include all-match config evidence."""
+    config_dir = tmp_path / "preview_dict_config"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"symbol":"ES"}', encoding="utf-8")
+
+    output_dir = tmp_path / "preview_dict_match"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="R",
+        output_dir=output_dir,
+        config_sources={"instruments.json": str(config_dir / "instruments.json")},
+    )
+
+    preview = ArchiveImporter(output_dir).build_preview(project_config_dir=config_dir)
+    data = archive_preview_to_dict(preview)
+
+    assert data["config"]["config_snapshot_files"] == ["instruments.json"]
+    assert data["config"]["config_snapshot_summary"]["match"] == 1
+    comparison_by_name = {
+        item["filename"]: item for item in data["config"]["config_snapshot_comparisons"]
+    }
+    assert comparison_by_name["instruments.json"]["status"] == "match"
+    json.dumps(data)
+
+
+def test_archive_preview_to_dict_collision_flags(tmp_path, fake_source, snapshot_file):
+    """archive_preview_to_dict must preserve strategy and dataset collision flags."""
+    output_dir = tmp_path / "preview_dict_collision"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="R",
+        output_dir=output_dir,
+    )
+
+    detector = FakeCollisionDetector(strategy_exists_val=True, dataset_exists_val=True)
+    preview = ArchiveImporter(output_dir).build_preview(detector)
+    data = archive_preview_to_dict(preview)
+
+    assert data["strategy_collision"] is True
+    assert data["dataset_collision"] is True
+    json.dumps(data)
+
+
+def test_archive_preview_to_dict_is_plain_copy(tmp_path, fake_source, snapshot_file):
+    """Mutating serialized preview data must not mutate the source preview."""
+    output_dir = tmp_path / "preview_dict_copy"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="R",
+        output_dir=output_dir,
+    )
+
+    preview = ArchiveImporter(output_dir).build_preview()
+    data = archive_preview_to_dict(preview)
+    data["plan"]["files"].append("mutated.txt")
+    data["strategy_uid"] = "mutated"
+
+    assert "mutated.txt" not in preview.plan.files
+    assert preview.strategy_uid == "strat-001"

@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-10 - Tasks 181-186: Archive Import Preview Full Dict Serialization
+
+### Added
+- `archive/importer.py`: Added `archive_preview_to_dict()` for JSON-compatible serialization of full `ArchiveImportPreview` metadata plus config evidence.
+- `archive/__init__.py`: Exported `archive_preview_to_dict` through the archive package API.
+- `tests/test_archive_importer.py`: Added full preview serialization coverage for omitted config, all-match config, collision flags, JSON compatibility, and copy isolation.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 181-186 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_importer.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py -q` - 55 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 175-180: Archive Import Preview Dict Serialization for Config Evidence
 
 ### Added

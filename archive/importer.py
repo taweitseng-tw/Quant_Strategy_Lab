@@ -348,6 +348,28 @@ def config_evidence_to_dict(
     }
 
 
+def archive_preview_to_dict(preview: ArchiveImportPreview) -> dict[str, Any]:
+    """Serialize an ArchiveImportPreview to a plain, JSON-compatible dict."""
+    return {
+        "plan": {
+            "archive_root": str(preview.plan.archive_root),
+            "archive_version": preview.plan.archive_version,
+            "experiment_name": preview.plan.experiment_name,
+            "files": list(preview.plan.files),
+            "verified": preview.plan.verified,
+        },
+        "strategy_uid": preview.strategy_uid,
+        "strategy_name": preview.strategy_name,
+        "dataset_id": preview.dataset_id,
+        "dataset_symbol": preview.dataset_symbol,
+        "dataset_timeframe": preview.dataset_timeframe,
+        "validation_passed": preview.validation_passed,
+        "strategy_collision": preview.strategy_collision,
+        "dataset_collision": preview.dataset_collision,
+        "config": config_evidence_to_dict(preview),
+    }
+
+
 class ArchiveImporter:
     """Verification skeleton for importing reproducible strategy archives.
 
