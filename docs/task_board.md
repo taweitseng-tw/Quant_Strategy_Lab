@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 151-156 - Archive Config Snapshot Immutable Hash Evidence
 - [x] Tasks 145-150 - Archive Config Snapshot Import Preview Evidence
 - [x] Tasks 139-144 - Archive Config Snapshot Import Readiness Smoke
 - [x] Tasks 133-138 - Archive Config Snapshot Verification Smoke

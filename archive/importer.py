@@ -35,6 +35,14 @@ class IImportCollisionDetector(Protocol):
 
 
 @dataclass(frozen=True)
+class ConfigSnapshotEvidence:
+    """Read-only manifest evidence for one archived project config snapshot."""
+
+    filename: str
+    sha256: str
+
+
+@dataclass(frozen=True)
 class ArchiveImportPreview:
     """Immutable preview summary of an archive import dry-run.
 
@@ -90,6 +98,9 @@ class ArchiveImportPlan:
         Subset of *files* that match known project config filenames
         (instruments.json, sessions.json, app_settings.json).
         Empty tuple when no config files are present.
+    config_snapshot_evidence : tuple[ConfigSnapshotEvidence, ...]
+        Immutable filename/hash evidence for every config snapshot file.
+        Empty tuple when no config files are present.
     """
     archive_root: Path
     archive_version: str
@@ -97,6 +108,7 @@ class ArchiveImportPlan:
     files: tuple[str, ...]
     verified: bool
     config_snapshot_files: tuple[str, ...] = ()
+    config_snapshot_evidence: tuple[ConfigSnapshotEvidence, ...] = ()
 
 
 def _get_major_version(version_str: str | None) -> int:
@@ -177,14 +189,21 @@ class ArchiveImporter:
         verifier = ArchiveVerifier(manifest, self.archive_dir)
         verified = verifier.verify_all()
 
+        config_snapshot_files = tuple(
+            f for f in manifest.files if f in _CONFIG_SNAPSHOT_NAMES
+        )
+
         return ArchiveImportPlan(
             archive_root=self.archive_dir,
             archive_version=manifest.archive_version,
             experiment_name=manifest.experiment_name,
             files=tuple(manifest.files),
             verified=verified,
-            config_snapshot_files=tuple(
-                f for f in manifest.files if f in _CONFIG_SNAPSHOT_NAMES
+            config_snapshot_files=config_snapshot_files,
+            config_snapshot_evidence=tuple(
+                ConfigSnapshotEvidence(filename=f, sha256=manifest.content_hashes[f])
+                for f in config_snapshot_files
+                if f in manifest.content_hashes
             ),
         )
 

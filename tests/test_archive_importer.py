@@ -18,6 +18,7 @@ from archive.importer import (
     ArchiveImportPlan,
     IImportCollisionDetector,
     ArchiveImportPreview,
+    ConfigSnapshotEvidence,
 )
 
 
@@ -500,3 +501,105 @@ def test_plan_config_snapshot_files_partial(tmp_path, fake_source, snapshot_file
     plan = importer.verify()
 
     assert plan.config_snapshot_files == ("instruments.json",)
+
+
+# ---------------------------------------------------------------------------
+# Config snapshot hash evidence in import plan (Tasks 151-156)
+# ---------------------------------------------------------------------------
+
+
+def test_plan_config_snapshot_evidence_full(tmp_path, fake_source, snapshot_file):
+    """Import plan must expose immutable sha256 evidence for config snapshot files."""
+    import hashlib
+
+    config_dir = tmp_path / "config_src"
+    config_dir.mkdir()
+    cfg_path = config_dir / "instruments.json"
+    cfg_path.write_text('{"symbol":"ES"}', encoding="utf-8")
+    expected_hash = hashlib.sha256(b'{"symbol":"ES"}').hexdigest()
+
+    sess_path = config_dir / "sessions.json"
+    sess_path.write_text('[{"name":"day"}]', encoding="utf-8")
+
+    output_dir = tmp_path / "export_hashes"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+        config_sources={
+            "instruments.json": str(cfg_path),
+            "sessions.json": str(sess_path),
+        },
+    )
+
+    importer = ArchiveImporter(output_dir)
+    plan = importer.verify()
+    preview = importer.build_preview()
+
+    evidence_by_name = {
+        item.filename: item.sha256 for item in plan.config_snapshot_evidence
+    }
+    assert evidence_by_name["instruments.json"] == expected_hash
+    assert "sessions.json" in evidence_by_name
+    assert len(evidence_by_name["sessions.json"]) == 64
+    assert len(plan.config_snapshot_evidence) == 2
+    assert preview.plan.config_snapshot_evidence == plan.config_snapshot_evidence
+    assert isinstance(plan.config_snapshot_evidence[0], ConfigSnapshotEvidence)
+    with pytest.raises(AttributeError):
+        plan.config_snapshot_evidence[0].sha256 = "mutated"
+
+
+def test_plan_config_snapshot_evidence_empty(fake_source, snapshot_file, tmp_path):
+    """Import plan must expose empty hash evidence when no config files present."""
+    output_dir = tmp_path / "export_no_hash"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+    )
+
+    importer = ArchiveImporter(output_dir)
+    plan = importer.verify()
+
+    assert plan.config_snapshot_evidence == ()
+
+
+def test_plan_config_snapshot_evidence_hash_match_manifest(tmp_path, fake_source, snapshot_file):
+    """Config snapshot hash evidence must match the manifest's content_hashes values."""
+    from archive.manifest import ArchiveManifest
+
+    config_dir = tmp_path / "config_src"
+    config_dir.mkdir()
+    (config_dir / "app_settings.json").write_text(
+        '{"execution_model":"next_bar_open"}', encoding="utf-8"
+    )
+
+    output_dir = tmp_path / "export_match"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+        config_sources={
+            "app_settings.json": str(config_dir / "app_settings.json"),
+        },
+    )
+
+    manifest = ArchiveManifest.read_from_folder(output_dir)
+    importer = ArchiveImporter(output_dir)
+    plan = importer.verify()
+
+    assert plan.config_snapshot_evidence == (
+        ConfigSnapshotEvidence(
+            filename="app_settings.json",
+            sha256=manifest.content_hashes["app_settings.json"],
+        ),
+    )

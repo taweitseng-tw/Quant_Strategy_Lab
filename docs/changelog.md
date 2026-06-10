@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-10 - Tasks 151-156: Archive Config Snapshot Immutable Hash Evidence
+
+### Added
+- `archive/importer.py`: Added immutable config snapshot filename/hash evidence to `ArchiveImportPlan`.
+- `archive/__init__.py`: Exported `ConfigSnapshotEvidence` through the archive package API.
+- `tests/test_archive_importer.py`: Added evidence coverage for full, absent, and manifest-matched config snapshot hashes.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 151-156 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_importer.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py tests/test_archive_exporter.py tests/test_archive_export_service.py -q` - 49 passed.
+- `git diff --check` passes with CRLF warnings only.
+
 ## 2026-06-10 - Tasks 145-150: Archive Config Snapshot Import Preview Evidence
 
 ### Added
