@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Tasks 265-270: Sample Data Workflow Smoke
+
+### Added
+- `tests/test_sample_data_workflow_smoke.py`: Added sample-data workflow smoke coverage for sample CSV existence, DataService normalization, backtest structured output, and markdown report generation using existing APIs.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 265-270 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_sample_data_workflow_smoke.py -q` - 7 passed.
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py -q` - 12 passed.
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 259-264: Alpha Readiness Gap Audit
 
 ### Added

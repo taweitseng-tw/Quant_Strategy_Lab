@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 265-270 - Sample Data Workflow Smoke
 - [x] Tasks 259-264 - Alpha Readiness Gap Audit
 - [x] Tasks 253-258 - Desktop Entrypoint Subprocess Smoke
 - [x] Tasks 247-252 - Desktop Startup Import Smoke
