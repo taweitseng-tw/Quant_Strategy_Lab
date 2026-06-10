@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 235-240 - Archive Import Preview Contract Acceptance Snapshot
 - [x] Tasks 229-234 - Archive Import Preview Schema Public Contract Hardening
 - [x] Tasks 223-228 - Archive Import Preview Stable Schema Contract
 - [x] Tasks 217-222 - Archive Config Restore Plan UI-Readiness Flags

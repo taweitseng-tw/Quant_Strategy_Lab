@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-10 - Tasks 235-240: Archive Import Preview Contract Acceptance Snapshot
+
+### Added
+- `tests/test_archive_import_preview_contract_acceptance.py`: Added a full service-level acceptance snapshot for archive import preview schema, top-level keys, config keys, restore plan entry keys, restore plan summary keys, JSON compatibility, collision flags, and read-only behavior.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 235-240 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_import_preview_contract_acceptance.py tests/test_archive_importer.py tests/test_archive_import_preview_service.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py -q` - 102 passed.
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 229-234: Archive Import Preview Schema Public Contract Hardening
 
 ### Added
