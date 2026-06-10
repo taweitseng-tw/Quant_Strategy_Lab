@@ -526,3 +526,76 @@ def test_service_restore_plan_flags_mixed(tmp_path):
     assert plan["app_settings.json"]["requires_manual_review"] is False
 
     assert summary["manual_review_required"] == 2
+
+
+# ---------------------------------------------------------------------------
+# Schema version marker service tests (Tasks 223-228)
+# ---------------------------------------------------------------------------
+
+
+def test_service_schema_version_omitted_config(tmp_path):
+    """Service must include schema version without config comparison."""
+    output_dir = tmp_path / "svc_schema_omit"
+    _export_minimal_archive(output_dir)
+
+    result = ArchiveImportPreviewService().build_preview(output_dir)
+
+    assert result["archive_import_preview_schema_version"] == "1.0.0"
+    assert isinstance(result["archive_import_preview_schema_version"], str)
+    json.dumps(result)
+
+
+def test_service_schema_version_with_config_comparison(tmp_path):
+    """Service must include schema version with config comparison."""
+    cfg_dir = tmp_path / "svc_schema_cfg"
+    cfg_dir.mkdir()
+    (cfg_dir / "instruments.json").write_text('{"s":"ES"}', encoding="utf-8")
+
+    output_dir = tmp_path / "svc_schema_cfg_out"
+    _export_minimal_archive(
+        output_dir,
+        config_sources={"instruments.json": str(cfg_dir / "instruments.json")},
+    )
+
+    result = ArchiveImportPreviewService().build_preview(
+        output_dir, project_config_dir=cfg_dir,
+    )
+
+    assert result["archive_import_preview_schema_version"] == "1.0.0"
+    assert result["config"]["config_snapshot_restore_plan_summary"]["total"] == 3
+    json.dumps(result)
+
+
+def test_service_schema_version_all_keys_present(tmp_path):
+    """Service output must include all expected top-level keys."""
+    output_dir = tmp_path / "svc_schema_keys"
+    _export_minimal_archive(output_dir)
+
+    result = ArchiveImportPreviewService().build_preview(output_dir)
+
+    expected = {
+        "archive_import_preview_schema_version", "plan", "strategy_uid",
+        "strategy_name", "dataset_id", "dataset_symbol", "dataset_timeframe",
+        "validation_passed", "strategy_collision", "dataset_collision", "config",
+    }
+    assert expected.issubset(result.keys())
+    json.dumps(result)
+
+
+def test_service_schema_version_no_file_writes(tmp_path):
+    """Generating schema version must not modify config files."""
+    cfg_dir = tmp_path / "svc_schema_nowrite"
+    cfg_dir.mkdir()
+    cfg_path = cfg_dir / "instruments.json"
+    original = '{"s":"ES"}'
+    cfg_path.write_text(original, encoding="utf-8")
+
+    output_dir = tmp_path / "svc_schema_nowrite_out"
+    _export_minimal_archive(
+        output_dir,
+        config_sources={"instruments.json": str(cfg_path)},
+    )
+
+    ArchiveImportPreviewService().build_preview(output_dir, project_config_dir=cfg_dir)
+
+    assert cfg_path.read_text(encoding="utf-8") == original

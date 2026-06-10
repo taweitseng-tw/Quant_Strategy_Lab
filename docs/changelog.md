@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-10 - Tasks 223-228: Archive Import Preview Stable Schema Contract
+
+### Added
+- `archive/importer.py`: Added top-level `archive_import_preview_schema_version` to archive preview dict output.
+- `tests/test_archive_importer.py`: Added schema marker tests for omitted config, config comparison, existing key preservation, and JSON compatibility.
+- `tests/test_archive_import_preview_service.py`: Added service schema marker tests for omitted config, config comparison, top-level key preservation, JSON compatibility, and no-write behavior.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 223-228 to Done.
+
+### Verification
+- `\.venv\Scripts\python.exe -m pytest tests/test_archive_importer.py tests/test_archive_import_preview_service.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py -q` - 98 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 217-222: Archive Config Restore Plan UI-Readiness Flags
 
 ### Added

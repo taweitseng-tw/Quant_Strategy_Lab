@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 223-228 - Archive Import Preview Stable Schema Contract
 - [x] Tasks 217-222 - Archive Config Restore Plan UI-Readiness Flags
 - [x] Tasks 211-216 - Archive Config Restore Plan Service Summary Hardening
 - [x] Tasks 205-210 - Archive Config Snapshot Read-only Restore Plan Preview

@@ -1550,3 +1550,78 @@ class TestRestorePlanUIFlags:
         summary = d["config_snapshot_restore_plan_summary"]
         assert "manual_review_required" in summary
         assert isinstance(summary["manual_review_required"], int)
+
+
+# ---------------------------------------------------------------------------
+# Schema version marker tests (Tasks 223-228)
+# ---------------------------------------------------------------------------
+
+
+def test_archive_preview_schema_version_marker_present(tmp_path, fake_source, snapshot_file):
+    """archive_preview_to_dict must include a stable schema version marker."""
+    output_dir = tmp_path / "schema_marker"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="R",
+        output_dir=output_dir,
+    )
+
+    data = archive_preview_to_dict(ArchiveImporter(output_dir).build_preview())
+
+    assert "archive_import_preview_schema_version" in data
+    assert isinstance(data["archive_import_preview_schema_version"], str)
+    assert data["archive_import_preview_schema_version"] == "1.0.0"
+    json.dumps(data)
+
+
+def test_archive_preview_schema_version_present_with_config(tmp_path, fake_source, snapshot_file):
+    """Schema marker must coexist with config comparison data."""
+    config_dir = tmp_path / "scfg"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"s":"ES"}', encoding="utf-8")
+
+    output_dir = tmp_path / "schema_cfg"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="R",
+        output_dir=output_dir,
+        config_sources={"instruments.json": str(config_dir / "instruments.json")},
+    )
+
+    data = archive_preview_to_dict(
+        ArchiveImporter(output_dir).build_preview(project_config_dir=config_dir)
+    )
+
+    assert data["archive_import_preview_schema_version"] == "1.0.0"
+    assert len(data["config"]["config_snapshot_restore_plan"]) == 3
+    assert data["config"]["config_snapshot_restore_plan"][0]["severity"] is not None
+    json.dumps(data)
+
+
+def test_archive_preview_schema_version_all_keys_present(tmp_path, fake_source, snapshot_file):
+    """Schema marker must not remove any existing keys."""
+    output_dir = tmp_path / "schema_keys"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="R",
+        output_dir=output_dir,
+    )
+
+    data = archive_preview_to_dict(ArchiveImporter(output_dir).build_preview())
+
+    expected_top_keys = {
+        "archive_import_preview_schema_version", "plan", "strategy_uid",
+        "strategy_name", "dataset_id", "dataset_symbol", "dataset_timeframe",
+        "validation_passed", "strategy_collision", "dataset_collision", "config",
+    }
+    assert expected_top_keys.issubset(data.keys())
+    json.dumps(data)

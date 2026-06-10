@@ -254,6 +254,10 @@ _CONFIG_SNAPSHOT_NAMES: frozenset[str] = frozenset({
     "app_settings.json",
 })
 
+# Stable schema version for archive import preview dict output.  Increment
+# when breaking changes are made to the serialized shape.
+_ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION = "1.0.0"
+
 
 def _sha256_hex_for_file(path: Path) -> str:
     """Compute SHA-256 hex digest for a file on disk."""
@@ -531,6 +535,7 @@ def config_evidence_to_dict(
 def archive_preview_to_dict(preview: ArchiveImportPreview) -> dict[str, Any]:
     """Serialize an ArchiveImportPreview to a plain, JSON-compatible dict."""
     return {
+        "archive_import_preview_schema_version": _ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION,
         "plan": {
             "archive_root": str(preview.plan.archive_root),
             "archive_version": preview.plan.archive_version,
