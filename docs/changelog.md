@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-10 - Tasks 157-162: Archive Config Snapshot Read-only Compare Helper
+
+### Added
+- `archive/importer.py`: Added read-only config snapshot comparison evidence and helper for match/different/missing_current/no_archive_evidence statuses.
+- `archive/__init__.py`: Exported `ConfigSnapshotComparison` and `compare_config_snapshots` through the archive package API.
+- `tests/test_archive_importer.py`: Added comparison coverage for match, different, missing current config, no archive evidence, immutability, and no-write behavior.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 157-162 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_importer.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py -q` - 36 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 151-156: Archive Config Snapshot Immutable Hash Evidence
 
 ### Added

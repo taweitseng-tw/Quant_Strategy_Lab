@@ -6,6 +6,7 @@ and returns an import plan. No database or filesystem mutations.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -40,6 +41,28 @@ class ConfigSnapshotEvidence:
 
     filename: str
     sha256: str
+
+
+@dataclass(frozen=True)
+class ConfigSnapshotComparison:
+    """Read-only comparison result for one archived config snapshot vs current project config.
+
+    Fields
+    ------
+    filename : str
+        The config filename (e.g. instruments.json).
+    status : str
+        One of: ``match``, ``different``, ``missing_current``, ``no_archive_evidence``.
+    archive_sha256 : str or None
+        The SHA-256 hex digest from the archive manifest, if available.
+    current_sha256 : str or None
+        The SHA-256 hex digest of the current project config file on disk,
+        or None if the file does not exist.
+    """
+    filename: str
+    status: str = "unknown"
+    archive_sha256: str | None = None
+    current_sha256: str | None = None
 
 
 @dataclass(frozen=True)
@@ -133,6 +156,76 @@ _CONFIG_SNAPSHOT_NAMES: frozenset[str] = frozenset({
     "sessions.json",
     "app_settings.json",
 })
+
+
+def _sha256_hex_for_file(path: Path) -> str:
+    """Compute SHA-256 hex digest for a file on disk."""
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def compare_config_snapshots(
+    plan: ArchiveImportPlan,
+    project_config_dir: Path,
+) -> tuple[ConfigSnapshotComparison, ...]:
+    """Compare archived config snapshot evidence against current project config files.
+
+    For each known config filename, the result status is one of:
+
+    * ``match`` — archive and current file exist with identical SHA-256.
+    * ``different`` — archive and current file exist with different hashes.
+    * ``missing_current`` — archive has evidence but no current file on disk.
+    * ``no_archive_evidence`` — no archive evidence exists; current file
+      may or may not exist (the comparison only reports what the archive
+      knows about).
+
+    Parameters
+    ----------
+    plan : ArchiveImportPlan
+        A verified import plan with config snapshot evidence.
+    project_config_dir : Path
+        Path to the active project's ``config/`` directory.
+
+    Returns
+    -------
+    tuple[ConfigSnapshotComparison, ...]
+        One comparison per known config filename, in a stable order.
+        Always has exactly 3 entries (one per known config name).
+    """
+    archive_evidence = {e.filename: e.sha256 for e in plan.config_snapshot_evidence}
+    results: list[ConfigSnapshotComparison] = []
+
+    for name in sorted(_CONFIG_SNAPSHOT_NAMES):
+        archive_hash = archive_evidence.get(name)
+
+        if archive_hash is None:
+            results.append(ConfigSnapshotComparison(
+                filename=name,
+                status="no_archive_evidence",
+                archive_sha256=None,
+                current_sha256=None,
+            ))
+            continue
+
+        current_path = project_config_dir / name
+        if not current_path.is_file():
+            results.append(ConfigSnapshotComparison(
+                filename=name,
+                status="missing_current",
+                archive_sha256=archive_hash,
+                current_sha256=None,
+            ))
+            continue
+
+        current_hash = _sha256_hex_for_file(current_path)
+        status = "match" if archive_hash == current_hash else "different"
+        results.append(ConfigSnapshotComparison(
+            filename=name,
+            status=status,
+            archive_sha256=archive_hash,
+            current_sha256=current_hash,
+        ))
+
+    return tuple(results)
 
 
 class ArchiveImporter:

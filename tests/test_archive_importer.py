@@ -19,6 +19,8 @@ from archive.importer import (
     IImportCollisionDetector,
     ArchiveImportPreview,
     ConfigSnapshotEvidence,
+    ConfigSnapshotComparison,
+    compare_config_snapshots,
 )
 
 
@@ -432,6 +434,7 @@ def test_plan_config_snapshot_files_with_config(tmp_path, fake_source, snapshot_
     (config_dir / "app_settings.json").write_text(
         '{"execution_model":"next_bar_open"}', encoding="utf-8"
     )
+    (config_dir / "notes.txt").write_text("not config", encoding="utf-8")
 
     output_dir = tmp_path / "export"
     builder = ArchiveBuilder(fake_source)
@@ -445,6 +448,7 @@ def test_plan_config_snapshot_files_with_config(tmp_path, fake_source, snapshot_
             "instruments.json": str(config_dir / "instruments.json"),
             "sessions.json": str(config_dir / "sessions.json"),
             "app_settings.json": str(config_dir / "app_settings.json"),
+            "notes.txt": str(config_dir / "notes.txt"),
         },
     )
 
@@ -603,3 +607,149 @@ def test_plan_config_snapshot_evidence_hash_match_manifest(tmp_path, fake_source
             sha256=manifest.content_hashes["app_settings.json"],
         ),
     )
+
+
+# ---------------------------------------------------------------------------
+# Config snapshot compare helper (Tasks 157-162)
+# ---------------------------------------------------------------------------
+
+
+def test_compare_config_match(tmp_path, fake_source, snapshot_file):
+    """compare_config_snapshots must report 'match' when archive and current config are identical."""
+    config_dir = tmp_path / "config_src"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"symbol":"ES"}', encoding="utf-8")
+    (config_dir / "sessions.json").write_text('[{"name":"day"}]', encoding="utf-8")
+    (config_dir / "app_settings.json").write_text(
+        '{"execution_model":"next_bar_open"}', encoding="utf-8"
+    )
+
+    output_dir = tmp_path / "export_match"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+        config_sources={
+            "instruments.json": str(config_dir / "instruments.json"),
+            "sessions.json": str(config_dir / "sessions.json"),
+            "app_settings.json": str(config_dir / "app_settings.json"),
+        },
+    )
+
+    importer = ArchiveImporter(output_dir)
+    plan = importer.verify()
+
+    # Use the same source config dir as the "current project config".
+    before_bytes = {path.name: path.read_bytes() for path in config_dir.iterdir()}
+    results = compare_config_snapshots(plan, config_dir)
+    after_bytes = {path.name: path.read_bytes() for path in config_dir.iterdir()}
+
+    assert after_bytes == before_bytes
+    assert len(results) == 3
+    assert "notes.txt" not in {r.filename for r in results}
+    for r in results:
+        assert r.status == "match", f"Expected match for {r.filename}, got {r.status}"
+        assert r.archive_sha256 == r.current_sha256
+    with pytest.raises(AttributeError):
+        results[0].status = "different"
+
+
+def test_compare_config_different(tmp_path, fake_source, snapshot_file):
+    """compare_config_snapshots must report 'different' when archives and current config diverge."""
+    import hashlib
+
+    config_dir = tmp_path / "config_src"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"symbol":"ES"}', encoding="utf-8")
+
+    output_dir = tmp_path / "export_diff"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+        config_sources={"instruments.json": str(config_dir / "instruments.json")},
+    )
+
+    # Read archive hash.
+    from archive.manifest import ArchiveManifest
+    manifest = ArchiveManifest.read_from_folder(output_dir)
+    archive_hash = manifest.content_hashes["instruments.json"]
+
+    # Now change the current file on disk.
+    (config_dir / "instruments.json").write_text('{"symbol":"CHANGED"}', encoding="utf-8")
+    current_hash = hashlib.sha256(b'{"symbol":"CHANGED"}').hexdigest()
+    assert archive_hash != current_hash
+
+    importer = ArchiveImporter(output_dir)
+    plan = importer.verify()
+    results = compare_config_snapshots(plan, config_dir)
+
+    instr_result = [r for r in results if r.filename == "instruments.json"][0]
+    assert instr_result.status == "different"
+    assert instr_result.archive_sha256 == archive_hash
+    assert instr_result.current_sha256 == current_hash
+
+
+def test_compare_config_missing_current(tmp_path, fake_source, snapshot_file):
+    """compare_config_snapshots must report 'missing_current' when archive has evidence but no current file."""
+    config_dir = tmp_path / "config_src"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"symbol":"ES"}', encoding="utf-8")
+
+    output_dir = tmp_path / "export_missing"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+        config_sources={"instruments.json": str(config_dir / "instruments.json")},
+    )
+
+    # Use a different (empty) directory as the "project config" — file does not exist.
+    empty_config = tmp_path / "empty_config"
+    empty_config.mkdir()
+
+    importer = ArchiveImporter(output_dir)
+    plan = importer.verify()
+    results = compare_config_snapshots(plan, empty_config)
+
+    instr_result = [r for r in results if r.filename == "instruments.json"][0]
+    assert instr_result.status == "missing_current"
+    assert instr_result.archive_sha256 is not None
+    assert instr_result.current_sha256 is None
+
+
+def test_compare_config_no_archive_evidence(fake_source, snapshot_file, tmp_path):
+    """compare_config_snapshots must report 'no_archive_evidence' when archive has no config files."""
+    config_dir = tmp_path / "config_src"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"symbol":"ES"}', encoding="utf-8")
+
+    output_dir = tmp_path / "export_no_ev"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+    )
+
+    importer = ArchiveImporter(output_dir)
+    plan = importer.verify()
+    results = compare_config_snapshots(plan, config_dir)
+
+    for r in results:
+        assert r.status == "no_archive_evidence", (
+            f"Expected no_archive_evidence for {r.filename}, got {r.status}"
+        )
+        assert r.archive_sha256 is None
+        assert r.current_sha256 is None
