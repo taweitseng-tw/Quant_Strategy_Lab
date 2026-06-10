@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 319-324 - PyInstaller Build Script and Artifact Hygiene
 - [x] Tasks 313-318 - PyInstaller Onedir Build Spike
 - [x] Tasks 307-312 - Packaging Path Spike
 - [x] Tasks 301-306 - Formal Release Blocker Triage
@@ -113,7 +114,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next
 
-- [ ] Tasks 319-324 - PyInstaller Build Script and Artifact Hygiene (recommended by onedir build spike)
+- [ ] Tasks 325-330 - Packaged App Walkthrough and Quickstart Draft
 
 *(Remaining v0.2 PRD items pending task prioritization)*
 - Proposed Task 055 - Agent Workflow Automation

@@ -49,6 +49,9 @@ test.pdf
 virtual/
 app/test1/
 
+# Generated PyInstaller spec files (committed spec added in a later task)
+*.spec
+
 # Binaries
 *.exe
 

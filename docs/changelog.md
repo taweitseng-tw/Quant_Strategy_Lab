@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-06-10 - Tasks 319-324: PyInstaller Build Script and Artifact Hygiene
+
+### Added
+- `scripts/build_package.ps1`: Added a Windows PyInstaller `--onedir` build script that prefers the local virtualenv Python and runs a packaged exe launch smoke.
+- `docs/pyinstaller_artifact_hygiene_319_324.md`: Added an ASCII artifact hygiene report covering generated output ignore rules, script verification, and remaining packaging risks.
+
+### Changed
+- `.gitignore`: Added `*.spec` to ignore auto-generated PyInstaller spec files by default.
+- `pyproject.toml`: Added `pyinstaller` to the dev optional dependency group only.
+- `docs/task_board.md`: Added Tasks 319-324 to Done and set Tasks 325-330 as the next recommended task.
+
+### Verification
+- `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build_package.ps1` - build succeeded and packaged exe launch smoke passed with exit code 0.
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py tests/test_archive_import_preview_contract_acceptance.py -q` - 16 passed.
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 313-318: PyInstaller Onedir Build Spike
 
 ### Added
