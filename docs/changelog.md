@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Tasks 313-318: PyInstaller Onedir Build Spike
+
+### Added
+- `docs/pyinstaller_onedir_build_spike_313_318.md`: Added an ASCII build spike recording a successful PyInstaller `--onedir` build, packaged exe launch smoke with exit code 0, bundled sample CSV location, build size, and next artifact-hygiene task.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 313-318 to Done and set Tasks 319-324 as the next recommended task.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py tests/test_archive_import_preview_contract_acceptance.py -q` - 16 passed.
+- Packaged exe launch smoke with `QSL_EXIT_AFTER_MS=100` and `QT_QPA_PLATFORM=offscreen` exited with code 0.
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 307-312: Packaging Path Spike
 
 ### Added

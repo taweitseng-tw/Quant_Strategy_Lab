@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 313-318 - PyInstaller Onedir Build Spike
 - [x] Tasks 307-312 - Packaging Path Spike
 - [x] Tasks 301-306 - Formal Release Blocker Triage
 - [x] Tasks 295-300 - CI Smoke Workflow Implementation
@@ -112,7 +113,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Next
 
-- [ ] Tasks 313-318 - PyInstaller Onedir Build Spike (recommended by packaging path spike)
+- [ ] Tasks 319-324 - PyInstaller Build Script and Artifact Hygiene (recommended by onedir build spike)
 
 *(Remaining v0.2 PRD items pending task prioritization)*
 - Proposed Task 055 - Agent Workflow Automation
