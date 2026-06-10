@@ -11,7 +11,11 @@ from typing import Any
 from archive.builder import ArchiveBuilder
 from archive.exporter import ArchiveExporter
 from archive.verifier import ArchiveIntegrityError
+from archive import (
+    ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION as EXPORTED_PREVIEW_SCHEMA_VERSION,
+)
 from archive.importer import (
+    ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION,
     ArchiveImporter,
     ArchiveImporterError,
     IncompatibleSchemaError,
@@ -1573,7 +1577,10 @@ def test_archive_preview_schema_version_marker_present(tmp_path, fake_source, sn
 
     assert "archive_import_preview_schema_version" in data
     assert isinstance(data["archive_import_preview_schema_version"], str)
-    assert data["archive_import_preview_schema_version"] == "1.0.0"
+    assert (
+        data["archive_import_preview_schema_version"]
+        == ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION
+    )
     json.dumps(data)
 
 
@@ -1598,7 +1605,7 @@ def test_archive_preview_schema_version_present_with_config(tmp_path, fake_sourc
         ArchiveImporter(output_dir).build_preview(project_config_dir=config_dir)
     )
 
-    assert data["archive_import_preview_schema_version"] == "1.0.0"
+    assert data["archive_import_preview_schema_version"] == ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION
     assert len(data["config"]["config_snapshot_restore_plan"]) == 3
     assert data["config"]["config_snapshot_restore_plan"][0]["severity"] is not None
     json.dumps(data)
@@ -1625,3 +1632,44 @@ def test_archive_preview_schema_version_all_keys_present(tmp_path, fake_source, 
     }
     assert expected_top_keys.issubset(data.keys())
     json.dumps(data)
+
+
+def test_archive_preview_schema_version_export_matches_serialized(
+    tmp_path, fake_source, snapshot_file
+):
+    """Package export must match serialized preview schema version."""
+    output_dir = tmp_path / "schema_export"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="R",
+        output_dir=output_dir,
+    )
+
+    data = archive_preview_to_dict(ArchiveImporter(output_dir).build_preview())
+
+    assert EXPORTED_PREVIEW_SCHEMA_VERSION == ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION
+    assert data["archive_import_preview_schema_version"] == EXPORTED_PREVIEW_SCHEMA_VERSION
+
+
+def test_archive_preview_schema_version_is_distinct_from_archive_version(
+    tmp_path, fake_source, snapshot_file
+):
+    """Preview schema version must not be confused with archive manifest version."""
+    output_dir = tmp_path / "schema_distinct"
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="R",
+        output_dir=output_dir,
+    )
+
+    data = archive_preview_to_dict(ArchiveImporter(output_dir).build_preview())
+
+    assert data["archive_import_preview_schema_version"] == ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION
+    assert data["plan"]["archive_version"] == "1.0.0"
+    assert "archive_import_preview_schema_version" not in data["plan"]

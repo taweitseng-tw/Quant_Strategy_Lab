@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-10 - Tasks 229-234: Archive Import Preview Schema Public Contract Hardening
+
+### Added
+- `archive/importer.py`: Promoted the archive import preview schema version to public `ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION` and used it in preview serialization.
+- `archive/__init__.py`: Exported `ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION`.
+- `tests/test_archive_importer.py`: Added public export consistency and archive-version distinction tests.
+- `tests/test_archive_import_preview_service.py`: Added full preview contract coverage for schema version, collision flags, config comparison, restore plan evidence, and JSON compatibility.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 229-234 to Done.
+
+### Verification
+- `\.venv\Scripts\python.exe -m pytest tests/test_archive_importer.py tests/test_archive_import_preview_service.py tests/test_archive_roundtrip_acceptance.py tests/test_archive_verifier.py -q` - 101 passed.
+- `git diff --check` passes with CRLF warnings only.
 ## 2026-06-10 - Tasks 223-228: Archive Import Preview Stable Schema Contract
 
 ### Added

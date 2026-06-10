@@ -24,6 +24,7 @@ __all__ = [
     "ArchiveExporterError",
     "ExportDataUnavailableError",
     "ArchiveImporter",
+    "ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION",
     "ArchiveImporterError",
     "IncompatibleSchemaError",
     "ConfigSnapshotEvidence",
@@ -58,6 +59,7 @@ from archive.builder import (
 from archive.exporter import ArchiveExporter, ArchiveExporterError, ExportDataUnavailableError
 from archive.importer import (
     ArchiveImporter,
+    ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION,
     ArchiveImporterError,
     IncompatibleSchemaError,
     ConfigSnapshotEvidence,

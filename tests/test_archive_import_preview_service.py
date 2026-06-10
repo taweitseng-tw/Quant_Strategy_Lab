@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from archive import ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION
 from app.services.archive_import_preview_service import (
     ArchiveImportPreviewService,
     ArchiveImportPreviewServiceError,
@@ -540,7 +541,10 @@ def test_service_schema_version_omitted_config(tmp_path):
 
     result = ArchiveImportPreviewService().build_preview(output_dir)
 
-    assert result["archive_import_preview_schema_version"] == "1.0.0"
+    assert (
+        result["archive_import_preview_schema_version"]
+        == ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION
+    )
     assert isinstance(result["archive_import_preview_schema_version"], str)
     json.dumps(result)
 
@@ -561,7 +565,7 @@ def test_service_schema_version_with_config_comparison(tmp_path):
         output_dir, project_config_dir=cfg_dir,
     )
 
-    assert result["archive_import_preview_schema_version"] == "1.0.0"
+    assert result["archive_import_preview_schema_version"] == ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION
     assert result["config"]["config_snapshot_restore_plan_summary"]["total"] == 3
     json.dumps(result)
 
@@ -599,3 +603,45 @@ def test_service_schema_version_no_file_writes(tmp_path):
     ArchiveImportPreviewService().build_preview(output_dir, project_config_dir=cfg_dir)
 
     assert cfg_path.read_text(encoding="utf-8") == original
+
+
+def test_service_schema_version_full_preview_contract(tmp_path):
+    """Schema version must coexist with collision and restore-plan evidence."""
+    archive_cfg = tmp_path / "svc_schema_full_archive_cfg"
+    archive_cfg.mkdir()
+    (archive_cfg / "instruments.json").write_text('{"s":"ARCHIVE"}', encoding="utf-8")
+    (archive_cfg / "sessions.json").write_text("[]", encoding="utf-8")
+
+    output_dir = tmp_path / "svc_schema_full_out"
+    _export_minimal_archive(
+        output_dir,
+        config_sources={
+            "instruments.json": str(archive_cfg / "instruments.json"),
+            "sessions.json": str(archive_cfg / "sessions.json"),
+        },
+    )
+
+    current_cfg = tmp_path / "svc_schema_full_current_cfg"
+    current_cfg.mkdir()
+    (current_cfg / "instruments.json").write_text('{"s":"CURRENT"}', encoding="utf-8")
+
+    detector = FakeCollisionDetector(strategy_exists=True, dataset_exists=True)
+    result = ArchiveImportPreviewService().build_preview(
+        output_dir,
+        collision_detector=detector,
+        project_config_dir=current_cfg,
+    )
+
+    assert result["archive_import_preview_schema_version"] == ARCHIVE_IMPORT_PREVIEW_SCHEMA_VERSION
+    assert result["strategy_collision"] is True
+    assert result["dataset_collision"] is True
+
+    config = result["config"]
+    assert len(config["config_snapshot_restore_plan"]) == 3
+    assert config["config_snapshot_restore_plan_summary"]["manual_review_required"] == 2
+    assert any(
+        entry["severity"] == "warning"
+        and entry["requires_manual_review"] is True
+        for entry in config["config_snapshot_restore_plan"]
+    )
+    json.dumps(result)
