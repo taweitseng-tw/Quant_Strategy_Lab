@@ -40,6 +40,7 @@ class ArchiveExporter:
         disclaimer_text: str,
         output_dir: str | Path,
         experiment_name: str | None = None,
+        config_sources: dict[str, str] | None = None,
     ) -> Path:
         """Export all strategy materials to output_dir and write manifest.json.
 
@@ -52,6 +53,10 @@ class ArchiveExporter:
         output_dir : str or Path
             The destination directory.
         experiment_name : str or None
+        config_sources : dict or None
+            Optional mapping ``{archive_filename: source_path}`` for
+            additional files to copy into the archive (e.g. project config
+            files).  Missing source paths are silently skipped.
 
         Returns
         -------
@@ -121,7 +126,17 @@ class ArchiveExporter:
         shutil.copy2(dataset_snapshot_path, snapshot_dest)
         snapshot_bytes = snapshot_dest.read_bytes()
 
-        # 7. Compute SHA-256 hashes of the exact written bytes
+        # 7. Copy project config files (optional)
+        config_bytes_map: dict[str, bytes] = {}
+        if config_sources:
+            for arc_name, src_path in config_sources.items():
+                src = Path(src_path)
+                if src.is_file():
+                    dest = output_path / arc_name
+                    shutil.copy2(src, dest)
+                    config_bytes_map[arc_name] = dest.read_bytes()
+
+        # 8. Compute SHA-256 hashes of the exact written bytes
         manifest.content_hashes = {
             "disclaimer.txt": hashlib.sha256(disclaimer_bytes).hexdigest(),
             "strategy.json": hashlib.sha256(strategy_bytes).hexdigest(),
@@ -129,6 +144,9 @@ class ArchiveExporter:
             "validation_result.json": hashlib.sha256(val_bytes).hexdigest(),
             "ohlcv_snapshot.csv": hashlib.sha256(snapshot_bytes).hexdigest(),
         }
+        for arc_name, data in config_bytes_map.items():
+            manifest.content_hashes[arc_name] = hashlib.sha256(data).hexdigest()
+            manifest.files.append(arc_name)
 
         # 8. Write manifest.json
         manifest.write_to_folder(output_path)

@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-10 - Tasks 127-132: Archive Project Config Snapshot Readiness
+
+### Added
+- `archive/exporter.py` and `ArchiveExportService`: Added optional export-side project config snapshot copying via `config_sources`.
+- Tests cover exporter config file inclusion, service forwarding, missing-config omission, and UI archive handler config source wiring.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 127-132 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_archive_exporter.py tests/test_archive_export_service.py tests/test_archive_builder.py -q` - 26 passed.
+- `.\.venv\Scripts\python.exe -m pytest tests/test_wfe_ui_wiring.py -q` - 71 passed.
+- `git diff --check` passes with CRLF warnings only.
+
 ## 2026-06-10 - Tasks 121-126: Config Foundation Acceptance and Next Slice Selection
 
 ### Changed

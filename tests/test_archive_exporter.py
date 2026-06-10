@@ -255,3 +255,76 @@ def test_export_raises_data_unavailable_if_validation_missing_after_build(fake_s
             disclaimer_text="Research only.",
             output_dir=tmp_path / "export_fail_validation",
         )
+
+
+# ---------------------------------------------------------------------------
+# Project config files in archive  (Task 127-132)
+# ---------------------------------------------------------------------------
+
+
+def test_export_with_config_sources(fake_source: FakeDataSource, snapshot_file: str, tmp_path: Path):
+    """Exporter must copy config files from source paths into the archive."""
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+
+    # Create source config files.
+    config_dir = tmp_path / "config_src"
+    config_dir.mkdir()
+    (config_dir / "instruments.json").write_text('{"key": "instrument_value"}', encoding="utf-8")
+    (config_dir / "sessions.json").write_text('{"key": "session_value"}', encoding="utf-8")
+
+    config_sources = {
+        "instruments.json": str(config_dir / "instruments.json"),
+        "sessions.json": str(config_dir / "sessions.json"),
+        "app_settings.json": str(config_dir / "app_settings.json"),  # missing, should be skipped
+    }
+
+    output_dir = tmp_path / "export_config"
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+        config_sources=config_sources,
+    )
+
+    # Config files present in output.
+    assert (output_dir / "instruments.json").is_file(), "instruments.json must be in archive"
+    assert (output_dir / "sessions.json").is_file(), "sessions.json must be in archive"
+    assert not (output_dir / "app_settings.json").exists(), "Missing config must be skipped"
+
+    # Content preserved.
+    assert json.loads((output_dir / "instruments.json").read_text(encoding="utf-8")) == {
+        "key": "instrument_value",
+    }
+    assert json.loads((output_dir / "sessions.json").read_text(encoding="utf-8")) == {
+        "key": "session_value",
+    }
+
+    # Manifest must include config files.
+    manifest = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert "instruments.json" in manifest["files"]
+    assert "sessions.json" in manifest["files"]
+    assert "app_settings.json" not in manifest["files"], "Missing config must not be in manifest"
+
+    # Verify hashes are present.
+    assert "instruments.json" in manifest["content_hashes"]
+    assert "sessions.json" in manifest["content_hashes"]
+
+
+def test_export_without_config_sources_unchanged(fake_source: FakeDataSource, snapshot_file: str, tmp_path: Path):
+    """Export without config_sources must not include any config files."""
+    builder = ArchiveBuilder(fake_source)
+    exporter = ArchiveExporter(builder, fake_source)
+
+    output_dir = tmp_path / "no_config"
+    exporter.export(
+        strategy_uid="strat-001",
+        dataset_snapshot_path=snapshot_file,
+        disclaimer_text="Research only.",
+        output_dir=output_dir,
+    )
+
+    manifest = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))
+    config_names = {"instruments.json", "sessions.json", "app_settings.json"}
+    assert not (config_names & set(manifest["files"])), "Config files must not appear without config_sources"

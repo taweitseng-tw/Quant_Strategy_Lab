@@ -1015,11 +1015,19 @@ class MainWindow(QMainWindow):
         output_dir = Path(project_root) / "exports" / "archives" / strategy_uid
 
         try:
+            config_dir = Path(project_root) / "config"
+            config_sources = {}
+            for cfg_name in ("instruments.json", "sessions.json", "app_settings.json"):
+                cfg_path = config_dir / cfg_name
+                if cfg_path.is_file():
+                    config_sources[cfg_name] = str(cfg_path)
+
             archive_path = export_svc.export_strategy_archive(
                 strategy_uid=strategy_uid,
                 dataset_snapshot_path=str(snapshot_path),
                 output_dir=output_dir,
                 experiment_name=strategy.name,
+                config_sources=config_sources or None,
             )
             self.log_panel.add_message("INFO", f"Archive successfully exported to {archive_path}")
             QMessageBox.information(self, "Export Successful", f"Archive exported to:\n{archive_path}")

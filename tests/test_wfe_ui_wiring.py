@@ -299,6 +299,10 @@ def test_export_archive_handler_calls_export_service(main_window, tmp_path, monk
             }]
 
     calls = []
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    for cfg_name in ("instruments.json", "sessions.json", "app_settings.json"):
+        (config_dir / cfg_name).write_text("{}", encoding="utf-8")
 
     class _ExportService:
         def __init__(self, data_source):
@@ -346,6 +350,11 @@ def test_export_archive_handler_calls_export_service(main_window, tmp_path, monk
     assert len(calls) == 1
     assert calls[0]["strategy_uid"] == "uid-ok"
     assert calls[0]["dataset_snapshot_path"] == str(snapshot)
+    assert calls[0]["config_sources"] == {
+        "instruments.json": str(config_dir / "instruments.json"),
+        "sessions.json": str(config_dir / "sessions.json"),
+        "app_settings.json": str(config_dir / "app_settings.json"),
+    }
     assert any(level == "INFO" and "Archive successfully exported" in msg for level, msg in messages)
 
 

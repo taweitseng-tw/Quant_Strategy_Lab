@@ -63,6 +63,7 @@ class ArchiveExportService:
         output_dir: str | Path,
         disclaimer_text: str | None = None,
         experiment_name: str | None = None,
+        config_sources: dict[str, str] | None = None,
     ) -> Path:
         """Build and export a strategy archive to *output_dir*.
 
@@ -77,6 +78,10 @@ class ArchiveExportService:
             Defaults to the standard research disclaimer.
         experiment_name : str or None
             Defaults to the strategy name.
+        config_sources : dict or None
+            Optional mapping ``{archive_filename: source_path}`` for
+            additional files to copy (e.g. project config files).
+            Missing source paths are silently skipped.
 
         Returns
         -------
@@ -98,6 +103,7 @@ class ArchiveExportService:
                 disclaimer_text=disclaimer,
                 output_dir=Path(output_dir),
                 experiment_name=experiment_name,
+                config_sources=config_sources,
             )
         except (ArchiveBuilderError, ArchiveExporterError) as exc:
             raise ArchiveExportServiceError(
