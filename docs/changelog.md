@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-11 - Tasks 373-378: v0.3.0-dev External Sharing Decision
+
+### Added
+- `docs/v0.3.0-dev_external_sharing_decision_373_378.md`: Added an ASCII decision document comparing local-only, direct transfer, cloud storage, and future remote/release sharing paths for the local `v0.3.0-dev` zip.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 373-378 to Done.
+
+### Verification
+- `release_artifacts/QuantStrategyLab-v0.3.0-dev-windows-onedir.zip` exists locally and is gitignored.
+- Zip size is `128,770,261` bytes / `122.8 MiB`.
+- `git diff --check` passed.
+- No upload, push, or remote configuration was executed.
 ## 2026-06-10 - Tasks 367-372: Local Release Zip Evidence
 
 ### Added
