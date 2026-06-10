@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-10 - Tasks 115-120: Reproducibility Config Foundation Continuation
+
+### Added
+- `tests/test_instrument_editor.py`: Added editor save isolation, missing `instruments.json` recovery, invalid item recovery, and partial valid/invalid list tests.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 115-120 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_instrument_editor.py tests/test_project_repo.py tests/test_project_service.py -q` - 42 passed.
+- `git diff --check` passes with CRLF warnings only.
+
 ## 2026-06-10 - Task 114A-114C: InstrumentService Malformed Config Recovery Isolation
 
 ### Added

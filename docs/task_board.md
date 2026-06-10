@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 115-120 - Reproducibility Config Foundation Continuation
 - [x] Task 114A-114C - InstrumentService Malformed Config Recovery Isolation
 - [x] Task 113A-113C - InstrumentService Config Isolation Smoke
 - [x] Task 112A-112C - ProjectService Config Boundary Smoke
