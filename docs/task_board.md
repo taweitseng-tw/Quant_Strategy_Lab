@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Tasks 295-300 - CI Smoke Workflow Implementation
 - [x] Tasks 289-294 - CI Smoke Pipeline Design
 - [x] Tasks 283-288 - Developer Alpha Acceptance Packet
 - [x] Tasks 277-282 - Hold Artifact Final Decision

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-10 - Tasks 295-300: CI Smoke Workflow Implementation
+
+### Added
+- `.github/workflows/ci.yml`: Added a Windows Python 3.11 GitHub Actions smoke workflow for the current 16-test developer-alpha smoke set on `master` push and pull request events.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 295-300 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py tests/test_archive_import_preview_contract_acceptance.py -q` - 16 passed.
+- `git diff --check` passed.
 ## 2026-06-10 - Tasks 289-294: CI Smoke Pipeline Design
 
 ### Added
