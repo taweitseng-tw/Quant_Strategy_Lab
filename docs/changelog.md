@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-06-11 - Tasks 385-390: v0.3.0-dev Evaluator Readiness Closure
+
+### Added
+- `docs/v0.3.0-dev_evaluator_readiness_closure_385_390.md`: Added compact evaluator readiness evidence with release artifact status, smoke command, known limits, feedback questions, and research-only disclaimer.
+
+### Changed
+- `docs/release_notes_v0.3.0-dev.md`: Added local release artifact status and updated smoke verification to the current 98-test readiness command.
+- `docs/desktop_evaluator_walkthrough_271_276.md`: Added import UX and quality checker smoke command coverage.
+- `docs/context_brief.md`: Updated current milestone and release artifact state.
+- `docs/task_board.md`: Added Tasks 385-390 to Done.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py tests/test_data_page_wiring.py tests/test_quality_checker.py tests/test_candlestick_chart.py tests/test_archive_import_preview_contract_acceptance.py -q` - 98 passed.
+- `git check-ignore -v release_artifacts/QuantStrategyLab-v0.3.0-dev-windows-onedir.zip` confirmed the zip is ignored by `release_artifacts/`.
+- Local tag `v0.3.0-dev` confirmed present. No binaries were modified or uploaded.
+
 ## 2026-06-11 - Codex Review Fix: Large-File Import UX Hardening
 
 ### Added

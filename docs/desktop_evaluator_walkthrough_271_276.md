@@ -137,11 +137,13 @@ Supporting test:
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py -q
 .\.venv\Scripts\python.exe -m pytest tests/test_sample_data_workflow_smoke.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_data_page_wiring.py tests/test_quality_checker.py tests/test_candlestick_chart.py -q
 ```
 
 Expected:
 - Startup smoke: 5 passed.
 - Sample-data workflow smoke: 7 passed.
+- Import UX and quality checker command is included for focused verification of import worker progress, quality warning details, session-aware gap detection, and chart slicing.
 
 ## Known Limits
 

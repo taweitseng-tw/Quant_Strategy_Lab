@@ -1,7 +1,7 @@
 # Quant Strategy Lab — Compact Context Brief
 
 > For Reasonix / Codex handoffs. Does **not** replace full-context review for risky tasks.
-> Last updated: 2026-06-09 (Codex review efficiency guardrails)
+> Last updated: 2026-06-11 (v0.3.0-dev evaluator readiness closure)
 
 ## Project Goal
 
@@ -9,7 +9,7 @@ Local-first PySide6 desktop platform for quant strategy generation, backtesting,
 
 ## Current Milestone
 
-**v0.2 Alpha — validation expansion.** Tagged: `v0.2-alpha-validation-expansion` → `1a9c533`.
+**v0.3.0-dev — developer pre-release (Windows, local tag).** Tagged: `v0.3.0-dev` → `bd94e90`.
 
 ## Architecture Layers (top to bottom)
 
@@ -44,10 +44,12 @@ Engine code must not import PySide6. UI must not contain trading/strategy/backte
 
 ## Open Capabilities / Current Gaps
 
-- Project/instrument config foundation complete: repo create/open, config template integrity, InstrumentService recovery (Tasks 110-120). The next post-v0.2 engineering task should be selected before assigning implementation.
+- Large-file import UX hardening complete: background worker, progress stages, session-aware quality gap filtering, structured quality issues (Tasks 065A-065B + follow-up series 080A+).
 - MC worst-case equity is trade-step evidence for missed-trade MC, not bar-by-bar equity and not all MC runner types.
 - Context/document hygiene remains active: handoff docs must avoid stale claims.
-- Data import is not currently considered blocked; focused data workflow tests pass and Tasks 065A/065B completed format guidance, actionable error text, and import error smoke coverage.
+- Data import is not currently considered blocked; focused data workflow tests pass.
+- Release artifact zip exists at `release_artifacts/QuantStrategyLab-v0.3.0-dev-windows-onedir.zip` (`128,770,261` bytes / `122.8 MiB`, gitignored).
+- Tag `v0.3.0-dev` is local only - not pushed to any remote.
 
 ## Key Directories
 
@@ -67,17 +69,15 @@ Engine code must not import PySide6. UI must not contain trading/strategy/backte
 
 ## Current Review Focus (June 2026)
 
-- Reduce repeated context loading with context levels and targeted reading.
+- v0.3.0-dev developer pre-release: desktop startup smoke, sample data workflow, archive preview contract, CI smoke pipeline, PyInstaller onedir packaging, large-file import UX with session-aware quality checks.
+- Evaluator readiness closure: release zip exists (`128,770,261` bytes / `122.8 MiB`), tag is local, evaluator docs are updated, no upload/push performed.
 - For Level 1/2 tasks, start from this brief plus current task-board/changelog sections.
-- For Level 3 tasks, use the full required reading order in `AGENTS.md`.
-- Latest active next item in `docs/task_board.md`: Next item is None. A new post-v0.2 task must be selected before assigning implementation.
 
 ## Context Efficiency Rules
 
 - Do not paste or reload full `docs/PRD.md`, full `docs/changelog.md`, or archive files for low-risk work.
 - Use `rg` to find older decisions in `docs/archive/`, then read only matching sections.
 - Keep handoff and review packets compact; store long evidence in `docs/agent_reports/` when needed.
-- Codex reviews should start from changed files, focused diffs, verification output, and reviewer focus. Review one coherent bucket at a time when the worktree is mixed.
+- Codex reviews should start from changed files, focused diffs, verification output, and reviewer focus.
 - Use focused tests before full suites unless the task touches broad engine behavior, release acceptance, no-future-leak assumptions, or architecture contracts.
 - Token savings must never weaken tests, architecture boundaries, no-future-leak review, or milestone acceptance.
-- Historical task-board Done items live in docs/archive/task_board_done_archive.md; older changelog entries live in docs/archive/changelog_archive.md. These are repository documentation artifacts, not local tool-state. Accepted untracked docs are grouped in docs/documentation_artifact_staging_plan_064H.md.

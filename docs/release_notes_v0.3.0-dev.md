@@ -50,29 +50,37 @@ Onedir size was about 386 MB in the latest local verification.
 Smoke tests:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py tests/test_archive_import_preview_contract_acceptance.py -q
+.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py tests/test_data_page_wiring.py tests/test_quality_checker.py tests/test_candlestick_chart.py tests/test_archive_import_preview_contract_acceptance.py -q
 ```
 
 Observed result:
 
 ```text
-16 passed
+98 passed
 ```
 
 ## Known Limits
 
 - Windows only.
 - No installer, code signing, or auto-update.
-- Large PyInstaller onedir package.
+- Large PyInstaller onedir package (~395 MB on disk, 122.8 MiB zip).
 - CI does not build the package yet.
 - No screenshot or visual regression coverage.
 - Full manual packaged workflow should still be exercised by an evaluator.
+- Sample data smoke test produces limited trades (sample files are small).
 - Not a `v1.0` or public production release.
 
-## Tag
-
-Recommended local annotated tag:
+## Local Release Artifact
 
 ```text
-v0.3.0-dev
+release_artifacts/QuantStrategyLab-v0.3.0-dev-windows-onedir.zip
+    Size: 128,770,261 bytes / 122.8 MiB
+    Status: gitignored, not pushed
+    Tag: v0.3.0-dev (local only)
 ```
+
+## Disclaimer
+
+This software is for research and backtesting purposes only.
+Backtested performance does not guarantee future results.
+Not financial advice. No live trading.
