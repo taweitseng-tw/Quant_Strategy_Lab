@@ -13,6 +13,7 @@ Strategy Quality / Robustness Expansion
 ## Done
 
 - [x] Tasks 397-402 - Post-v0.3.0-dev Next Milestone Decision
+- [x] Tasks 403-408 - Elimination Rule Configuration Design and Contract
 - [x] Tasks 391-396 - Final v0.3.0-dev Release Acceptance Audit
 - [x] Codex Review Fix - Large-File Import UX Hardening
 - [x] Tasks 385-390 - v0.3.0-dev Release Evidence and Evaluator Readiness Closure
@@ -128,8 +129,7 @@ Strategy Quality / Robustness Expansion
 
 ## Next
 
-- [ ] Tasks 403-408 - Elimination Rule Configuration Design and Contract
-- [ ] Tasks 409-414 - Elimination Rule Configuration Implementation
+- [ ] Tasks 409-414 - Elimination Rule Configuration Implementation (OOS stability controls + Validate pipeline config wiring)
 - [ ] Tasks 415-420 - Strategy Quality Evidence Summary
 - [ ] Tasks 421-426 - Fitness Multi-Metric Weighting Design
 - [ ] Tasks 427-432 - Fitness Multi-Metric Weighting Implementation

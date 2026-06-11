@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-11 - Tasks 403-408: Elimination Rule Configuration Design and Contract
+
+### Added
+- `docs/elimination_rule_config_design_403_408.md`: Added a reviewed elimination configuration design covering existing engine, strategy service, ranking UI, validation pipeline, current gaps, next implementation slice, and deterministic test plan.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 403-408 to Done and clarified Tasks 409-414 as the OOS stability gate control implementation slice.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_elimination_config_widget.py tests/test_elimination.py tests/test_strategy_service_elimination_config.py -q` - 55 passed.
+- `git diff --check` passed with CRLF notices only. No production code changed.
+
 ## 2026-06-11 - Tasks 397-402: Post-v0.3.0-dev Next Milestone Decision
 
 ### Added
