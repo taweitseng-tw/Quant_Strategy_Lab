@@ -9,7 +9,7 @@ import pandas as pd
 from core.models.instrument import InstrumentProfile
 from strategy_engine.generator import generate_strategies
 from backtest_engine.runner import run_backtest
-from strategy_engine.ranking import rank_strategies
+from strategy_engine.ranking import rank_strategies, DEFAULT_WEIGHTS
 from validation_engine.elimination import EliminationConfig, evaluate_elimination
 
 
@@ -28,6 +28,7 @@ class StrategyService:
 
     def __init__(self, elimination_config: EliminationConfig | None = None) -> None:
         self.elimination_config = elimination_config or self.DEFAULT_ELIMINATION_CONFIG
+        self.fitness_weights = dict(DEFAULT_WEIGHTS)
 
     def update_elimination_config(self, config_dict: dict) -> None:
         """Update the elimination configuration from a primitive dictionary.
@@ -50,6 +51,22 @@ class StrategyService:
     def get_elimination_config_dict(self) -> dict:
         """Get the current elimination configuration as a primitive dictionary."""
         return self.elimination_config.to_dict()
+
+    def get_fitness_weights(self) -> dict:
+        """Return a defensive copy of the current fitness weights."""
+        return dict(self.fitness_weights)
+
+    def update_fitness_weights(self, weights: dict) -> None:
+        """Update fitness weights with partial or full replacement.
+
+        - Keys from ``DEFAULT_WEIGHTS`` that are present in *weights* are
+          updated (values clamped to [0.0, 1.0]).
+        - Keys not in *weights* are preserved.
+        - Unknown keys and non-numeric values are silently ignored.
+        """
+        for k, v in weights.items():
+            if k in DEFAULT_WEIGHTS and isinstance(v, (int, float)) and not isinstance(v, bool):
+                self.fitness_weights[k] = max(0.0, min(1.0, float(v)))
 
     def get_ranked_strategies(
         self,
@@ -134,7 +151,7 @@ class StrategyService:
             })
             
         # 3. Rank strategies based on fitness score
-        ranked = rank_strategies(backtest_results)
+        ranked = rank_strategies(backtest_results, weights=self.fitness_weights)
 
         # 4. Apply elimination rules — mark strategies without removing them.
         for entry in ranked:

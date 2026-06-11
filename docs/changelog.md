@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-11 - Tasks 433-438: Fitness Multi-Metric Weighting Implementation
+
+### Added
+- `app/services/strategy_service.py`: Added service-owned fitness weights, defensive read access, partial updates, numeric clamping, and ranking weight forwarding.
+- `tests/test_strategy_service_fitness.py`: Added focused service and engine-edge coverage for default weights, copy safety, updates, clamping, ignored invalid values, service-to-ranking wiring, zero-weight dimensions, and all-zero fitness.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 433-438 to Done and advanced Next to Tasks 439-444.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_strategy_service_fitness.py tests/test_strategy_generator.py tests/test_strategy_service_elimination_config.py -q` - 66 passed in 3.14s.
+- `git diff --check` passed with CRLF warnings only. No ranking formulas, elimination formulas, or UI changed.
+
 ## 2026-06-11 - Tasks 427-432: Fitness Multi-Metric Weighting Design
 
 ### Added
