@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-11 - Tasks 463-468: Same-Bar SL/TP Ambiguity Audit and Design
+
+### Added
+- `docs/same_bar_sl_tp_ambiguity_design_463_468.md`: Added a focused audit confirming current stop-loss-first same-bar behavior and defining the remaining regression test gaps.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 463-468 to Done and advanced Next to Tasks 469-474 test verification.
+
+### Verification
+- `git diff --check` passed with CRLF warnings only. No production code changed.
+
 ## 2026-06-11 - Tasks 457-462: Next Milestone Planning
 
 ### Added
