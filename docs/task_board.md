@@ -17,6 +17,7 @@ Strategy Quality / Robustness Expansion
 - [x] Tasks 409-414 - Elimination Rule Configuration Implementation (OOS stability controls + Validate pipeline config wiring)
 - [x] Tasks 415-420 - Strategy Quality Evidence Summary Design
 - [x] Tasks 421-426 - Strategy Quality Evidence Summary Implementation (widget + report expansion)
+- [x] Tasks 427-432 - Fitness Multi-Metric Weighting Design
 - [x] Tasks 391-396 - Final v0.3.0-dev Release Acceptance Audit
 - [x] Codex Review Fix - Large-File Import UX Hardening
 - [x] Tasks 385-390 - v0.3.0-dev Release Evidence and Evaluator Readiness Closure
@@ -132,8 +133,7 @@ Strategy Quality / Robustness Expansion
 
 ## Next
 
-- [ ] Tasks 427-432 - Fitness Multi-Metric Weighting Design
-- [ ] Tasks 433-438 - Fitness Multi-Metric Weighting Implementation
+- [ ] Tasks 433-438 - Fitness Multi-Metric Weighting Implementation (service layer + tests)
 - [ ] Tasks 439-444 - Strategy Explainability Report Section
 
 *(Legacy backlog items pending reprioritization)*

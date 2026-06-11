@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-11 - Tasks 427-432: Fitness Multi-Metric Weighting Design
+
+### Added
+- `docs/fitness_multi_metric_weighting_design_427_432.md`: Added a reviewed design for service-layer configurable multi-metric fitness weights using the existing ranking engine contract.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 427-432 to Done and advanced Next to Tasks 433-438 implementation.
+
+### Verification
+- `git diff --check` passed with CRLF warnings only. No production code changed.
+
 ## 2026-06-11 - Tasks 421-426: Strategy Quality Evidence Summary Implementation
 
 ### Added
