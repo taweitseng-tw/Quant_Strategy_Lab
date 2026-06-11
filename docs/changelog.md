@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-06-11 - Tasks 493-498: Version Roadmap and 1.0 Gap Rebaseline
+
+### Added
+- docs/version_roadmap_1_0_gap_rebaseline_493_498.md: Added a compact roadmap baseline separating task-ID count, recent standardized six-task rounds, milestone progress, and formal 1.0 readiness.
+
+### Changed
+- docs/task_board.md: Moved Tasks 493-498 to Done, advanced the current milestone to Data Resampling and Normalization Hardening, and set Tasks 499-504 as Next.
+
+### Verification
+- git diff --check passed with CRLF warnings only.
 ## 2026-06-11 - Tasks 487-492: Backtest Correctness Hardening Acceptance Audit
 
 ### Added
