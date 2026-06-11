@@ -887,6 +887,16 @@ def _format_markdown_validation(vr: dict) -> str:
         lines.append("- **Elimination**: PASSED")
     else:
         lines.append(f"- **Elimination**: ELIMINATED — {'; '.join(elim.get('failed_rules',[]))}")
+    # Show enabled thresholds.
+    config_snap = elim.get("config_snapshot", {}) or {}
+    enabled = [f"{k}={v}" for k, v in config_snap.items()
+               if v is not None and v is not False and k != "require_optional"]
+    if enabled:
+        lines.append(f"  - Thresholds applied: {', '.join(enabled)}")
+    # Show warnings.
+    elim_warnings = elim.get("warnings", []) or []
+    for w in elim_warnings:
+        lines.append(f"  - Warning: {w}")
     return "\n".join(lines) + "\n"
 
 
@@ -1032,6 +1042,16 @@ def _format_html_validation(vr: dict) -> str:
     else:
         rules = "; ".join(html.escape(r) for r in elim.get("failed_rules", []))
         parts.append(f'<p><b>Elimination:</b> <span style="color:#ef5350;font-weight:bold;">ELIMINATED</span> — {rules}</p>')
+    # Enabled thresholds.
+    config_snap = elim.get("config_snapshot", {}) or {}
+    enabled = [f"{k}={v}" for k, v in config_snap.items()
+               if v is not None and v is not False and k != "require_optional"]
+    if enabled:
+        parts.append(f'<p style="margin-left:1em;"><b>Thresholds applied:</b> {html.escape(", ".join(enabled))}</p>')
+    # Warnings.
+    elim_warnings = elim.get("warnings", []) or []
+    for w in elim_warnings:
+        parts.append(f'<p style="margin-left:1em;"><b>Warning:</b> {html.escape(w)}</p>')
     parts.append('</div>')
     return "\n".join(parts)
 

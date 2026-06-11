@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-11 - Tasks 421-426: Strategy Quality Evidence Summary Implementation
+
+### Added
+- `app/widgets/validation_summary.py`: Expanded the Elimination card with failed-rule lines, enabled threshold summaries, and warnings.
+- `reports/generator.py`: Added elimination threshold and warning evidence to markdown and HTML validation sections.
+- `tests/test_validation_summary.py` and `tests/test_report_export.py`: Added focused widget/report coverage for elimination evidence.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 421-426 to Done and advanced Next to Tasks 427-432.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_validation_summary.py tests/test_report_export.py -q` - 105 passed in 4.29s.
+- `git diff --check` passed with CRLF warnings only. No validation formulas, ranking behavior, or defaults changed.
+
 ## 2026-06-11 - Tasks 415-420: Strategy Quality Evidence Summary Design
 
 ### Added

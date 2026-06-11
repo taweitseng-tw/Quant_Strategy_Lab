@@ -357,6 +357,71 @@ def test_elimination_failed_rules_in_report(mock_strategy, mock_backtest_result)
     assert "min_total_pnl" in html_out
 
 
+def test_elimination_thresholds_in_report(mock_strategy, mock_backtest_result):
+    """Enabled config_snapshot thresholds must appear in both formats."""
+    vr = _make_validation_dict(
+        elimination_result={"passed": True, "failed_rules": [],
+                            "warnings": [],
+                            "config_snapshot": {
+                                "min_trade_count": 5,
+                                "min_profit_factor": 0.5,
+                                "max_drawdown_pnl": None,
+                                "min_win_rate": False,
+                                "require_optional": False,
+                            }}
+    )
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "PASSED" in md
+    assert "Thresholds applied:" in md
+    assert "min_trade_count=5" in md
+    assert "min_profit_factor=0.5" in md
+    assert "max_drawdown_pnl" not in md
+    assert "min_win_rate" not in md
+    assert "require_optional" not in md
+
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "PASSED" in html_out
+    assert "Thresholds applied" in html_out
+    assert "min_trade_count=5" in html_out
+    assert "min_profit_factor=0.5" in html_out
+    assert "max_drawdown_pnl" not in html_out
+    assert "min_win_rate" not in html_out
+    assert "require_optional" not in html_out
+
+
+def test_elimination_warnings_in_report(mock_strategy, mock_backtest_result):
+    """Elimination warnings must appear in both formats."""
+    vr = _make_validation_dict(
+        elimination_result={"passed": True, "failed_rules": [],
+                            "warnings": ["OOS data not provided. Skipping OOS rules."]}
+    )
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "Warning:" in md
+    assert "OOS data not provided" in md
+
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "Warning:" in html_out
+    assert "OOS data not provided" in html_out
+
+
+def test_elimination_no_thresholds_when_none_enabled(mock_strategy, mock_backtest_result):
+    """When no config_snapshot thresholds are enabled, omit the thresholds line."""
+    vr = _make_validation_dict(
+        elimination_result={"passed": True, "failed_rules": [],
+                            "warnings": [],
+                            "config_snapshot": {
+                                "min_trade_count": None,
+                                "min_profit_factor": None,
+                                "min_win_rate": False,
+                                "require_optional": False,
+                            }}
+    )
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "Thresholds applied:" not in md
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    assert "Thresholds applied" not in html_out
+
+
 def test_malicious_validation_string_escaped_in_html(mock_strategy, mock_backtest_result):
     """HTML report must escape malicious strings in validation evidence."""
     vr = _make_validation_dict(

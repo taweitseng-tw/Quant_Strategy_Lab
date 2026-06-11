@@ -419,8 +419,30 @@ class ValidationSummary(QWidget):
         elim = self._get(result, "elimination_result", {}) or {}
         passed = elim.get("passed", False)
         rules = elim.get("failed_rules", [])
-        status = "✓ PASSED" if passed else f"✗ ELIMINATED — {'; '.join(rules)}"
-        self._add_section("Elimination", status, passed=passed)
+        warnings = elim.get("warnings", []) or []
+        config_snap = elim.get("config_snapshot", {}) or {}
+
+        # Status line.
+        if passed:
+            body_lines = ["PASSED"]
+        else:
+            body_lines = ["ELIMINATED"]
+            for rule in rules:
+                body_lines.append(f"  - {rule}")
+
+        # Enabled thresholds from config_snapshot.
+        enabled = [f"{k}={v}" for k, v in config_snap.items()
+                   if v is not None and v is not False and k != "require_optional"]
+        if enabled:
+            body_lines.append(f"  Thresholds used: {', '.join(enabled)}")
+
+        # Warnings.
+        if warnings:
+            body_lines.append("  Warnings:")
+            for w in warnings:
+                body_lines.append(f"    - {w}")
+
+        self._add_section("Elimination", "\n".join(body_lines), passed=passed)
 
         self._layout.addStretch()
 

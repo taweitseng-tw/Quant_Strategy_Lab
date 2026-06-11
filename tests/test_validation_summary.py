@@ -283,6 +283,78 @@ def test_elimination_failed_rules_displayed(qapp):
     assert found_elim, "Elimination card with 'ELIMINATED' not found"
 
 
+def test_elimination_warnings_displayed(qapp):
+    """Elimination warnings must appear in the card body."""
+    result = {
+        "split_metadata": {"train_rows": 5},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "oos_metrics": None,
+        "elimination_result": {
+            "passed": True,
+            "failed_rules": [],
+            "warnings": ["OOS data not provided. Skipping OOS rules."],
+        },
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    body = ""
+    for i in range(widget._layout.count()):
+        item = widget._layout.itemAt(i)
+        if item and item.widget() and hasattr(item.widget(), "layout"):
+            lay = item.widget().layout()
+            if lay:
+                for j in range(lay.count()):
+                    child = lay.itemAt(j)
+                    if child and child.widget():
+                        body += str(getattr(child.widget(), "text", lambda: "")()) + "\n"
+    assert "PASSED" in body
+    assert "Warnings:" in body
+    assert "OOS data not provided" in body
+
+
+def test_elimination_thresholds_displayed(qapp):
+    """Enabled config_snapshot thresholds must appear as 'Thresholds used:'."""
+    result = {
+        "split_metadata": {"train_rows": 5},
+        "baseline_metrics": {"total_pnl": 100.0},
+        "stress_results": [],
+        "oos_metrics": None,
+        "elimination_result": {
+            "passed": True,
+            "failed_rules": [],
+            "warnings": [],
+            "config_snapshot": {
+                "min_trade_count": 5,
+                "min_profit_factor": 0.5,
+                "max_drawdown_pnl": None,
+                "min_avg_trade": None,
+                "min_win_rate": False,
+                "require_optional": False,
+            },
+        },
+    }
+    widget = ValidationSummary()
+    widget.update_from_result(result)
+    body = ""
+    for i in range(widget._layout.count()):
+        item = widget._layout.itemAt(i)
+        if item and item.widget() and hasattr(item.widget(), "layout"):
+            lay = item.widget().layout()
+            if lay:
+                for j in range(lay.count()):
+                    child = lay.itemAt(j)
+                    if child and child.widget():
+                        body += str(getattr(child.widget(), "text", lambda: "")()) + "\n"
+    assert "PASSED" in body
+    assert "Thresholds used:" in body
+    assert "min_trade_count=5" in body
+    assert "min_profit_factor=0.5" in body
+    assert "max_drawdown_pnl" not in body
+    assert "min_win_rate" not in body
+    assert "require_optional" not in body
+
+
 # ---------------------------------------------------------------------------
 # Stress detail sub-lines (Task 056G-Impl)
 # ---------------------------------------------------------------------------
