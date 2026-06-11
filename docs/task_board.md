@@ -21,6 +21,7 @@ Strategy Quality / Robustness Expansion
 - [x] Tasks 433-438 - Fitness Multi-Metric Weighting Implementation
 - [x] Tasks 439-444 - Strategy Explainability Report Section Design
 - [x] Tasks 445-450 - Strategy Explainability Report Section Implementation
+- [x] Tasks 451-456 - Strategy Quality Expansion Acceptance Audit
 - [x] Tasks 391-396 - Final v0.3.0-dev Release Acceptance Audit
 - [x] Codex Review Fix - Large-File Import UX Hardening
 - [x] Tasks 385-390 - v0.3.0-dev Release Evidence and Evaluator Readiness Closure
@@ -136,7 +137,7 @@ Strategy Quality / Robustness Expansion
 
 ## Next
 
-- [ ] Tasks 451-456 - Strategy Quality Expansion Acceptance Audit
+- [ ] Tasks 457-462 - Next Milestone Planning
 
 *(Legacy backlog items pending reprioritization)*
 - Proposed Task 055 - Agent Workflow Automation
