@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-11 - Tasks 439-444: Strategy Explainability Report Section Design
+
+### Added
+- `docs/strategy_explainability_report_section_design_439_444.md`: Added a reviewed design for an additive Strategy Explainability report section using existing strategy, provenance, backtest result, and optional validation fields.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 439-444 to Done and advanced Next to Tasks 445-450 implementation.
+
+### Verification
+- `git diff --check` passed with CRLF warnings only. No production code changed.
+
 ## 2026-06-11 - Tasks 433-438: Fitness Multi-Metric Weighting Implementation
 
 ### Added
