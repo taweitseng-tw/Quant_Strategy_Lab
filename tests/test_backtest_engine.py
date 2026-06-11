@@ -667,6 +667,91 @@ def test_same_bar_ambiguity_sl_wins():
     assert t.exit_price == 100.0
     assert t.exit_reason == "stop_loss"
 
+def test_short_same_bar_ambiguity_sl_wins():
+    from core.models.strategy import RiskManagement
+    df = _make_sl_tp_df()
+    df.loc[0, "volume"] = 1000
+    df.loc[1:, "volume"] = 100
+    # Enter short at bar 0 close -> executes at bar 1 open (105.0)
+    # SL = 110.0 (105 + 5 ticks), TP = 100.0 (105 - 5 ticks)
+    # Bar 1 high is 115.0 (hits SL), low is 95.0 (hits TP)
+    strat = Strategy(
+        name="test_short_ambiguity",
+        short_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        risk_management=RiskManagement(stop_loss_ticks=5.0, take_profit_ticks=5.0)
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=1.0)
+    assert len(res.trades) == 1
+    t = res.trades[0]
+    assert t.direction == "short"
+    assert t.exit_reason == "stop_loss"
+    assert t.exit_price == 110.0
+
+def test_long_gap_through_same_bar_ambiguity_sl_wins():
+    from core.models.strategy import RiskManagement
+    df = pd.DataFrame({
+        "datetime": pd.date_range("2024-01-01 09:00", periods=4, freq="5min"),
+        "open":  [100.0, 100.0,  90.0, 100.0],
+        "high":  [100.0, 100.0, 112.0, 100.0],
+        "low":   [100.0, 100.0,  85.0, 100.0],
+        "close": [100.0, 100.0,  90.0, 100.0],
+        "volume": [1000, 100, 100, 100],
+    })
+    # Bar 0: volume=1000 -> long entry signal triggered
+    # Bar 1: opens at 100.0 -> long position entered at 100.0
+    # SL is 95.0 (5 ticks), TP is 105.0 (5 ticks)
+    # Bar 2: opens at 90.0 (gaps down past SL)
+    # Bar 2 High is 112.0 (hits TP), Low is 85.0 (hits SL)
+    # Both SL and TP are hit on Bar 2. SL wins.
+    # Exits at gap open (90.0) with warning.
+    strat = Strategy(
+        name="test_long_gap_ambiguity",
+        long_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        risk_management=RiskManagement(stop_loss_ticks=5.0, take_profit_ticks=5.0)
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=1.0)
+    assert len(res.trades) == 1
+    t = res.trades[0]
+    assert t.exit_reason == "stop_loss"
+    assert t.exit_price == 90.0
+
+    # Assert gap warning exists
+    warnings = [w for w in res.warnings if "Gap execution on Stop-Loss" in w]
+    assert len(warnings) == 1
+
+def test_short_gap_through_same_bar_ambiguity_sl_wins():
+    from core.models.strategy import RiskManagement
+    df = pd.DataFrame({
+        "datetime": pd.date_range("2024-01-01 09:00", periods=4, freq="5min"),
+        "open":  [100.0, 100.0, 112.0, 100.0],
+        "high":  [100.0, 100.0, 115.0, 100.0],
+        "low":   [100.0, 100.0,  90.0, 100.0],
+        "close": [100.0, 100.0, 110.0, 100.0],
+        "volume": [1000, 100, 100, 100],
+    })
+    # Bar 0: volume=1000 -> short entry signal triggered
+    # Bar 1: opens at 100.0 -> short position entered at 100.0
+    # SL is 105.0 (5 ticks), TP is 95.0 (5 ticks)
+    # Bar 2: opens at 112.0 (gaps up past SL)
+    # Bar 2 High is 115.0 (hits SL), Low is 90.0 (hits TP)
+    # Both SL and TP are hit on Bar 2. SL wins.
+    # Exits at gap open (112.0) with warning.
+    strat = Strategy(
+        name="test_short_gap_ambiguity",
+        short_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        risk_management=RiskManagement(stop_loss_ticks=5.0, take_profit_ticks=5.0)
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=1.0)
+    assert len(res.trades) == 1
+    t = res.trades[0]
+    assert t.direction == "short"
+    assert t.exit_reason == "stop_loss"
+    assert t.exit_price == 112.0
+
+    # Assert gap warning exists
+    warnings = [w for w in res.warnings if "Gap execution on Stop-Loss" in w]
+    assert len(warnings) == 1
+
 def test_gap_through_long_sl():
     from core.models.strategy import RiskManagement
     df = pd.DataFrame({

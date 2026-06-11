@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-11 - Tasks 469-474: Same-Bar SL/TP Ambiguity Test Verification
+
+### Added
+- `tests/test_backtest_engine.py`: Added focused regression tests for short same-bar SL/TP ambiguity, long gap-through same-bar ambiguity, and short gap-through same-bar ambiguity.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 469-474 to Done and advanced Next to Tasks 475-480 slippage and tick-size rounding design.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_backtest_engine.py -q` - 58 passed in 1.29s.
+- `git diff --check` passed with CRLF warnings only. No production code changed.
+
 ## 2026-06-11 - Tasks 463-468: Same-Bar SL/TP Ambiguity Audit and Design
 
 ### Added
