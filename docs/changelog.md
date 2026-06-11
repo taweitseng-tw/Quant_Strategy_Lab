@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-11 - Tasks 475-480: Slippage and Tick-Size Rounding Enforcement Design
+
+### Added
+- `docs/slippage_tick_rounding_design_475_480.md`: Added a focused audit of current slippage paths and a conservative side-aware tick-alignment implementation design.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 475-480 to Done and advanced Next to Tasks 481-486 implementation.
+
+### Verification
+- `git diff --check` passed with CRLF warnings only. No production code changed.
+
 ## 2026-06-11 - Tasks 469-474: Same-Bar SL/TP Ambiguity Test Verification
 
 ### Added
