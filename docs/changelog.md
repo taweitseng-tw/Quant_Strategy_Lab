@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-11 - Tasks 457-462: Next Milestone Planning
+
+### Added
+- `docs/next_milestone_planning_457_462.md`: Produced planning note comparing 3 options and recommending Event-Driven Backtest Performance / Correctness Hardening as the next milestone.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 457-462 to Done, set the current milestone to Event-Driven Backtest Performance / Correctness Hardening, and set Next to Tasks 463-468.
+
+### Verification
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-11 - Tasks 451-456: Strategy Quality Expansion Acceptance Audit
 
 ### Added
@@ -23,7 +34,7 @@
 
 ### Verification
 - `.\.venv\Scripts\python.exe -m pytest tests/test_report_export.py -q` - 71 passed in 2.50s.
-- `git diff --check` passes cleanly.
+- `git diff --check` passed with CRLF warnings only.
 
 ## 2026-06-11 - Tasks 439-444: Strategy Explainability Report Section Design
 
