@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-11 - Tasks 487-492: Backtest Correctness Hardening Acceptance Audit
+
+### Added
+- `docs/backtest_correctness_hardening_acceptance_audit_487_492.md`: Added a focused Codex acceptance audit for same-bar stop-loss-first behavior and conservative tick-size alignment.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 487-492 to Done and set Tasks 493-498 as the next roadmap rebaseline round.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_backtest_engine.py -q` - 67 passed in 1.35s.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-11 - Tasks 481-486: Slippage and Tick-Size Rounding Enforcement Implementation
 
 ### Added
