@@ -2,7 +2,7 @@
 
 ## Current Milestone
 
-Post-v0.3.0-dev - Next milestone selection
+Strategy Quality / Robustness Expansion
 
 ---
 
@@ -12,9 +12,10 @@ Post-v0.3.0-dev - Next milestone selection
 
 ## Done
 
+- [x] Tasks 397-402 - Post-v0.3.0-dev Next Milestone Decision
+- [x] Tasks 391-396 - Final v0.3.0-dev Release Acceptance Audit
 - [x] Codex Review Fix - Large-File Import UX Hardening
 - [x] Tasks 385-390 - v0.3.0-dev Release Evidence and Evaluator Readiness Closure
-- [x] Tasks 391-396 - Final v0.3.0-dev Release Acceptance Audit
 - [x] Tasks 379-384 - Optional Evaluator Share Message Draft
 - [x] Tasks 373-378 - External Sharing Decision for v0.3.0-dev Zip
 - [x] Tasks 367-372 - Optional Manual Zip Execution Evidence
@@ -127,9 +128,14 @@ Post-v0.3.0-dev - Next milestone selection
 
 ## Next
 
-- [ ] None
+- [ ] Tasks 403-408 - Elimination Rule Configuration Design and Contract
+- [ ] Tasks 409-414 - Elimination Rule Configuration Implementation
+- [ ] Tasks 415-420 - Strategy Quality Evidence Summary
+- [ ] Tasks 421-426 - Fitness Multi-Metric Weighting Design
+- [ ] Tasks 427-432 - Fitness Multi-Metric Weighting Implementation
+- [ ] Tasks 433-438 - Strategy Explainability Report Section
 
-*(Remaining v0.2 PRD items pending task prioritization)*
+*(Legacy backlog items pending reprioritization)*
 - Proposed Task 055 - Agent Workflow Automation
 - Proposed Task 053 - Backtest Execution Enhancements
 - Proposed Task 054 - Code Hygiene and Technical Debt

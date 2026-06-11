@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-11 - Tasks 397-402: Post-v0.3.0-dev Next Milestone Decision
+
+### Added
+- `docs/post_v0.3.0_next_milestone_decision_397_402.md`: Added a compact three-option next milestone decision and recommended Strategy Quality / Robustness Expansion.
+
+### Changed
+- `docs/task_board.md`: Current milestone moved to Strategy Quality / Robustness Expansion, Tasks 397-402 added to Done, and six concrete Next task batches were added.
+
+### Verification
+- Planning/docs-only change. No source code, binaries, upload, push, or tag operation was performed.
+- `git diff --check` passed with CRLF notices only.
+
 ## 2026-06-11 - Tasks 391-396: Final v0.3.0-dev Acceptance Audit
 
 ### Added
