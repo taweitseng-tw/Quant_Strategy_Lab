@@ -752,6 +752,191 @@ def test_short_gap_through_same_bar_ambiguity_sl_wins():
     warnings = [w for w in res.warnings if "Gap execution on Stop-Loss" in w]
     assert len(warnings) == 1
 
+
+def test_long_entry_tick_rounding_up():
+    df = pd.DataFrame({
+        "datetime": pd.date_range("2024-01-01 09:00", periods=2, freq="5min"),
+        "open":  [100.0, 100.12],
+        "high":  [100.0, 101.0],
+        "low":   [100.0, 100.0],
+        "close": [100.0, 100.50],
+        "volume": [1000, 100],
+    })
+    strat = Strategy(
+        name="test_long_round_up",
+        long_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)])
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=0.25, slippage_ticks=1.0)
+    assert len(res.trades) == 1
+    assert res.trades[0].entry_price == 100.50
+
+
+def test_short_entry_tick_rounding_down():
+    df = pd.DataFrame({
+        "datetime": pd.date_range("2024-01-01 09:00", periods=2, freq="5min"),
+        "open":  [100.0, 100.13],
+        "high":  [100.0, 101.0],
+        "low":   [100.0, 100.0],
+        "close": [100.0, 100.50],
+        "volume": [1000, 100],
+    })
+    strat = Strategy(
+        name="test_short_round_down",
+        short_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)])
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=0.25, slippage_ticks=1.0)
+    assert len(res.trades) == 1
+    assert res.trades[0].entry_price == 99.75
+
+
+def test_long_signal_exit_tick_rounding_down():
+    df = pd.DataFrame({
+        "datetime": pd.date_range("2024-01-01 09:00", periods=3, freq="5min"),
+        "open":  [100.0, 100.0, 100.13],
+        "high":  [100.0, 100.0, 101.0],
+        "low":   [100.0, 100.0, 100.0],
+        "close": [100.0, 50.0,  100.50],
+        "volume": [1000, 100,  100],
+    })
+    strat = Strategy(
+        name="test_long_exit_round_down",
+        long_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        long_exit=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator="<", right=500)]),
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=0.25, slippage_ticks=1.0)
+    assert len(res.trades) == 1
+    assert res.trades[0].exit_price == 99.75
+
+
+def test_short_signal_exit_tick_rounding_up():
+    df = pd.DataFrame({
+        "datetime": pd.date_range("2024-01-01 09:00", periods=3, freq="5min"),
+        "open":  [100.0, 100.0, 100.12],
+        "high":  [100.0, 100.0, 101.0],
+        "low":   [100.0, 100.0, 100.0],
+        "close": [100.0, 50.0,  100.50],
+        "volume": [1000, 100,  100],
+    })
+    strat = Strategy(
+        name="test_short_exit_round_up",
+        short_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        short_exit=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator="<", right=500)]),
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=0.25, slippage_ticks=1.0)
+    assert len(res.trades) == 1
+    assert res.trades[0].exit_price == 100.50
+
+
+def test_long_sltp_exit_tick_rounding_down():
+    from core.models.strategy import RiskManagement
+    df = pd.DataFrame({
+        "datetime": pd.date_range("2024-01-01 09:00", periods=3, freq="5min"),
+        "open":  [100.0, 100.0, 90.13],
+        "high":  [100.0, 100.0, 112.0],
+        "low":   [100.0, 100.0, 85.0],
+        "close": [100.0, 100.0, 90.0],
+        "volume": [1000, 100, 100],
+    })
+    strat = Strategy(
+        name="test_long_sl_round",
+        long_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        risk_management=RiskManagement(stop_loss_ticks=20.0)
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=0.25, slippage_ticks=1.0)
+    assert len(res.trades) == 1
+    t = res.trades[0]
+    assert t.exit_reason == "stop_loss"
+    assert t.exit_price == 89.75
+    assert any("Gap execution on Stop-Loss" in w for w in res.warnings)
+
+
+def test_short_sltp_exit_tick_rounding_up():
+    from core.models.strategy import RiskManagement
+    df = pd.DataFrame({
+        "datetime": pd.date_range("2024-01-01 09:00", periods=3, freq="5min"),
+        "open":  [100.0, 100.0, 109.87],
+        "high":  [100.0, 100.0, 115.0],
+        "low":   [100.0, 100.0, 100.0],
+        "close": [100.0, 100.0, 100.0],
+        "volume": [1000, 100, 100],
+    })
+    strat = Strategy(
+        name="test_short_sl_round",
+        short_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        risk_management=RiskManagement(stop_loss_ticks=20.0)
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=0.25, slippage_ticks=1.0)
+    assert len(res.trades) == 1
+    t = res.trades[0]
+    assert t.exit_reason == "stop_loss"
+    assert t.exit_price == 110.25
+    assert any("Gap execution on Stop-Loss" in w for w in res.warnings)
+
+
+def test_session_end_long_exit_rounding_down():
+    from core.models.strategy import RiskManagement
+    times = pd.date_range("2024-01-01 15:50", periods=3, freq="5min")
+    df = pd.DataFrame({
+        "datetime": times,
+        "open":  [100.0, 100.0, 100.0],
+        "high":  [100.0, 100.0, 100.0],
+        "low":   [100.0, 100.0, 100.0],
+        "close": [100.0, 100.0, 100.13],
+        "volume": [1000, 100, 100],
+    })
+    strat = Strategy(
+        name="test_session_end_long_round",
+        long_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        risk_management=RiskManagement(close_end_of_session=True, session_end_time="16:00")
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=0.25, slippage_ticks=1.0)
+    assert len(res.trades) == 1
+    assert res.trades[0].exit_reason == "session_end"
+    assert res.trades[0].exit_price == 99.75
+
+
+def test_session_end_short_exit_rounding_up():
+    from core.models.strategy import RiskManagement
+    times = pd.date_range("2024-01-01 15:50", periods=3, freq="5min")
+    df = pd.DataFrame({
+        "datetime": times,
+        "open":  [100.0, 100.0, 100.0],
+        "high":  [100.0, 100.0, 100.0],
+        "low":   [100.0, 100.0, 100.0],
+        "close": [100.0, 100.0, 100.12],
+        "volume": [1000, 100, 100],
+    })
+    strat = Strategy(
+        name="test_session_end_short_round",
+        short_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+        risk_management=RiskManagement(close_end_of_session=True, session_end_time="16:00")
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=0.25, slippage_ticks=1.0)
+    assert len(res.trades) == 1
+    assert res.trades[0].exit_reason == "session_end"
+    assert res.trades[0].exit_price == 100.50
+
+
+def test_end_of_data_exit_remains_mark_to_close_without_rounding_or_slippage():
+    df = pd.DataFrame({
+        "datetime": pd.date_range("2024-01-01 09:00", periods=2, freq="5min"),
+        "open":  [100.0, 100.0],
+        "high":  [100.0, 100.0],
+        "low":   [100.0, 100.0],
+        "close": [100.0, 100.13],
+        "volume": [1000, 100],
+    })
+    strat = Strategy(
+        name="test_end_of_data_mark_to_close",
+        long_entry=StrategyBlock(conditions=[Condition(indicator="VOLUME", params={}, operator=">", right=500)]),
+    )
+    res = run_backtest(strat, df, initial_capital=10000.0, tick_size=0.25, slippage_ticks=1.0)
+    assert len(res.trades) == 1
+    t = res.trades[0]
+    assert t.exit_reason == "end_of_data"
+    assert t.exit_price == 100.13
+
+
 def test_gap_through_long_sl():
     from core.models.strategy import RiskManagement
     df = pd.DataFrame({

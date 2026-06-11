@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-11 - Tasks 481-486: Slippage and Tick-Size Rounding Enforcement Implementation
+
+### Added
+- `tests/test_backtest_engine.py`: Added focused tests for conservative tick alignment across long/short entries, signal exits, SL/TP exits, session-end exits, and the end-of-data mark-to-close decision.
+
+### Changed
+- `backtest_engine/runner.py`: Added side-aware tick alignment for assigned execution fill paths while preserving end-of-data as mark-to-close without slippage or rounding.
+- `docs/task_board.md`: Moved Tasks 481-486 to Done and advanced Next to Tasks 487-492 acceptance audit.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_backtest_engine.py -q` - 67 passed in 1.42s.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-11 - Tasks 475-480: Slippage and Tick-Size Rounding Enforcement Design
 
 ### Added

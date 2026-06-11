@@ -26,6 +26,7 @@ Event-Driven Backtest Performance / Correctness Hardening
 - [x] Tasks 463-468 - Same-Bar Stop-Loss / Take-Profit Ambiguity Audit and Design
 - [x] Tasks 469-474 - Same-Bar Stop-Loss / Take-Profit Ambiguity Test Verification
 - [x] Tasks 475-480 - Slippage and Tick-Size Rounding Enforcement Design
+- [x] Tasks 481-486 - Slippage and Tick-Size Rounding Enforcement Implementation
 - [x] Tasks 391-396 - Final v0.3.0-dev Release Acceptance Audit
 - [x] Codex Review Fix - Large-File Import UX Hardening
 - [x] Tasks 385-390 - v0.3.0-dev Release Evidence and Evaluator Readiness Closure
@@ -141,7 +142,7 @@ Event-Driven Backtest Performance / Correctness Hardening
 
 ## Next
 
-- [ ] Tasks 481-486 - Slippage and Tick-Size Rounding Enforcement Implementation
+- [ ] Tasks 487-492 - Backtest Correctness Hardening Acceptance Audit
 
 *(Legacy backlog items pending reprioritization)*
 - Proposed Task 055 - Agent Workflow Automation

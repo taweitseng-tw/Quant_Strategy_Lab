@@ -8,6 +8,7 @@ Conservative execution defaults (AGENTS.md Section 6.1):
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 import numpy as np
@@ -213,7 +214,10 @@ def run_backtest(
             if action == "enter":
                 # Apply slippage: for longs, we pay slightly more; for shorts, slightly less.
                 slip = slippage_ticks * tick_size
-                fill_price = bar_open + slip if direction == "long" else bar_open - slip
+                if direction == "long":
+                    fill_price = _align_price_to_tick(bar_open + slip, tick_size, side="buy")
+                else:
+                    fill_price = _align_price_to_tick(bar_open - slip, tick_size, side="sell")
                 position = direction
                 entry_price = fill_price
                 entry_bar = i
@@ -243,7 +247,10 @@ def run_backtest(
             elif action == "exit":
                 slip = slippage_ticks * tick_size
                 # Reverse the entry slippage: exit longs lower, shorts higher.
-                fill_price = bar_open - slip if position == "long" else bar_open + slip
+                if position == "long":
+                    fill_price = _align_price_to_tick(bar_open - slip, tick_size, side="sell")
+                else:
+                    fill_price = _align_price_to_tick(bar_open + slip, tick_size, side="buy")
 
                 gross_pnl = _compute_pnl(position, entry_price, fill_price)
                 # Convert price movement to dollars via point_value.
@@ -299,21 +306,18 @@ def run_backtest(
                     if reason == "stop_loss":
                         # If gap down below SL, execute at open. Otherwise at SL.
                         trigger_price = bar_open if bar_open <= sl_price else sl_price
-                        fill_price = trigger_price - slip
                     else:
                         # If gap up above TP, execute at open. Otherwise at TP.
                         trigger_price = bar_open if bar_open >= tp_price else tp_price
-                        # TP acts like a limit order, but applying slippage against trader for conservatism.
-                        fill_price = trigger_price - slip
+                    fill_price = _align_price_to_tick(trigger_price - slip, tick_size, side="sell")
                 else:  # short
                     if reason == "stop_loss":
                         # Gap up above SL
                         trigger_price = bar_open if bar_open >= sl_price else sl_price
-                        fill_price = trigger_price + slip
                     else:
                         # Gap down below TP
                         trigger_price = bar_open if bar_open <= tp_price else tp_price
-                        fill_price = trigger_price + slip
+                    fill_price = _align_price_to_tick(trigger_price + slip, tick_size, side="buy")
 
                 # Check if gap execution occurred and warn
                 if reason == "stop_loss" and trigger_price == bar_open:
@@ -349,7 +353,10 @@ def run_backtest(
 
         if session_ended and position is not None:
             slip = slippage_ticks * tick_size
-            fill_price = bar_close - slip if position == "long" else bar_close + slip
+            if position == "long":
+                fill_price = _align_price_to_tick(bar_close - slip, tick_size, side="sell")
+            else:
+                fill_price = _align_price_to_tick(bar_close + slip, tick_size, side="buy")
 
             gross_pnl = _compute_pnl(position, entry_price, fill_price)
             gross_dollars = gross_pnl * point_value
@@ -841,3 +848,23 @@ def _compute_pnl(direction: str | None, entry_price: float, exit_price: float) -
     elif direction == "short":
         return entry_price - exit_price
     return 0.0
+
+
+def _tick_decimals(tick_size: float) -> int:
+    s = f"{tick_size:.15f}"
+    if "." in s:
+        return len(s.split(".")[1].rstrip('0'))
+    return 0
+
+
+def _align_price_to_tick(price: float, tick_size: float, *, side: str) -> float:
+    if tick_size <= 0:
+        return price
+    steps = price / tick_size
+    if side == "buy":
+        aligned = math.ceil(steps - 1e-12) * tick_size
+    elif side == "sell":
+        aligned = math.floor(steps + 1e-12) * tick_size
+    else:
+        raise ValueError("side must be 'buy' or 'sell'")
+    return round(aligned, _tick_decimals(tick_size))
