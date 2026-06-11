@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-11 - Tasks 445-450: Strategy Explainability Report Section Implementation
+
+### Added
+- `reports/generator.py`: Implemented `_format_markdown_strategy_explainability(...)` and `_format_html_strategy_explainability(...)` helpers. Added CSS rules and integrated the explainability panel inside HTML/Markdown generator flow.
+- `tests/test_report_export.py`: Added focused unit tests covering headers, rules text, provenance defaults, validation evidence, Markdown/HTML escaping, optional fields exclusion, and risk management parameters.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 445-450 to Done and advanced Next to Tasks 451-456 acceptance audit.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_report_export.py -q` - 71 passed in 2.50s.
+- `git diff --check` passes cleanly.
+
 ## 2026-06-11 - Tasks 439-444: Strategy Explainability Report Section Design
 
 ### Added

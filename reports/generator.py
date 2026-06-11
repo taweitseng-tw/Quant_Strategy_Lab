@@ -18,23 +18,373 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _sanitize_explainability_md(text: object) -> str:
+    """Escape dynamic text for the compact explainability markdown section."""
+    return _sanitize_md(str(text)).replace("<", "&lt;").replace(">", "&gt;")
+
+
 def format_block_desc(block: StrategyBlock) -> str:
     """Format a StrategyBlock conditions list into a readable description string."""
     if not block.conditions:
         return "Inactive"
-    
+
     cond_strs = []
     for c in block.conditions:
         tf = c.params.get("timeframe")
         params_str = ", ".join(f"{k}={v}" for k, v in c.params.items() if k != "timeframe")
-        
+
         base_str = f"{c.left} {c.operator} {c.indicator}({params_str})"
         if tf is not None:
             base_str += f" [TF: {tf}m]"
-            
+
         cond_strs.append(base_str)
-        
+
     return f" {block.logic} ".join(cond_strs)
+
+
+def _format_markdown_strategy_explainability(
+    strategy: Strategy,
+    result: BacktestResult,
+    provenance: dict | None = None,
+    validation_result: dict | None = None,
+) -> str:
+    """Format the Strategy Explainability section in Markdown."""
+    prov = provenance or {}
+    source_type = prov.get("source_type", "generated")
+    generator = prov.get("generator", "N/A")
+    gen_version = prov.get("generator_version", "N/A")
+    seed = prov.get("random_seed", "N/A")
+
+    if source_type == "manual":
+        source_str = "Manual / Custom Strategy"
+    else:
+        source_str = f"Generated ({generator} v{gen_version}, seed={seed})"
+    strategy_name_md = _sanitize_explainability_md(strategy.name)
+    source_str_md = _sanitize_explainability_md(source_str)
+
+    # Rule Blocks
+    long_entry_desc = format_block_desc(strategy.long_entry)
+    long_exit_desc = format_block_desc(strategy.long_exit)
+    short_entry_desc = format_block_desc(strategy.short_entry)
+    short_exit_desc = format_block_desc(strategy.short_exit)
+    long_entry_desc_md = _sanitize_explainability_md(long_entry_desc)
+    long_exit_desc_md = _sanitize_explainability_md(long_exit_desc)
+    short_entry_desc_md = _sanitize_explainability_md(short_entry_desc)
+    short_exit_desc_md = _sanitize_explainability_md(short_exit_desc)
+
+    # Assumptions & Risk Management
+    a = result.assumptions
+    exec_model_raw = a.get("execution_model", "next_bar_open")
+    if exec_model_raw == "next_bar_open":
+        exec_model_desc = "Signal confirmed at bar close, execute at next bar open"
+    elif exec_model_raw == "same_bar_close":
+        exec_model_desc = "Execute at same bar close"
+    else:
+        exec_model_desc = str(exec_model_raw)
+    exec_model_desc_md = _sanitize_explainability_md(exec_model_desc)
+
+    init_cap = a.get("initial_capital", 100_000.0)
+    comm = a.get("commission_per_side", 0.0)
+    slip = a.get("slippage_per_side_ticks", 0.0)
+    tick_sz = a.get("tick_size", 1.0)
+
+    # Risk Management
+    rm = strategy.risk_management
+    sl_parts = []
+    if rm.stop_loss_ticks is not None:
+        sl_parts.append(f"{rm.stop_loss_ticks:.1f} ticks")
+    if rm.stop_loss_pct is not None:
+        sl_parts.append(f"{rm.stop_loss_pct:.2%}")
+    sl_desc = " & ".join(sl_parts) if sl_parts else "None"
+    sl_desc_md = _sanitize_explainability_md(sl_desc)
+
+    tp_parts = []
+    if rm.take_profit_ticks is not None:
+        tp_parts.append(f"{rm.take_profit_ticks:.1f} ticks")
+    if rm.take_profit_pct is not None:
+        tp_parts.append(f"{rm.take_profit_pct:.2%}")
+    tp_desc = " & ".join(tp_parts) if tp_parts else "None"
+    tp_desc_md = _sanitize_explainability_md(tp_desc)
+
+    session_exit_desc = "No"
+    if rm.close_end_of_session:
+        session_exit_desc = f"Yes ({rm.session_end_time or 'N/A'})"
+    session_exit_desc_md = _sanitize_explainability_md(session_exit_desc)
+
+    lines = [
+        "## Strategy Explainability",
+        "",
+        f"**Name:** {strategy_name_md}",
+        f"**Source:** {source_str_md}",
+        "",
+        "### Rule Blocks",
+        f"- **Long Entry:** {long_entry_desc_md}",
+        f"- **Long Exit:** {long_exit_desc_md}",
+        f"- **Short Entry:** {short_entry_desc_md}",
+        f"- **Short Exit:** {short_exit_desc_md}",
+        ""
+    ]
+
+    # Ranking & Validation Evidence
+    if validation_result is not None:
+        fitness = validation_result.get("fitness")
+        rank = validation_result.get("rank")
+        total_strategies = validation_result.get("total_strategies")
+        elim_res = validation_result.get("elimination_result", {}) or {}
+
+        has_fitness = fitness is not None
+        has_rank = rank is not None
+        has_elimination = bool(elim_res)
+
+        if has_fitness or has_rank or has_elimination:
+            lines.append("### Ranking & Validation Evidence")
+            if has_fitness:
+                fitness_str = f"{fitness:.3f}" if isinstance(fitness, float) else str(fitness)
+                fitness_str = _sanitize_explainability_md(fitness_str)
+                lines.append(f"- **Fitness Score:** {fitness_str}")
+            if has_rank:
+                rank_str = _sanitize_explainability_md(rank)
+                if total_strategies is not None:
+                    total_strategies_str = _sanitize_explainability_md(total_strategies)
+                    lines.append(f"- **Rank:** {rank_str} / {total_strategies_str}")
+                else:
+                    lines.append(f"- **Rank:** {rank_str}")
+            if has_elimination:
+                passed = elim_res.get("passed")
+                if passed is not None:
+                    status = "PASSED" if passed else "ELIMINATED"
+                    lines.append(f"- **Elimination Status:** {status}")
+
+                failed_rules = elim_res.get("failed_rules", [])
+                if failed_rules and not passed:
+                    failed_rules_str = _sanitize_explainability_md(", ".join(str(rule) for rule in failed_rules))
+                    lines.append(f"- **Failed Rules:** {failed_rules_str}")
+
+                config_snap = elim_res.get("config_snapshot", {}) or {}
+                enabled = [f"{k}={v}" for k, v in config_snap.items()
+                           if v is not None and v is not False and k != "require_optional"]
+                if enabled:
+                    thresholds_str = _sanitize_explainability_md(", ".join(enabled))
+                    lines.append(f"- **Thresholds Applied:** {thresholds_str}")
+            lines.append("")
+
+    # Assumptions & Risk
+    lines.extend([
+        "### Execution & Risk Assumptions",
+        f"- **Execution Model:** {exec_model_desc_md}",
+        f"- **Initial Capital:** ${init_cap:,.2f}",
+        f"- **Commission:** ${comm:,.2f} per side  |  **Slippage:** {slip} ticks (Tick size: {tick_sz})",
+        f"- **Intra-bar Risk:** Stop-Loss: {sl_desc_md}  |  Take-Profit: {tp_desc_md}  |  Session exit: {session_exit_desc_md}",
+        ""
+    ])
+
+    # Warnings
+    all_warnings = []
+    if result.warnings:
+        all_warnings.extend(result.warnings)
+    if validation_result:
+        elim_warnings = (validation_result.get("elimination_result", {}) or {}).get("warnings", []) or []
+        all_warnings.extend(elim_warnings)
+
+    if all_warnings:
+        lines.append("### Warnings")
+        for w in all_warnings:
+            lines.append(f"- **Warning:** {_sanitize_explainability_md(w)}")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def _format_html_strategy_explainability(
+    strategy: Strategy,
+    result: BacktestResult,
+    provenance: dict | None = None,
+    validation_result: dict | None = None,
+) -> str:
+    """Format the Strategy Explainability section in HTML."""
+    prov = provenance or {}
+    source_type = prov.get("source_type", "generated")
+    generator = prov.get("generator", "N/A")
+    gen_version = prov.get("generator_version", "N/A")
+    seed = prov.get("random_seed", "N/A")
+
+    strategy_name_esc = html.escape(str(strategy.name))
+
+    if source_type == "manual":
+        source_html = "Manual / Custom Strategy"
+    else:
+        generator_esc = html.escape(str(generator))
+        gen_version_esc = html.escape(str(gen_version))
+        seed_esc = html.escape(str(seed))
+        source_html = f"Generated ({generator_esc} v{gen_version_esc}, seed={seed_esc})"
+
+    # Rule Blocks
+    long_entry_desc = format_block_desc(strategy.long_entry)
+    long_exit_desc = format_block_desc(strategy.long_exit)
+    short_entry_desc = format_block_desc(strategy.short_entry)
+    short_exit_desc = format_block_desc(strategy.short_exit)
+
+    long_entry_desc_esc = html.escape(str(long_entry_desc))
+    long_exit_desc_esc = html.escape(str(long_exit_desc))
+    short_entry_desc_esc = html.escape(str(short_entry_desc))
+    short_exit_desc_esc = html.escape(str(short_exit_desc))
+
+    long_entry_class = "rule-item inactive" if long_entry_desc == "Inactive" else "rule-item"
+    long_exit_class = "rule-item inactive" if long_exit_desc == "Inactive" else "rule-item"
+    short_entry_class = "rule-item inactive" if short_entry_desc == "Inactive" else "rule-item"
+    short_exit_class = "rule-item inactive" if short_exit_desc == "Inactive" else "rule-item"
+
+    # Assumptions & Risk Management
+    a = result.assumptions
+    exec_model_raw = a.get("execution_model", "next_bar_open")
+    if exec_model_raw == "next_bar_open":
+        exec_model_desc = "Signal confirmed at bar close, execute at next bar open"
+    elif exec_model_raw == "same_bar_close":
+        exec_model_desc = "Execute at same bar close"
+    else:
+        exec_model_desc = str(exec_model_raw)
+
+    init_cap = a.get("initial_capital", 100_000.0)
+    comm = a.get("commission_per_side", 0.0)
+    slip = a.get("slippage_per_side_ticks", 0.0)
+    tick_sz = a.get("tick_size", 1.0)
+
+    # Risk Management
+    rm = strategy.risk_management
+    sl_parts = []
+    if rm.stop_loss_ticks is not None:
+        sl_parts.append(f"{rm.stop_loss_ticks:.1f} ticks")
+    if rm.stop_loss_pct is not None:
+        sl_parts.append(f"{rm.stop_loss_pct:.2%}")
+    sl_desc = " & ".join(sl_parts) if sl_parts else "None"
+
+    tp_parts = []
+    if rm.take_profit_ticks is not None:
+        tp_parts.append(f"{rm.take_profit_ticks:.1f} ticks")
+    if rm.take_profit_pct is not None:
+        tp_parts.append(f"{rm.take_profit_pct:.2%}")
+    tp_desc = " & ".join(tp_parts) if tp_parts else "None"
+
+    session_exit_desc = "No"
+    if rm.close_end_of_session:
+        session_exit_desc = f"Yes ({rm.session_end_time or 'N/A'})"
+
+    exec_model_desc_esc = html.escape(str(exec_model_desc))
+    sl_desc_esc = html.escape(str(sl_desc))
+    tp_desc_esc = html.escape(str(tp_desc))
+    session_exit_desc_esc = html.escape(str(session_exit_desc))
+
+    parts = [
+        '<div class="panel explainability-panel">',
+        '    <h2 class="panel-title">Strategy Explainability</h2>',
+        '    <div class="explainability-meta">',
+        f'        <p><b>Strategy Name:</b> {strategy_name_esc}<br/>',
+        f'        <b>Source:</b> {source_html}</p>',
+        '    </div>',
+        '',
+        '    <h3 class="panel-subtitle">Rule Blocks</h3>',
+        '    <div class="rules-container">',
+        f'        <div class="{long_entry_class}">',
+        '            <div class="rule-name">Long Entry</div>',
+        f'            <div class="rule-code">{long_entry_desc_esc}</div>',
+        '        </div>',
+        f'        <div class="{long_exit_class}">',
+        '            <div class="rule-name">Long Exit</div>',
+        f'            <div class="rule-code">{long_exit_desc_esc}</div>',
+        '        </div>',
+        f'        <div class="{short_entry_class}">',
+        '            <div class="rule-name">Short Entry</div>',
+        f'            <div class="rule-code">{short_entry_desc_esc}</div>',
+        '        </div>',
+        f'        <div class="{short_exit_class}">',
+        '            <div class="rule-name">Short Exit</div>',
+        f'            <div class="rule-code">{short_exit_desc_esc}</div>',
+        '        </div>',
+        '    </div>'
+    ]
+
+    # Ranking & Validation Evidence
+    if validation_result is not None:
+        fitness = validation_result.get("fitness")
+        rank = validation_result.get("rank")
+        total_strategies = validation_result.get("total_strategies")
+        elim_res = validation_result.get("elimination_result", {}) or {}
+
+        has_fitness = fitness is not None
+        has_rank = rank is not None
+        has_elimination = bool(elim_res)
+
+        if has_fitness or has_rank or has_elimination:
+            parts.extend([
+                '',
+                '    <h3 class="panel-subtitle">Ranking &amp; Validation Evidence</h3>',
+                '    <ul class="info-list">'
+            ])
+            if has_fitness:
+                fitness_str = f"{fitness:.3f}" if isinstance(fitness, float) else str(fitness)
+                fitness_esc = html.escape(str(fitness_str))
+                parts.append(f'        <li><span class="label">Fitness Score</span><span class="value">{fitness_esc}</span></li>')
+            if has_rank:
+                rank_esc = html.escape(str(rank))
+                if total_strategies is not None:
+                    total_esc = html.escape(str(total_strategies))
+                    parts.append(f'        <li><span class="label">Rank</span><span class="value">{rank_esc} / {total_esc}</span></li>')
+                else:
+                    parts.append(f'        <li><span class="label">Rank</span><span class="value">{rank_esc}</span></li>')
+            if has_elimination:
+                passed = elim_res.get("passed")
+                if passed is not None:
+                    status_class = "status-passed" if passed else "status-eliminated"
+                    status_text = "PASSED" if passed else "ELIMINATED"
+                    parts.append(f'        <li><span class="label">Elimination Status</span><span class="value {status_class}">{status_text}</span></li>')
+
+                failed_rules = elim_res.get("failed_rules", [])
+                if failed_rules and not passed:
+                    failed_rules_esc = html.escape(", ".join(failed_rules))
+                    parts.append(f'        <li><span class="label">Failed Rules</span><span class="value">{failed_rules_esc}</span></li>')
+
+                config_snap = elim_res.get("config_snapshot", {}) or {}
+                enabled = [f"{k}={v}" for k, v in config_snap.items()
+                           if v is not None and v is not False and k != "require_optional"]
+                if enabled:
+                    thresholds_esc = html.escape(", ".join(enabled))
+                    parts.append(f'        <li><span class="label">Thresholds Applied</span><span class="value">{thresholds_esc}</span></li>')
+            parts.append('    </ul>')
+
+    # Assumptions & Risk Management
+    parts.extend([
+        '',
+        '    <h3 class="panel-subtitle">Execution &amp; Risk Assumptions</h3>',
+        '    <ul class="info-list">',
+        f'        <li><span class="label">Execution Model</span><span class="value">{exec_model_desc_esc}</span></li>',
+        f'        <li><span class="label">Initial Capital</span><span class="value">${init_cap:,.2f}</span></li>',
+        f'        <li><span class="label">Costs</span><span class="value">Commission: ${comm:,.2f} per side  |  Slippage: {slip} ticks (Tick size: {tick_sz})</span></li>',
+        f'        <li><span class="label">Intra-bar Risk</span><span class="value">Stop-Loss: {sl_desc_esc}  |  Take-Profit: {tp_desc_esc}  |  Session exit: {session_exit_desc_esc}</span></li>',
+        '    </ul>'
+    ])
+
+    # Warnings
+    all_warnings = []
+    if result.warnings:
+        all_warnings.extend(result.warnings)
+    if validation_result:
+        elim_warnings = (validation_result.get("elimination_result", {}) or {}).get("warnings", []) or []
+        all_warnings.extend(elim_warnings)
+
+    if all_warnings:
+        parts.extend([
+            '',
+            '    <h3 class="panel-subtitle">Warnings</h3>',
+            '    <div class="warnings-container">'
+        ])
+        for w in all_warnings:
+            warning_esc = html.escape(str(w))
+            parts.append(f'        <div class="warning-item">Warning: {warning_esc}</div>')
+        parts.append('    </div>')
+
+    parts.append('</div>')
+
+    return "\n".join(parts)
 
 
 def generate_markdown_report(
@@ -101,12 +451,18 @@ def generate_markdown_report(
 
     title_header = "Quant Strategy Lab — Sample / Mock Report (No Project Loaded)" if is_mock else "Quant Strategy Lab — Backtest Performance Report"
 
+    explainability_md = _format_markdown_strategy_explainability(
+        strategy, result, provenance, validation_result
+    )
+
     md = f"""# {title_header}
 
 ## [Financial Safety Notice]
 > [!WARNING]
 > This report is for research and backtesting purposes only.
 > Backtested performance does not guarantee future results.
+
+{explainability_md}
 
 ## Strategy Profile
 - **Strategy Name**: `{strategy.name}`
@@ -198,13 +554,17 @@ def generate_html_report(
     slip = a.get("slippage_per_side_ticks", 0.0)
     tick_sz = a.get("tick_size", 1.0)
 
+    explainability_html = _format_html_strategy_explainability(
+        strategy, result, provenance, validation_result
+    )
+
     # HTML escaping for all dynamic text fields to prevent injection
     strategy_name_esc = html.escape(strategy.name)
     gen_version_esc = html.escape(str(gen_version))
     seed_esc = html.escape(str(seed))
     rule_versions_esc = html.escape(rule_versions)
     generated_at_esc = html.escape(generated_at)
-    
+
     exec_model_esc = html.escape(str(exec_model))
     sig_conf_esc = html.escape(str(sig_conf))
 
@@ -237,13 +597,13 @@ def generate_html_report(
             exit_t = t.exit_time.strftime("%Y-%m-%d %H:%M") if hasattr(t.exit_time, "strftime") else str(t.exit_time)
             pnl_class = "pnl-positive" if t.pnl > 0 else "pnl-negative" if t.pnl < 0 else ""
             pnl_sign = "+" if t.pnl > 0 else ""
-            
+
             direction_value = str(t.direction)
             direction_lower = direction_value.lower()
             direction_class = direction_lower if direction_lower in {"long", "short"} else "unknown"
             direction_esc = html.escape(direction_value.upper())
             exit_reason_esc = html.escape(t.exit_reason)
-            
+
             trade_rows_html += f"""
             <tr>
                 <td>{i + 1}</td>
@@ -603,6 +963,28 @@ def generate_html_report(
             color: var(--danger);
             font-weight: 600;
         }}
+
+        .explainability-panel {{
+            margin-bottom: 24px;
+        }}
+        .panel-subtitle {{
+            font-family: 'Outfit', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-top: 16px;
+            margin-bottom: 12px;
+            border-bottom: 1px dashed var(--border-color);
+            padding-bottom: 6px;
+        }}
+        .status-passed {{
+            color: #26a69a;
+            font-weight: bold;
+        }}
+        .status-eliminated {{
+            color: #ef5350;
+            font-weight: bold;
+        }}
     </style>
 </head>
 <body>
@@ -625,6 +1007,8 @@ def generate_html_report(
                 This report is for research and backtesting purposes only. Backtested performance does not guarantee future results.
             </div>
         </div>
+
+        {explainability_html}
 
         <!-- KPI Grid -->
         <div class="kpi-grid">
@@ -693,7 +1077,7 @@ def generate_html_report(
                     <li><span class="label">Slippage per Side (Ticks)</span><span class="value">{slip}</span></li>
                     <li><span class="label">Tick Size</span><span class="value">{tick_sz}</span></li>
                 </ul>
-                
+
                 <h2 class="panel-title" style="margin-top: 10px;">Sub-Metrics Details</h2>
                 <ul class="info-list">
                     <li><span class="label">Winning Trades</span><span class="value" style="color: var(--primary);">{winning_trades}</span></li>
@@ -739,7 +1123,7 @@ def generate_html_report(
         html_out += ('<div class="panel" style="margin-top:24px;"><h2 class="panel-title">'
                      'Validation Evidence</h2><p style="color:#8e8e93;font-style:italic;">'
                      'No validation evidence was included in this report.</p></div>')
-                     
+
     # ── multi-instrument evidence section ────────────────────────────────
     if multi_instrument_result:
         html_out += _format_html_multi_instrument(multi_instrument_result)
@@ -1093,7 +1477,7 @@ def _sanitize_md(text: str) -> str:
 
 def _format_markdown_multi_instrument(mir: "MultiInstrumentBacktestResult") -> str:
     lines = ["\n## Multi-Instrument Evidence\n"]
-    
+
     agg = mir.aggregate_metrics
     lines.append("### Aggregate Metrics (Successful Runs Only)")
     lines.append(f"- **Instruments**: {mir.success_count} passed / {mir.failure_count} failed (Total: {mir.instrument_count})")
@@ -1110,7 +1494,7 @@ def _format_markdown_multi_instrument(mir: "MultiInstrumentBacktestResult") -> s
     lines.append("### Per-Instrument Breakdown")
     lines.append("| Instrument | Status | Trades | Net Profit | Profit Factor | Max Drawdown | Notes |")
     lines.append("| :--- | :--- | :--- | :--- | :--- | :--- | :--- |")
-    
+
     for r in mir.per_instrument:
         safe_label = _sanitize_md(r.label)
         if r.success:
@@ -1134,7 +1518,7 @@ def _format_html_multi_instrument(mir: "MultiInstrumentBacktestResult") -> str:
     agg = mir.aggregate_metrics
     pf = agg.get('mean_profit_factor')
     pf_str = f"{pf:.2f}" if pf is not None else "N/A"
-    
+
     html_out = '<div class="panel" style="margin-top:24px;">'
     html_out += '<h2 class="panel-title">Multi-Instrument Evidence</h2>'
     html_out += '<h3 style="font-size: 14px; margin-bottom: 10px;">Aggregate Metrics (Successful Runs Only)</h3>'
@@ -1148,10 +1532,10 @@ def _format_html_multi_instrument(mir: "MultiInstrumentBacktestResult") -> str:
     html_out += f'<li><span class="label">Worst Max Drawdown</span><span class="value">${agg.get("worst_max_drawdown_pnl", 0.0):,.2f}</span></li>'
     html_out += f'<li><span class="label">Mean Profit Factor</span><span class="value">{pf_str}</span></li>'
     html_out += '</ul>'
-    
+
     html_out += '<h3 style="font-size: 14px; margin-bottom: 10px;">Per-Instrument Breakdown</h3>'
     html_out += '<div style="overflow-x: auto;"><table><thead><tr><th>Instrument</th><th>Status</th><th>Trades</th><th>Net Profit</th><th>Profit Factor</th><th>Max Drawdown</th><th>Notes</th></tr></thead><tbody>'
-    
+
     for r in mir.per_instrument:
         label_esc = html.escape(r.label)
         if r.success:
@@ -1161,7 +1545,7 @@ def _format_html_multi_instrument(mir: "MultiInstrumentBacktestResult") -> str:
             pnl_val = m.get('total_pnl', 0.0)
             pnl_class = "pnl-positive" if pnl_val > 0 else "pnl-negative" if pnl_val < 0 else ""
             pnl_sign = "+" if pnl_val > 0 else ""
-            
+
             html_out += f'<tr><td>{label_esc}</td><td><span class="direction-badge long">PASSED</span></td>'
             html_out += f'<td>{m.get("total_trades",0)}</td><td class="{pnl_class}">{pnl_sign}${pnl_val:,.2f}</td>'
             html_out += f'<td>{pf_str}</td><td>${m.get("max_drawdown_pnl",0.0):,.2f}</td><td>-</td></tr>'
@@ -1169,13 +1553,13 @@ def _format_html_multi_instrument(mir: "MultiInstrumentBacktestResult") -> str:
             err_esc = html.escape(str(r.error_message))
             html_out += f'<tr><td>{label_esc}</td><td><span class="direction-badge short">FAILED</span></td>'
             html_out += f'<td>-</td><td>-</td><td>-</td><td>-</td><td>{err_esc}</td></tr>'
-            
+
     html_out += '</tbody></table></div>'
-    
+
     if mir.warnings:
         html_out += '<h3 style="font-size: 14px; margin-top: 24px; margin-bottom: 10px;">Warnings</h3>'
         for w in mir.warnings:
             html_out += f'<div class="warning-item">⚠ {html.escape(w)}</div>'
-            
+
     html_out += '</div>'
     return html_out

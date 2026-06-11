@@ -146,7 +146,7 @@ def test_html_report_generation(mock_strategy, mock_backtest_result) -> None:
 def test_report_service_exports(mock_strategy, mock_backtest_result) -> None:
     """Verify that ReportService correctly selects templates and writes files based on extension."""
     service = ReportService()
-    
+
     provenance = {
         "generator_version": "0.1.0",
         "random_seed": 42,
@@ -180,7 +180,7 @@ def test_html_report_escaping_regression(mock_strategy, mock_backtest_result) ->
             conditions=[Condition(indicator="SMA", params={"period": 20}, operator=">")]
         ),
     )
-    
+
     malicious_result = BacktestResult(
         trades=[
             Trade(
@@ -458,18 +458,18 @@ def test_pdf_report_export_creates_pdf_file_and_has_magic_bytes(mock_strategy, m
     """ReportService must export a real PDF using QPdfWriter starting with %PDF."""
     import tempfile, os
     from PySide6.QtWidgets import QApplication
-    
+
     if not QApplication.instance():
         app = QApplication([])
     else:
         app = QApplication.instance()
-        
+
     service = ReportService()
 
     with tempfile.TemporaryDirectory() as tmpdir:
         pdf_path = os.path.join(tmpdir, "test_report.pdf")
         service.export_report(mock_strategy, mock_backtest_result, pdf_path)
-        
+
         assert os.path.exists(pdf_path)
         with open(pdf_path, "rb") as f:
             header = f.read(4)
@@ -478,7 +478,7 @@ def test_pdf_report_export_creates_pdf_file_and_has_magic_bytes(mock_strategy, m
 
 def test_pdf_report_export_uses_html_generation_and_passes_results(mock_strategy, mock_backtest_result):
     """
-    Verify the PDF branch delegates to HTML generation and includes all 
+    Verify the PDF branch delegates to HTML generation and includes all
     validation, multi-instrument, and disclaimer components in the printed content.
     We mock QTextDocument.setHtml to inspect the exact string being fed to the PDF writer.
     This mock doesn't hide the behavior under test; it just lets us read the content
@@ -489,14 +489,14 @@ def test_pdf_report_export_uses_html_generation_and_passes_results(mock_strategy
     from PySide6.QtWidgets import QApplication
     from PySide6.QtGui import QTextDocument
     from app.services.multi_instrument_service import MultiInstrumentBacktestResult
-    
+
     if not QApplication.instance():
         app = QApplication([])
     else:
         app = QApplication.instance()
-        
+
     service = ReportService()
-    
+
     vr = {"elimination_result": {"passed": True}}
     mir = MultiInstrumentBacktestResult(
         instrument_count=1, success_count=1, failure_count=0,
@@ -506,26 +506,26 @@ def test_pdf_report_export_uses_html_generation_and_passes_results(mock_strategy
 
     with tempfile.TemporaryDirectory() as tmpdir:
         pdf_path = os.path.join(tmpdir, "test_plumbing.pdf")
-        
+
         with patch.object(QTextDocument, "setHtml") as mock_setHtml:
             service.export_report(
                 mock_strategy, mock_backtest_result, pdf_path,
                 validation_result=vr, multi_instrument_result=mir
             )
-            
+
             mock_setHtml.assert_called_once()
             html_content = mock_setHtml.call_args[0][0]
-            
+
             # test_pdf_report_export_uses_html_generation
             assert "<!DOCTYPE html>" in html_content
-            
+
             # test_pdf_report_export_passes_validation_result
             assert "Validation Evidence" in html_content
             assert "PASSED" in html_content
-            
+
             # test_pdf_report_export_passes_multi_instrument_result
             assert "Multi-Instrument Evidence" in html_content
-            
+
             # test_pdf_report_export_preserves_disclaimer_source
             assert "Backtested performance does not guarantee future results." in html_content
 
@@ -538,16 +538,16 @@ def test_markdown_and_html_report_export_still_work(mock_strategy, mock_backtest
     with tempfile.TemporaryDirectory() as tmpdir:
         md_path = os.path.join(tmpdir, "test_report.md")
         html_path = os.path.join(tmpdir, "test_report.html")
-        
+
         service.export_report(mock_strategy, mock_backtest_result, md_path)
         service.export_report(mock_strategy, mock_backtest_result, html_path)
-        
+
         assert os.path.exists(md_path)
         assert os.path.exists(html_path)
-        
+
         with open(md_path, "r", encoding="utf-8") as f:
             assert "Strategy Logic" in f.read()
-            
+
         with open(html_path, "r", encoding="utf-8") as f:
             assert "<!DOCTYPE html>" in f.read()
 
@@ -556,11 +556,11 @@ def test_report_export_walk_forward_summary_compatible_with_stability_score(mock
     """Report generators must not crash when walk_forward_summary has stability_score, and should optionally render it."""
     vr = _make_validation_dict()
     vr["walk_forward_summary"]["stability_score"] = 5.67
-    
+
     # Should not crash
     md_report = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
     html_report = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
-    
+
     assert "Validation Evidence" in md_report
     assert "Validation Evidence" in html_report
 
@@ -623,16 +623,16 @@ def test_report_export_wfe_rendering_with_wfe(mock_strategy, mock_backtest_resul
         "defined_wfe_count": 4,
         "undefined_wfe_count": 1,
     })
-    
+
     md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
     html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
-    
+
     # Markdown checks
     assert "Avg=0.85" in md
     assert "Median=0.81" in md
     assert "Defined Windows=4" in md
     assert "Undefined Windows=1" in md
-    
+
     # HTML checks
     assert "Avg=0.85" in html_out
     assert "Median=0.81" in html_out
@@ -649,14 +649,14 @@ def test_report_export_wfe_rendering_with_none_wfe(mock_strategy, mock_backtest_
         "defined_wfe_count": 0,
         "undefined_wfe_count": 5,
     })
-    
+
     md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
     html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
-    
+
     assert "Avg=N/A" in md
     assert "Median=N/A" in md
     assert "Undefined Windows=5" in md
-    
+
     assert "Avg=N/A" in html_out
     assert "Median=N/A" in html_out
     assert "Undefined Windows=5" in html_out
@@ -685,7 +685,7 @@ def test_report_does_not_crash_with_mtf_conditions(mock_strategy, mock_backtest_
     )
     md = generate_markdown_report(mock_strategy, mock_backtest_result)
     html = generate_html_report(mock_strategy, mock_backtest_result)
-    
+
     assert "[TF: 15m]" in md
     assert "[TF: 15m]" in html
 
@@ -1170,3 +1170,245 @@ def test_reports_wfe_shown_when_only_median_key_present(mock_strategy, mock_back
     assert 'WF Efficiency' in html_out
     assert 'Avg=N/A' in html_out
     assert 'Median=0.85' in html_out
+
+
+# ---------------------------------------------------------------------------
+# Tasks 445-450: Strategy Explainability Report Section Tests
+# ---------------------------------------------------------------------------
+
+
+def test_explainability_header_present_in_markdown(mock_strategy, mock_backtest_result):
+    """1. Explainability header present in Markdown."""
+    md = generate_markdown_report(mock_strategy, mock_backtest_result)
+    assert "## Strategy Explainability" in md
+
+
+def test_explainability_panel_present_in_html(mock_strategy, mock_backtest_result):
+    """2. Explainability panel present in HTML."""
+    html_out = generate_html_report(mock_strategy, mock_backtest_result)
+    assert 'class="panel explainability-panel"' in html_out
+    assert 'Strategy Explainability' in html_out
+
+
+def test_explainability_strategy_name_rendering(mock_strategy, mock_backtest_result):
+    """3. Strategy name rendering in both formats."""
+    md = generate_markdown_report(mock_strategy, mock_backtest_result)
+    html_out = generate_html_report(mock_strategy, mock_backtest_result)
+
+    assert "**Name:** test_strategy_007" in md
+    assert "<b>Strategy Name:</b> test_strategy_007" in html_out
+
+
+def test_explainability_rules_text_display(mock_strategy, mock_backtest_result):
+    """4. Rules text display in both formats."""
+    md = generate_markdown_report(mock_strategy, mock_backtest_result)
+    html_out = generate_html_report(mock_strategy, mock_backtest_result)
+
+    assert "- **Long Entry:** close &gt; SMA(period=20)" in md
+    assert "- **Long Exit:** close &lt; SMA(period=10)" in md
+    assert "- **Short Entry:** Inactive" in md
+    assert "- **Short Exit:** Inactive" in md
+
+    assert "close &gt; SMA(period=20)" in html_out
+    assert "close &lt; SMA(period=10)" in html_out
+    assert "class=\"rule-item inactive\"" in html_out
+
+
+def test_explainability_provenance_rendering(mock_strategy, mock_backtest_result):
+    """5. Provenance rendering and cleanup of defaults."""
+    # Supplied provenance
+    provenance = {
+        "generator": "ga_search",
+        "generator_version": "1.2.3",
+        "random_seed": 999,
+        "source_type": "generated",
+    }
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, provenance=provenance)
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, provenance=provenance)
+
+    assert "**Source:** Generated (ga_search v1.2.3, seed=999)" in md
+    assert "Generated (ga_search v1.2.3, seed=999)" in html_out
+
+    # Missing/Manual provenance
+    provenance_manual = {"source_type": "manual"}
+    md_manual = generate_markdown_report(mock_strategy, mock_backtest_result, provenance=provenance_manual)
+    html_manual = generate_html_report(mock_strategy, mock_backtest_result, provenance=provenance_manual)
+
+    assert "**Source:** Manual / Custom Strategy" in md_manual
+    assert "Manual / Custom Strategy" in html_manual
+
+
+def test_explainability_validation_data_inclusion(mock_strategy, mock_backtest_result):
+    """6. Validation data inclusion (fitness, rank, elimination details)."""
+    vr = _make_validation_dict(
+        fitness=0.789,
+        rank=2,
+        total_strategies=15,
+        elimination_result={
+            "passed": True,
+            "failed_rules": [],
+            "config_snapshot": {
+                "min_trade_count": 5,
+                "min_profit_factor": 0.50,
+                "max_drawdown_pnl": None,
+                "min_win_rate": False,
+            }
+        }
+    )
+    md = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr)
+    html_out = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr)
+
+    assert "### Ranking & Validation Evidence" in md
+    assert "**Fitness Score:** 0.789" in md
+    assert "**Rank:** 2 / 15" in md
+    assert "**Elimination Status:** PASSED" in md
+    assert "**Thresholds Applied:** min_trade_count=5, min_profit_factor=0.5" in md
+
+    assert "Ranking &amp; Validation Evidence" in html_out
+    assert "Fitness Score" in html_out
+    assert "0.789" in html_out
+    assert "Rank" in html_out
+    assert "2 / 15" in html_out
+    assert "class=\"value status-passed\"" in html_out
+    assert "PASSED" in html_out
+    assert "min_trade_count=5, min_profit_factor=0.5" in html_out
+
+
+def test_explainability_html_escaping_validation(mock_strategy, mock_backtest_result):
+    """7. HTML escaping validation for malicious parameters."""
+    malicious_strategy = Strategy(
+        name="<script>alert('name')</script>",
+        long_entry=StrategyBlock(
+            conditions=[Condition(indicator="SMA", params={"period": "<img src=x>"}, operator=">")]
+        ),
+    )
+    provenance = {
+        "generator": "<svg onload=1>",
+        "generator_version": "1.0",
+        "random_seed": "<b>seed</b>",
+    }
+    vr = _make_validation_dict(
+        fitness="<iframe src=y>",
+        rank="<script>alert(2)</script>",
+        elimination_result={
+            "passed": False,
+            "failed_rules": ["<script>alert('failed')</script>"],
+            "config_snapshot": {
+                "min_trade_count": "<script>alert('threshold')</script>",
+            },
+            "warnings": ["<script>alert('warning')</script>"],
+        }
+    )
+
+    html_out = generate_html_report(malicious_strategy, mock_backtest_result, provenance=provenance, validation_result=vr)
+
+    assert "<script>alert('name')</script>" not in html_out
+    assert "<img src=x>" not in html_out
+    assert "<svg onload=1>" not in html_out
+    assert "<b>seed</b>" not in html_out
+    assert "<iframe src=y>" not in html_out
+    assert "<script>alert(2)</script>" not in html_out
+    assert "<script>alert('failed')</script>" not in html_out
+    assert "<script>alert('threshold')</script>" not in html_out
+    assert "<script>alert('warning')</script>" not in html_out
+
+    assert "&lt;script&gt;alert(&#x27;name&#x27;)&lt;/script&gt;" in html_out
+    assert "&lt;img src=x&gt;" in html_out
+    assert "&lt;svg onload=1&gt;" in html_out
+    assert "&lt;b&gt;seed&lt;/b&gt;" in html_out
+    assert "&lt;iframe src=y&gt;" in html_out
+    assert "&lt;script&gt;alert(2)&lt;/script&gt;" in html_out
+    assert "&lt;script&gt;alert(&#x27;failed&#x27;)&lt;/script&gt;" in html_out
+    assert "&lt;script&gt;alert(&#x27;threshold&#x27;)&lt;/script&gt;" in html_out
+    assert "&lt;script&gt;alert(&#x27;warning&#x27;)&lt;/script&gt;" in html_out
+
+
+def test_explainability_markdown_sanitizes_dynamic_strings(mock_backtest_result):
+    """Markdown explainability must sanitize dynamic strategy and validation strings."""
+    malicious_strategy = Strategy(
+        name="<script>alert('name')</script>",
+        long_entry=StrategyBlock(
+            conditions=[Condition(indicator="SMA", params={"period": "<img src=x>"}, operator=">")]
+        ),
+    )
+    provenance = {
+        "generator": "<svg onload=1>",
+        "generator_version": "1.0",
+        "random_seed": "<b>seed</b>",
+    }
+    vr = _make_validation_dict(
+        fitness="<iframe src=y>",
+        rank="<script>alert(2)</script>",
+        elimination_result={
+            "passed": False,
+            "failed_rules": ["<script>alert('failed')</script>"],
+            "config_snapshot": {
+                "min_trade_count": "<script>alert('threshold')</script>",
+            },
+            "warnings": ["<script>alert('warning')</script>"],
+        }
+    )
+
+    md = generate_markdown_report(
+        malicious_strategy,
+        mock_backtest_result,
+        provenance=provenance,
+        validation_result=vr,
+    )
+    explainability_md = md.split("## Strategy Profile", 1)[0]
+
+    assert "<script>alert('name')</script>" not in explainability_md
+    assert "<img src=x>" not in explainability_md
+    assert "<svg onload=1>" not in explainability_md
+    assert "<b>seed</b>" not in explainability_md
+    assert "<iframe src=y>" not in explainability_md
+    assert "<script>alert(2)</script>" not in explainability_md
+    assert "<script>alert('failed')</script>" not in explainability_md
+    assert "<script>alert('threshold')</script>" not in explainability_md
+    assert "<script>alert('warning')</script>" not in explainability_md
+    assert "&lt;script&gt;alert('name')&lt;/script&gt;" in explainability_md
+    assert "&lt;img src=x&gt;" in explainability_md
+    assert "&lt;svg onload=1&gt;" in explainability_md
+    assert "&lt;b&gt;seed&lt;/b&gt;" in explainability_md
+
+
+def test_explainability_optional_validation_fields_exclusion(mock_strategy, mock_backtest_result):
+    """8. Optional validation fields exclusion."""
+    # 8.1 validation_result is None
+    md_none = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=None)
+    html_none = generate_html_report(mock_strategy, mock_backtest_result, validation_result=None)
+
+    assert "Ranking & Validation Evidence" not in md_none
+    assert "Ranking &amp; Validation Evidence" not in html_none
+
+    # 8.2 validation_result has no fitness or rank
+    vr_empty = _make_validation_dict(fitness=None, rank=None)
+    md_empty = generate_markdown_report(mock_strategy, mock_backtest_result, validation_result=vr_empty)
+    html_empty = generate_html_report(mock_strategy, mock_backtest_result, validation_result=vr_empty)
+
+    assert "Fitness Score" not in md_empty
+    assert "**Rank:**" not in md_empty
+    assert "Fitness Score" not in html_empty
+    assert '<li><span class="label">Rank</span>' not in html_empty
+
+
+def test_explainability_risk_management_parameters(mock_strategy, mock_backtest_result):
+    """9. Risk management parameters rendering."""
+    # Configured risk parameters
+    mock_strategy.risk_management.stop_loss_ticks = 15.0
+    mock_strategy.risk_management.stop_loss_pct = 0.015
+    mock_strategy.risk_management.take_profit_ticks = 40.0
+    mock_strategy.risk_management.take_profit_pct = None
+    mock_strategy.risk_management.close_end_of_session = True
+    mock_strategy.risk_management.session_end_time = "13:45"
+
+    md = generate_markdown_report(mock_strategy, mock_backtest_result)
+    html_out = generate_html_report(mock_strategy, mock_backtest_result)
+
+    assert "Stop-Loss: 15.0 ticks & 1.50%" in md
+    assert "Take-Profit: 40.0 ticks" in md
+    assert "Session exit: Yes (13:45)" in md
+
+    assert "Stop-Loss: 15.0 ticks &amp; 1.50%" in html_out
+    assert "Take-Profit: 40.0 ticks" in html_out
+    assert "Session exit: Yes (13:45)" in html_out
