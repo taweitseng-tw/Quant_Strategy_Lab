@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-11 - Tasks 517-522: Desktop Workflow and Chart Reliability Design
+
+### Added
+- `docs/desktop_workflow_chart_reliability_design_517_522.md`: Added a focused desktop workflow and chart/table reliability design for project reset state, ranking table row limits, and validation busy-cursor handling.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 517-522 to Done, advanced the current milestone to Desktop Workflow and Chart Reliability, and set Tasks 523-528 as the next implementation block.
+
+### Verification
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-11 - Tasks 511-516: Data Resampling and Normalization Hardening Acceptance Audit
 
 ### Added

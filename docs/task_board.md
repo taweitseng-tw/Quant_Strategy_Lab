@@ -2,7 +2,7 @@
 
 ## Current Milestone
 
-Data Resampling and Normalization Hardening
+Desktop Workflow and Chart Reliability
 
 ---
 
@@ -12,6 +12,7 @@ Data Resampling and Normalization Hardening
 
 ## Done
 
+- [x] Tasks 517-522 - Desktop Workflow and Chart Reliability Design
 - [x] Tasks 511-516 - Data Resampling and Normalization Hardening Acceptance Audit
 - [x] Tasks 505-510 - Data Resampling and Normalization Hardening Implementation
 - [x] Tasks 499-504 - Data Resampling & Normalization Hardening Design
@@ -147,7 +148,7 @@ Data Resampling and Normalization Hardening
 
 ## Next
 
-- [ ] Tasks 517-522 - Desktop Workflow and Chart Reliability Design
+- [ ] Tasks 523-528 - Desktop Workflow and Chart/Table Reliability Implementation
 
 *(Legacy backlog items pending reprioritization)*
 - Proposed Task 055 - Agent Workflow Automation
