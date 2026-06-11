@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-11 - Tasks 415-420: Strategy Quality Evidence Summary Design
+
+### Added
+- `docs/strategy_quality_evidence_summary_design_415_420.md`: Added a reviewed design for richer elimination evidence in the Validate summary and markdown/html reports using existing serialized fields only.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 415-420 to Done and advanced Next to Tasks 421-426 implementation.
+
+### Verification
+- `git diff --check` passed with CRLF notices only. No production code changed.
+
 ## 2026-06-11 - Tasks 409-414: Elimination Rule Configuration Implementation
 
 ### Added
