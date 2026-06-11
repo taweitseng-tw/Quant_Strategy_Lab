@@ -75,12 +75,21 @@ class EliminationConfigWidget(QWidget):
         self._add_rule(adv_layout, "min_stress_pass_rate", "Min Stress Pass Rate", 0.0, 1.0, 0.05, True)
         self._add_rule(adv_layout, "min_monte_carlo_p05_pnl", "Min MC 5% PnL", -1000000.0, 1000000.0, 100.0, True)
         self._add_rule(adv_layout, "min_walk_forward_pass_rate", "Min WF Pass Rate", 0.0, 1.0, 0.05, True)
+
+        # ── OOS Stability Rules Group ──
+        oos_stab_group = QGroupBox("IS/OOS Stability Rules")
+        oos_stab_layout = QFormLayout(oos_stab_group)
+
+        self._add_rule(oos_stab_layout, "max_oos_pf_degradation", "Max OOS PF Degradation", 0.0, 1.0, 0.05, True)
+        self._add_rule(oos_stab_layout, "max_oos_drawdown_ratio", "Max OOS Drawdown Ratio", 0.0, 10.0, 0.5, True)
+        self._add_rule(oos_stab_layout, "max_oos_avg_trade_degradation", "Max OOS Avg Trade Degradation", 0.0, 1.0, 0.05, True)
         
         self.cb_require_optional = QCheckBox("Require optional validation data")
         self.cb_require_optional.toggled.connect(self._on_input_changed)
         adv_layout.addRow("", self.cb_require_optional)
 
         main_layout.addWidget(adv_group)
+        main_layout.addWidget(oos_stab_group)
         main_layout.addStretch()
 
         # Connect buttons

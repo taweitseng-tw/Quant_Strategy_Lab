@@ -93,6 +93,24 @@ def test_wfe_checked_passes_calc_wfe_true(mock_run, main_window):
     assert config.calc_wfe is True
 
 
+@patch("app.ui.main_window.run_validation_pipeline")
+def test_validate_run_passes_current_elimination_config(mock_run, main_window):
+    """Validate page must use the same elimination config as Results ranking."""
+    mock_run.return_value = _success_result()
+    main_window.strategy_service.update_elimination_config({
+        "min_profit_factor": 1.25,
+        "max_oos_pf_degradation": 0.6,
+    })
+
+    main_window._handle_run()
+
+    mock_run.assert_called_once()
+    config: PipelineConfig = mock_run.call_args.kwargs["config"]
+    assert config.elimination_config is main_window.strategy_service.elimination_config
+    assert config.elimination_config.min_profit_factor == 1.25
+    assert config.elimination_config.max_oos_pf_degradation == 0.6
+
+
 # ---------------------------------------------------------------------------
 # Remove Best N Trades config controls (Task 056H-Impl)
 # ---------------------------------------------------------------------------

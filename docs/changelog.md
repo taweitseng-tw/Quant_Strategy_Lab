@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-06-11 - Tasks 409-414: Elimination Rule Configuration Implementation
+
+### Added
+- `app/widgets/elimination_config_widget.py`: Added disabled-by-default OOS stability controls for `max_oos_pf_degradation`, `max_oos_drawdown_ratio`, and `max_oos_avg_trade_degradation`.
+- `tests/test_elimination_config_widget.py`: Added focused coverage for OOS stability keys, defaults, enabled values, partial dictionaries, clear-all, and apply-defaults behavior.
+- `tests/test_wfe_ui_wiring.py`: Added MainWindow validation-run coverage proving the current StrategyService elimination config is passed into `PipelineConfig`.
+
+### Changed
+- `app/ui/main_window.py`: Validate page runs now pass the current elimination config into the validation pipeline.
+- `docs/task_board.md`: Moved Tasks 409-414 to Done and advanced Next to Tasks 415-420.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_elimination_config_widget.py tests/test_elimination.py tests/test_strategy_service_elimination_config.py tests/test_run_validation_wiring.py tests/test_wfe_ui_wiring.py::test_validate_run_passes_current_elimination_config -q` - 68 passed in 3.75s.
+- `git diff --check` passed with CRLF notices only.
+
 ## 2026-06-11 - Tasks 403-408: Elimination Rule Configuration Design and Contract
 
 ### Added

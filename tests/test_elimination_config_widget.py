@@ -44,6 +44,9 @@ def test_elimination_config_widget_default_dict_shape(widget):
         "min_stress_pass_rate",
         "min_monte_carlo_p05_pnl",
         "min_walk_forward_pass_rate",
+        "max_oos_pf_degradation",
+        "max_oos_drawdown_ratio",
+        "max_oos_avg_trade_degradation",
         "require_optional",
     }
     assert set(cfg.keys()) == expected_keys
@@ -189,3 +192,75 @@ def test_elimination_config_widget_has_no_validation_engine_import():
     
     assert "import validation_engine" not in content, "Widget must not import from validation_engine."
     assert "from validation_engine" not in content, "Widget must not import from validation_engine."
+
+
+# ---------------------------------------------------------------------------
+# OOS stability gate controls — Tasks 409-414
+# ---------------------------------------------------------------------------
+
+
+def test_elimination_config_includes_oos_stability_keys(widget):
+    """Widget must include all three OOS stability gate keys."""
+    cfg = widget.get_config_dict()
+    assert "max_oos_pf_degradation" in cfg
+    assert "max_oos_drawdown_ratio" in cfg
+    assert "max_oos_avg_trade_degradation" in cfg
+
+
+def test_elimination_config_oos_stability_disabled_by_default(widget):
+    """OOS stability gates must be None (disabled) by default."""
+    cfg = widget.get_config_dict()
+    assert cfg["max_oos_pf_degradation"] is None
+    assert cfg["max_oos_drawdown_ratio"] is None
+    assert cfg["max_oos_avg_trade_degradation"] is None
+
+
+def test_elimination_config_oos_stability_enabled_emits_float(widget):
+    """Enabling each OOS stability row must emit the expected float value."""
+    for key in ("max_oos_pf_degradation", "max_oos_drawdown_ratio", "max_oos_avg_trade_degradation"):
+        cb, spin = widget._inputs[key]
+        cb.setChecked(True)
+        spin.setValue(0.75)
+        cfg = widget.get_config_dict()
+        assert cfg[key] == 0.75, f"{key} should be 0.75, got {cfg[key]}"
+        # Reset for next iteration
+        cb.setChecked(False)
+
+
+def test_elimination_config_oos_stability_clear_all(widget):
+    """Clear All must set OOS stability rows to None."""
+    widget.set_config_dict({
+        "max_oos_pf_degradation": 0.5,
+        "max_oos_drawdown_ratio": 2.0,
+        "max_oos_avg_trade_degradation": 0.5,
+    })
+    widget.btn_clear.click()
+    cfg = widget.get_config_dict()
+    assert cfg["max_oos_pf_degradation"] is None
+    assert cfg["max_oos_drawdown_ratio"] is None
+    assert cfg["max_oos_avg_trade_degradation"] is None
+
+
+def test_elimination_config_oos_stability_apply_defaults_leaves_disabled(widget):
+    """Apply Defaults must leave OOS stability rows disabled (None)."""
+    widget.btn_defaults.click()
+    cfg = widget.get_config_dict()
+    assert cfg["max_oos_pf_degradation"] is None
+    assert cfg["max_oos_drawdown_ratio"] is None
+    assert cfg["max_oos_avg_trade_degradation"] is None
+    # Core fields should still be set.
+    assert cfg["min_trade_count"] == 5
+    assert cfg["min_profit_factor"] == 0.5
+
+
+def test_elimination_config_oos_stability_partial_dict(widget):
+    """set_config_dict with only OOS stability keys must update only those rows."""
+    widget.set_config_dict({
+        "max_oos_pf_degradation": 0.6,
+        "max_oos_avg_trade_degradation": 0.4,
+    })
+    cfg = widget.get_config_dict()
+    assert cfg["max_oos_pf_degradation"] == 0.6
+    assert cfg["max_oos_avg_trade_degradation"] == 0.4
+    # max_oos_drawdown_ratio was NOT in the partial dict, so it remains default (None)
+    assert cfg["max_oos_drawdown_ratio"] is None

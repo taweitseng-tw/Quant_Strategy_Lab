@@ -1687,6 +1687,9 @@ class MainWindow(QMainWindow):
             run_precheck = self.precheck_checkbox.isChecked()
             fail_nonpositive = run_precheck and self.precheck_nonpositive_checkbox.isChecked()
 
+        # Use the current elimination config from StrategyService.
+        pipeline_elim_config = self.strategy_service.elimination_config
+
         try:
             result = run_validation_pipeline(
                 df, strategy,
@@ -1704,6 +1707,7 @@ class MainWindow(QMainWindow):
                     price_noise_seed=price_noise_seed,
                     run_is_baseline_quality_precheck=run_precheck,
                     fail_is_baseline_on_nonpositive_pnl=fail_nonpositive,
+                    elimination_config=pipeline_elim_config,
                 ),
                 instrument=active_profile,
                 data_source=source_label,

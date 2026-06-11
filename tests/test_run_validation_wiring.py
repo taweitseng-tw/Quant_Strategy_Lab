@@ -141,3 +141,29 @@ def test_validation_pipeline_error_is_surfaced():
 
     with pytest.raises(Exception):
         run_validation_pipeline(df, strategy, commission=2.0)
+
+
+def test_pipeline_config_receives_elimination_config():
+    """PipelineConfig must accept an EliminationConfig and serialize it."""
+    from app.services.validation_pipeline_service import PipelineConfig
+    from validation_engine.elimination import EliminationConfig
+
+    elim = EliminationConfig(min_profit_factor=1.5, max_drawdown_pnl=10000.0)
+    cfg = PipelineConfig(
+        mc_iterations=5,
+        elimination_config=elim,
+    )
+    d = cfg.to_dict()
+    assert d["elimination_config"] is not None
+    assert d["elimination_config"]["min_profit_factor"] == 1.5
+    assert d["elimination_config"]["max_drawdown_pnl"] == 10000.0
+    assert d["elimination_config"]["min_trade_count"] is None
+
+
+def test_pipeline_config_elimination_config_defaults_to_none():
+    """PipelineConfig without elimination_config must serialize to None."""
+    from app.services.validation_pipeline_service import PipelineConfig
+
+    cfg = PipelineConfig(mc_iterations=5)
+    d = cfg.to_dict()
+    assert d["elimination_config"] is None
