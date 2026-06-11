@@ -2,7 +2,7 @@
 
 ## Current Milestone
 
-Post-v0.2 - Reproducibility foundation design
+Post-v0.3.0-dev - Next milestone selection
 
 ---
 
@@ -14,6 +14,7 @@ Post-v0.2 - Reproducibility foundation design
 
 - [x] Codex Review Fix - Large-File Import UX Hardening
 - [x] Tasks 385-390 - v0.3.0-dev Release Evidence and Evaluator Readiness Closure
+- [x] Tasks 391-396 - Final v0.3.0-dev Release Acceptance Audit
 - [x] Tasks 379-384 - Optional Evaluator Share Message Draft
 - [x] Tasks 373-378 - External Sharing Decision for v0.3.0-dev Zip
 - [x] Tasks 367-372 - Optional Manual Zip Execution Evidence

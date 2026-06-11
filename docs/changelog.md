@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-11 - Tasks 391-396: Final v0.3.0-dev Acceptance Audit
+
+### Added
+- `docs/v0.3.0-dev_final_acceptance_audit_391_396.md`: Added final local developer pre-release acceptance audit with exact tag, zip, smoke test, not-tested, remaining-risk, and disclaimer evidence.
+
+### Changed
+- `docs/task_board.md`: Added Tasks 391-396 to Done and moved the current milestone to post-v0.3.0-dev next milestone selection.
+
+### Verification
+- `git show --no-patch --format=fuller v0.3.0-dev` confirmed tag object `ed34d2b5373c3fb8417839b9f06b67e2f706cebe` targets commit `bd94e90bd82839f8e47d21bbda5dc80cc04c8003`.
+- `git check-ignore -v release_artifacts/QuantStrategyLab-v0.3.0-dev-windows-onedir.zip` confirmed the release zip is ignored by `release_artifacts/`.
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py tests/test_data_page_wiring.py tests/test_quality_checker.py tests/test_candlestick_chart.py tests/test_archive_import_preview_contract_acceptance.py -q` - 98 passed in 10.86s.
+- `git diff --check` passed with CRLF notices only. No binaries were modified, uploaded, pushed, or rebuilt.
+
 ## 2026-06-11 - Tasks 385-390: v0.3.0-dev Evaluator Readiness Closure
 
 ### Added
