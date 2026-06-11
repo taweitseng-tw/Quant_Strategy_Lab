@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-11 - Tasks 511-516: Data Resampling and Normalization Hardening Acceptance Audit
+
+### Added
+- `docs/data_resampling_normalization_hardening_acceptance_audit_511_516.md`: Added a focused acceptance audit for normalizer and resampler hardening.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 511-516 to Done and set Tasks 517-522 as the next design block.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_csv_importer.py tests/test_resampler.py -q` - 46 passed.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-11 - Tasks 505-510: Data Resampling and Normalization Hardening Implementation
 
 ### Added
