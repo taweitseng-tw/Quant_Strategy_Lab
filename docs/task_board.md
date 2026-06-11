@@ -12,6 +12,7 @@ Data Resampling and Normalization Hardening
 
 ## Done
 
+- [x] Tasks 499-504 - Data Resampling & Normalization Hardening Design
 - [x] Tasks 397-402 - Post-v0.3.0-dev Next Milestone Decision
 - [x] Tasks 403-408 - Elimination Rule Configuration Design and Contract
 - [x] Tasks 409-414 - Elimination Rule Configuration Implementation (OOS stability controls + Validate pipeline config wiring)
@@ -144,7 +145,7 @@ Data Resampling and Normalization Hardening
 
 ## Next
 
-- [ ] Tasks 499-504 - Data Resampling & Normalization Hardening Design
+- [ ] Tasks 505-510 - Data Resampling and Normalization Hardening Implementation
 
 *(Legacy backlog items pending reprioritization)*
 - Proposed Task 055 - Agent Workflow Automation

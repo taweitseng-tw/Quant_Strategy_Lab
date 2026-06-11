@@ -1,15 +1,26 @@
 # Changelog
 
+## 2026-06-11 - Tasks 499-504: Data Resampling and Normalization Hardening Design
+
+### Added
+- `docs/data_resampling_normalization_hardening_design_499_504.md`: Added a focused design for hardening normalizer and resampler validation, diagnostics, partial-bar warnings, and session-boundary risk handling.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 499-504 to Done and set Tasks 505-510 as the next implementation block.
+
+### Verification
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-11 - Tasks 493-498: Version Roadmap and 1.0 Gap Rebaseline
 
 ### Added
 - docs/version_roadmap_1_0_gap_rebaseline_493_498.md: Added a compact roadmap baseline separating task-ID count, recent standardized six-task rounds, milestone progress, and formal 1.0 readiness.
 
 ### Changed
-- docs/task_board.md: Moved Tasks 493-498 to Done, advanced the current milestone to Data Resampling and Normalization Hardening, and set Tasks 499-504 as Next.
+- `docs/task_board.md`: Moved Tasks 493-498 to Done, advanced the current milestone to Data Resampling and Normalization Hardening, and set Tasks 499-504 as Next.
 
 ### Verification
-- git diff --check passed with CRLF warnings only.
+- `git diff --check` passed with CRLF warnings only.
 ## 2026-06-11 - Tasks 487-492: Backtest Correctness Hardening Acceptance Audit
 
 ### Added
@@ -978,7 +989,7 @@
 - scripts/agent_loop.ps1: Adds a configurable DeepSeek/Reasonix implementation plus Codex review loop with counted rounds, score threshold gating, same-round fix attempts, prompt/output archives, and dry-run simulation.
 
 ### Changed
-- docs/task_board.md: Added the agent loop automation script to Done.
+- `docs/task_board.md`: Added the agent loop automation script to Done.
 
 ### Verification
 - powershell -NoProfile -ExecutionPolicy Bypass -File scripts\agent_loop.ps1 -Rounds 1 -DryRun
