@@ -309,3 +309,65 @@ def test_resample_non_datetime64_column_raises():
     df["datetime"] = df["datetime"].astype(str)
     with pytest.raises(ResamplerError, match="datetime64"):
         resample(df)
+
+
+# ---------------------------------------------------------------------------
+# Resampler Hardening Tests
+# ---------------------------------------------------------------------------
+
+
+def test_resample_invalid_inputs_raises():
+    """Invalid OHLCV prices, volume, or NaN/infs raise ResamplerError."""
+    # Negative Price
+    df1 = _make_1min_df(count=3)
+    df1.loc[1, "close"] = -10.0
+    with pytest.raises(ResamplerError, match="non-positive prices"):
+        resample(df1)
+
+    # Invalid OHLC relationships (high < low)
+    df2 = _make_1min_df(count=3)
+    df2.loc[1, "high"] = 50.0
+    df2.loc[1, "low"] = 150.0
+    with pytest.raises(ResamplerError, match="invalid OHLC relationships"):
+        resample(df2)
+
+    # Negative Volume
+    df3 = _make_1min_df(count=3)
+    df3.loc[1, "volume"] = -100
+    with pytest.raises(ResamplerError, match="negative volume"):
+        resample(df3)
+
+    # NaN Value
+    df4 = _make_1min_df(count=3)
+    df4.loc[1, "open"] = float("nan")
+    with pytest.raises(ResamplerError, match="NaN or infinite values"):
+        resample(df4)
+
+
+def test_resample_identity_mode_still_validates_inputs():
+    """Same-timeframe resampling must not bypass hardening validation."""
+    df = _make_1min_df(count=3)
+    df.loc[1, "low"] = 0.0
+
+    with pytest.raises(ResamplerError, match="non-positive prices"):
+        resample(df, source_minutes=1, target_minutes=1)
+
+
+def test_resample_partial_bar_warning():
+    """Resampling with missing non-boundary constituent bars triggers a UserWarning."""
+    # We want a 1-min to 5-min resampling.
+    # If we have 15 minutes of bars, but one of the middle groups (e.g. index 5-9, representing 08:35-08:39)
+    # is missing some bars, say we drop 08:36, 08:37, and 08:38.
+    df = _make_1min_df(start="2024-01-02 08:30", count=15)
+    # drop indices 6, 7, 8 (timestamps 08:36, 08:37, 08:38)
+    df = df.drop(index=[6, 7, 8]).reset_index(drop=True)
+
+    with pytest.warns(UserWarning, match="incomplete constituent counts"):
+        result = resample(df, source_minutes=1, target_minutes=5)
+
+    assert len(result) == 3
+    # The middle bar (datetime 08:35) should have 2 constituent bars instead of 5
+    # Verification that it still resampled correctly:
+    # 08:30 group has 5 bars (08:30-08:34)
+    # 08:35 group has 2 bars (08:35, 08:39)
+    # 08:40 group has 5 bars (08:40-08:44)

@@ -118,7 +118,8 @@ def test_normalize_sorts_by_datetime():
         "close": [4498.0, 4508.0, 4510.0],
         "volume": [11200, 12500, 9800],
     })
-    result = normalize(df)
+    with pytest.warns(UserWarning, match="monotonic increasing"):
+        result = normalize(df)
     assert result["datetime"].is_monotonic_increasing
 
 
@@ -324,3 +325,168 @@ def test_e2e_import_and_persist(importer, tmp_dir):
     assert isinstance(got.created_at, datetime)
 
     repo.close()
+
+
+# ---------------------------------------------------------------------------
+# Normalizer Hardening Tests
+# ---------------------------------------------------------------------------
+
+
+def test_normalize_ohlc_consistency_violating_high_raises():
+    """If high is less than open, close, or low, NormalizerError is raised."""
+    # high < open
+    df1 = pd.DataFrame({
+        "datetime": ["2024-01-02 08:30"],
+        "open": [10.0],
+        "high": [9.0],
+        "low": [8.0],
+        "close": [9.5],
+        "volume": [100],
+    })
+    with pytest.raises(NormalizerError, match="invalid OHLC relationships"):
+        normalize(df1)
+
+    # high < close
+    df2 = pd.DataFrame({
+        "datetime": ["2024-01-02 08:30"],
+        "open": [10.0],
+        "high": [10.2],
+        "low": [8.0],
+        "close": [10.5],
+        "volume": [100],
+    })
+    with pytest.raises(NormalizerError, match="invalid OHLC relationships"):
+        normalize(df2)
+
+    # high < low
+    df3 = pd.DataFrame({
+        "datetime": ["2024-01-02 08:30"],
+        "open": [10.0],
+        "high": [7.0],
+        "low": [8.0],
+        "close": [9.0],
+        "volume": [100],
+    })
+    with pytest.raises(NormalizerError, match="invalid OHLC relationships"):
+        normalize(df3)
+
+
+def test_normalize_ohlc_consistency_violating_low_raises():
+    """If low is greater than open or close, NormalizerError is raised."""
+    # low > open
+    df1 = pd.DataFrame({
+        "datetime": ["2024-01-02 08:30"],
+        "open": [10.0],
+        "high": [12.0],
+        "low": [11.0],
+        "close": [10.5],
+        "volume": [100],
+    })
+    with pytest.raises(NormalizerError, match="invalid OHLC relationships"):
+        normalize(df1)
+
+    # low > close
+    df2 = pd.DataFrame({
+        "datetime": ["2024-01-02 08:30"],
+        "open": [10.0],
+        "high": [12.0],
+        "low": [10.8],
+        "close": [10.5],
+        "volume": [100],
+    })
+    with pytest.raises(NormalizerError, match="invalid OHLC relationships"):
+        normalize(df2)
+
+
+def test_normalize_negative_price_raises():
+    """Any price <= 0 raises NormalizerError."""
+    for col in ("open", "high", "low", "close"):
+        df = pd.DataFrame({
+            "datetime": ["2024-01-02 08:30"],
+            "open": [10.0],
+            "high": [12.0],
+            "low": [8.0],
+            "close": [10.5],
+            "volume": [100],
+        })
+        df.loc[0, col] = 0.0
+        with pytest.raises(NormalizerError, match="non-positive prices"):
+            normalize(df)
+
+        df.loc[0, col] = -1.0
+        with pytest.raises(NormalizerError, match="non-positive prices"):
+            normalize(df)
+
+
+def test_normalize_negative_volume_raises():
+    """Volume < 0 raises NormalizerError."""
+    df = pd.DataFrame({
+        "datetime": ["2024-01-02 08:30"],
+        "open": [10.0],
+        "high": [12.0],
+        "low": [8.0],
+        "close": [10.5],
+        "volume": [-5],
+    })
+    with pytest.raises(NormalizerError, match="negative volume"):
+        normalize(df)
+
+
+def test_normalize_nan_inf_values_raises():
+    """NaN or infinite values in OHLCV columns raise NormalizerError."""
+    for col in ("open", "high", "low", "close", "volume"):
+        # NaN
+        df1 = pd.DataFrame({
+            "datetime": ["2024-01-02 08:30"],
+            "open": [10.0],
+            "high": [12.0],
+            "low": [8.0],
+            "close": [10.5],
+            "volume": [100],
+        })
+        df1[col] = df1[col].astype(float)
+        df1.loc[0, col] = float("nan")
+        with pytest.raises(NormalizerError, match="NaN or infinite values"):
+            normalize(df1)
+
+        # Inf
+        df2 = pd.DataFrame({
+            "datetime": ["2024-01-02 08:30"],
+            "open": [10.0],
+            "high": [12.0],
+            "low": [8.0],
+            "close": [10.5],
+            "volume": [100],
+        })
+        df2[col] = df2[col].astype(float)
+        df2.loc[0, col] = float("inf")
+        with pytest.raises(NormalizerError, match="NaN or infinite values"):
+            normalize(df2)
+
+
+def test_normalize_non_monotonic_warns():
+    """Inputting out-of-order data emits a UserWarning."""
+    df = pd.DataFrame({
+        "datetime": ["2024-01-02 08:32", "2024-01-02 08:30", "2024-01-02 08:31"],
+        "open": [10.0, 10.0, 10.0],
+        "high": [12.0, 12.0, 12.0],
+        "low": [8.0, 8.0, 8.0],
+        "close": [10.5, 10.5, 10.5],
+        "volume": [100, 100, 100],
+    })
+    with pytest.warns(UserWarning, match="monotonic increasing"):
+        normalize(df)
+
+
+def test_normalize_duplicate_diagnostics_message():
+    """Duplicate error message shows specific duplicate timestamps."""
+    df = pd.DataFrame({
+        "datetime": ["2024-01-02 08:30", "2024-01-02 08:30"],
+        "open": [10.0, 10.0],
+        "high": [12.0, 12.0],
+        "low": [8.0, 8.0],
+        "close": [10.5, 10.5],
+        "volume": [100, 100],
+    })
+    with pytest.raises(NormalizerError, match="Duplicate timestamps include: 2024-01-02 08:30"):
+        normalize(df)

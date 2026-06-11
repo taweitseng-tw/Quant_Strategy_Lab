@@ -84,13 +84,6 @@ def resample(
             f"source_minutes ({source_minutes})."
         )
 
-    # --- identity shortcut: same period → no-op -----------------------------
-    if target_minutes == source_minutes:
-        out = df[list(INTERNAL_COLUMNS)].copy()
-        # When source == target each bar is immediately available.
-        out["available_at"] = out["datetime"]
-        return out
-
     # ------------------------------------------------------------------
     # 2. Validate input DataFrame
     # ------------------------------------------------------------------
@@ -117,9 +110,14 @@ def resample(
         raise ResamplerError("Datetime column contains NaT values.")
 
     if work["datetime"].duplicated().any():
-        dupes = work["datetime"].duplicated().sum()
+        dupe_series = work["datetime"][work["datetime"].duplicated()]
+        dupe_count = len(dupe_series)
+        unique_dupes = dupe_series.unique()
+        sample_dupes = [str(ts) for ts in unique_dupes[:5]]
         raise ResamplerError(
-            f"Found {dupes} duplicate datetime rows. "
+            f"Found {dupe_count} duplicate datetime rows. "
+            f"Duplicate timestamps include: {', '.join(sample_dupes)}"
+            f"{'...' if len(unique_dupes) > 5 else ''}. "
             "Resolve duplicates before resampling."
         )
 
@@ -129,12 +127,60 @@ def resample(
             raise ResamplerError(
                 f"Column '{col}' must be numeric, got {work[col].dtype}."
             )
+        invalid_mask = (
+            work[col].isna()
+            | (work[col] == float("inf"))
+            | (work[col] == float("-inf"))
+        )
+        if invalid_mask.any():
+            bad_count = invalid_mask.sum()
+            raise ResamplerError(
+                f"{bad_count} row(s) contain NaN or infinite values in column '{col}'."
+            )
+
+    for col in ("open", "high", "low", "close"):
+        invalid_mask = work[col] <= 0
+        if invalid_mask.any():
+            bad_count = invalid_mask.sum()
+            raise ResamplerError(
+                f"{bad_count} row(s) contain non-positive prices (<= 0) in column '{col}'."
+            )
+
+    invalid_mask = work["volume"] < 0
+    if invalid_mask.any():
+        bad_count = invalid_mask.sum()
+        raise ResamplerError(
+            f"{bad_count} row(s) contain negative volume in column 'volume'."
+        )
+
+    invalid_high_open = work["high"] < work["open"]
+    invalid_high_close = work["high"] < work["close"]
+    invalid_high_low = work["high"] < work["low"]
+    invalid_low_open = work["low"] > work["open"]
+    invalid_low_close = work["low"] > work["close"]
+
+    any_invalid = (
+        invalid_high_open | invalid_high_close | invalid_high_low |
+        invalid_low_open | invalid_low_close
+    )
+    if any_invalid.any():
+        bad_count = any_invalid.sum()
+        raise ResamplerError(
+            f"{bad_count} row(s) contain invalid OHLC relationships."
+        )
 
     # ------------------------------------------------------------------
     # 3. Sort by datetime (robustness — input may be unsorted)
     # ------------------------------------------------------------------
     work.sort_values("datetime", inplace=True)
     work.reset_index(drop=True, inplace=True)
+
+    # --- identity shortcut: same period no-op after validation --------------
+    if target_minutes == source_minutes:
+        out = work[list(INTERNAL_COLUMNS)].copy()
+        # When source == target each bar is immediately available.
+        out["available_at"] = out["datetime"]
+        return out
 
     # Preserve a copy of datetime as a column so we can aggregate .last()
     # after set_index consumes the original column.
@@ -162,6 +208,7 @@ def resample(
             close=("close", "last"),
             volume=("volume", "sum"),
             available_at=("_dt", "last"),  # _dt is the preserved datetime copy
+            constituent_count=("_dt", "count"),
         )
         .reset_index()
     )
@@ -169,6 +216,28 @@ def resample(
     # Drop empty buckets that Grouper may create at the head (before data starts).
     result.dropna(subset=["open"], inplace=True)
     result.reset_index(drop=True, inplace=True)
+
+    expected_count = target_minutes // source_minutes
+    if len(result) >= 3:
+        non_boundary = result.iloc[1:-1]
+        incomplete_mask = non_boundary["constituent_count"] < expected_count
+        if incomplete_mask.any():
+            incomplete_bars = non_boundary[incomplete_mask]
+            incomplete_details = [
+                f"{row['datetime'].strftime('%Y-%m-%d %H:%M')} "
+                f"(has {int(row['constituent_count'])}/{expected_count} bars)"
+                for _, row in incomplete_bars.head(5).iterrows()
+            ]
+            import warnings
+            warnings.warn(
+                f"Found {len(incomplete_bars)} non-boundary resampled bars "
+                "with incomplete constituent counts. "
+                f"Expected {expected_count} bars. Incomplete bars include: "
+                f"{', '.join(incomplete_details)}"
+                f"{'...' if len(incomplete_bars) > 5 else ''}.",
+                UserWarning,
+                stacklevel=2,
+            )
 
     # Canonical output order — available_at is the non-leaking signal gate.
     _RESULT_COLUMNS = list(INTERNAL_COLUMNS) + ["available_at"]

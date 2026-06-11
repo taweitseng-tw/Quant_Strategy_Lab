@@ -118,14 +118,86 @@ def normalize(df: pd.DataFrame) -> pd.DataFrame:
             f"at indices {bad_indices}.  All datetime values must be valid."
         )
 
+    # --- 5A. Validate OHLCV numeric/finite/bounds ------------------------------------------
+    for col in ("open", "high", "low", "close", "volume"):
+        if not pd.api.types.is_numeric_dtype(df[col]):
+            raise NormalizerError(f"Column '{col}' must be numeric.")
+
+        # Check for NaN or infinite values
+        invalid_mask = df[col].isna() | (df[col] == float("inf")) | (df[col] == float("-inf"))
+        if invalid_mask.any():
+            bad_count = invalid_mask.sum()
+            bad_indices = df.index[invalid_mask].tolist()
+            raise NormalizerError(
+                f"{bad_count} row(s) contain NaN or infinite values in column '{col}' "
+                f"at indices {bad_indices}."
+            )
+
+    # Check price bounds (positive)
+    for col in ("open", "high", "low", "close"):
+        invalid_mask = df[col] <= 0
+        if invalid_mask.any():
+            bad_count = invalid_mask.sum()
+            bad_indices = df.index[invalid_mask].tolist()
+            raise NormalizerError(
+                f"{bad_count} row(s) contain non-positive prices (<= 0) in column '{col}' "
+                f"at indices {bad_indices}."
+            )
+
+    # Check volume bounds (non-negative)
+    invalid_mask = df["volume"] < 0
+    if invalid_mask.any():
+        bad_count = invalid_mask.sum()
+        bad_indices = df.index[invalid_mask].tolist()
+        raise NormalizerError(
+            f"{bad_count} row(s) contain negative volume in column 'volume' "
+            f"at indices {bad_indices}."
+        )
+
+    # Check OHLC consistency: high >= open, high >= close, high >= low, low <= open, low <= close
+    invalid_high_open = df["high"] < df["open"]
+    invalid_high_close = df["high"] < df["close"]
+    invalid_high_low = df["high"] < df["low"]
+    invalid_low_open = df["low"] > df["open"]
+    invalid_low_close = df["low"] > df["close"]
+
+    any_invalid = (
+        invalid_high_open | invalid_high_close | invalid_high_low |
+        invalid_low_open | invalid_low_close
+    )
+    if any_invalid.any():
+        bad_count = any_invalid.sum()
+        bad_indices = df.index[any_invalid].tolist()
+        first_bad = bad_indices[0]
+        row_vals = df.loc[first_bad]
+        raise NormalizerError(
+            f"{bad_count} row(s) contain invalid OHLC relationships "
+            f"at indices {bad_indices}. First violation values at index {first_bad}: "
+            f"O={row_vals['open']}, H={row_vals['high']}, L={row_vals['low']}, C={row_vals['close']}."
+        )
+
     # --- 6. Sort and check duplicates ------------------------------------------------------
+    import warnings
+    if not df["datetime"].is_monotonic_increasing:
+        warnings.warn(
+            "Source datetime series is not monotonic increasing (out-of-order). "
+            "Data will be automatically sorted by datetime.",
+            UserWarning,
+            stacklevel=2
+        )
+
     df.sort_values("datetime", inplace=True)
     df.reset_index(drop=True, inplace=True)
 
     if df["datetime"].duplicated().any():
-        dupes = df["datetime"].duplicated().sum()
+        dupe_series = df["datetime"][df["datetime"].duplicated()]
+        dupe_count = len(dupe_series)
+        unique_dupes = dupe_series.unique()
+        sample_dupes = [str(ts) for ts in unique_dupes[:5]]
         raise NormalizerError(
-            f"Found {dupes} duplicate datetime rows. "
+            f"Found {dupe_count} duplicate datetime rows. "
+            f"Duplicate timestamps include: {', '.join(sample_dupes)}"
+            f"{'...' if len(unique_dupes) > 5 else ''}. "
             "Source data must have unique timestamps per bar."
         )
 

@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-06-11 - Tasks 505-510: Data Resampling and Normalization Hardening Implementation
+
+### Added
+- `tests/test_csv_importer.py`: Added focused normalizer hardening coverage for OHLC bounds, non-positive prices, negative volume, NaN/inf values, out-of-order warnings, and duplicate timestamp diagnostics.
+- `tests/test_resampler.py`: Added focused resampler hardening coverage for invalid OHLCV input, partial constituent-bar warnings, and identity-mode validation.
+
+### Changed
+- `data_engine/normalizer.py`: Added OHLCV numeric/finite/bounds validation, out-of-order warnings, and duplicate timestamp diagnostics.
+- `data_engine/resampler.py`: Added OHLCV finite/bounds validation, duplicate timestamp diagnostics, post-validation identity mode, and partial non-boundary bar warnings.
+- `docs/task_board.md`: Moved Tasks 505-510 to Done and set Tasks 511-516 as the next acceptance audit block.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_csv_importer.py tests/test_resampler.py -q` - 46 passed.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-11 - Tasks 499-504: Data Resampling and Normalization Hardening Design
 
 ### Added
