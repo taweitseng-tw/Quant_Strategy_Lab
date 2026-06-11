@@ -25,3 +25,5 @@ class InstrumentProfile:
     slippage_ticks: float = 0.0       # Default per-side slippage (ticks)
     currency: str = "USD"
     session_template: str = ""        # Name of session template (future use)
+    session_start: str = ""           # Session start time e.g. "08:30"
+    session_end: str = ""             # Session end time e.g. "13:30"

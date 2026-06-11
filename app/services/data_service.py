@@ -49,8 +49,18 @@ class DataService:
         source_path: Path | str,
         symbol: str = "RESEARCH",
         timeframe: str = "1min",
+        session_start: str | None = None,
+        session_end: str | None = None,
     ) -> tuple[pd.DataFrame, DatasetMeta, DataQualityReport]:
-        """Import a CSV/TXT OHLCV file and run quality checks."""
+        """Import a CSV/TXT OHLCV file and run quality checks.
+
+        Parameters
+        ----------
+        session_start, session_end : str or None
+            Optional trading session times (e.g. "08:30", "13:30") for
+            session-aware gap filtering.  When provided, gaps that cross
+            session boundaries are excluded from the warning count.
+        """
         source = Path(source_path).resolve()
         if not source.is_file():
             raise FileNotFoundError(f"Source file not found: {source}")
@@ -76,6 +86,8 @@ class DataService:
             normalized_df,
             expected_freq_minutes=_timeframe_to_minutes(timeframe),
             outlier_pct_threshold=5.0,
+            session_start=session_start,
+            session_end=session_end,
         )
 
         if not quality_report.passed:
@@ -92,15 +104,28 @@ class DataService:
             )
 
         if self._dataset_repo is not None:
-            try:
-                self._dataset_repo.save(meta)
-                logger.info("Dataset metadata persisted: %s", meta.name)
-            except Exception:
-                logger.exception(
-                    "Failed to persist dataset metadata; continuing in-memory only."
-                )
+            self.persist_metadata(meta)
 
         return normalized_df, meta, quality_report
+
+    def persist_metadata(self, meta: DatasetMeta) -> bool:
+        """Persist dataset metadata when a project database is attached.
+
+        Returns ``True`` when a repository exists and the save succeeds.  Import
+        should remain usable in-memory if persistence fails, matching the
+        original import behavior.
+        """
+        if self._dataset_repo is None:
+            return False
+        try:
+            self._dataset_repo.save(meta)
+            logger.info("Dataset metadata persisted: %s", meta.name)
+            return True
+        except Exception:
+            logger.exception(
+                "Failed to persist dataset metadata; continuing in-memory only."
+            )
+            return False
 
     def get_dataset_raw_by_id(self, dataset_id: int) -> dict | None:
         """Return a dataset row as a raw dict, or None."""
@@ -160,6 +185,73 @@ class DataService:
             f"Import failed: {msg}\n"
             "Check that the file is a valid OHLCV CSV/TXT file with the expected format."
         )
+
+    @staticmethod
+    def extract_warning_details(quality: DataQualityReport, df: pd.DataFrame | None = None) -> list[str]:
+        """Extract first-N actionable details from quality warnings.
+
+        Returns a list of human-readable detail lines for large jumps and time
+        gaps when the source DataFrame is available.  When *df* is ``None``
+        the warning text itself is returned without extra detail.
+        """
+        details: list[str] = []
+        counts = quality.issue_counts or {}
+        issues_by_type = {issue.type: issue for issue in getattr(quality, "issues", [])}
+
+        large_jump_count = counts.get("large_jumps", 0)
+        large_jump_issue = issues_by_type.get("large_jumps")
+        if large_jump_issue and large_jump_issue.sample_timestamps:
+            details.append(
+                "  Largest close jumps: " + ", ".join(large_jump_issue.sample_timestamps[:3])
+            )
+        elif large_jump_count > 0 and df is not None and "datetime" in df.columns:
+            pct_chg = df["close"].pct_change().abs() * 100
+            jump_series = pct_chg[pct_chg > 5.0].nlargest(3)
+            jump_parts = []
+            for idx, pct_val in jump_series.items():
+                dt_val = df["datetime"].iloc[idx]
+                if hasattr(dt_val, "strftime"):
+                    dt_str = dt_val.strftime("%Y-%m-%d %H:%M")
+                else:
+                    dt_str = str(dt_val)
+                jump_parts.append(f"{dt_str} ({pct_val:.1f}%)")
+            details.append("  Largest close jumps: " + ", ".join(jump_parts))
+        elif large_jump_count > 0:
+            details.append(f"  {large_jump_count} large close jump(s) detected")
+
+        gap_count = counts.get("time_gaps", 0)
+        gap_issue = issues_by_type.get("time_gaps")
+        if gap_issue and gap_issue.sample_timestamps:
+            details.append("  Largest gaps: " + "; ".join(gap_issue.sample_timestamps[:2]))
+        elif gap_count > 0 and df is not None and "datetime" in df.columns:
+            deltas = df["datetime"].diff()
+            gap_positions = deltas[deltas > pd.Timedelta(minutes=1)].nlargest(3).index
+            gap_strs = []
+            for pos in gap_positions:
+                if pos == 0:
+                    continue
+                gap_size = deltas.iloc[pos]
+                prev_dt = df["datetime"].iloc[pos - 1]
+                next_dt = df["datetime"].iloc[pos]
+                if hasattr(prev_dt, "strftime"):
+                    prev_str = prev_dt.strftime("%Y-%m-%d %H:%M")
+                else:
+                    prev_str = str(prev_dt)
+                if hasattr(next_dt, "strftime"):
+                    next_str = next_dt.strftime("%Y-%m-%d %H:%M")
+                else:
+                    next_str = str(next_dt)
+                gap_strs.append(f"{prev_str} -> {next_str} ({gap_size})")
+            if gap_strs:
+                details.append("  Largest gaps: " + "; ".join(gap_strs[:2]))
+        elif gap_count > 0:
+            details.append(f"  {gap_count} time gap(s) detected")
+
+        if not details:
+            for w in quality.warnings[:2]:
+                details.append(f"  {w}")
+
+        return details
 
     @staticmethod
     def format_quality_evidence(quality: DataQualityReport) -> str:

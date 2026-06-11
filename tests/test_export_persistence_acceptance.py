@@ -10,11 +10,18 @@ import pytest
 from PySide6.QtWidgets import QApplication
 
 from app.ui.main_window import MainWindow
+from app.workers import ImportWorker
 from core.models.strategy import Strategy, StrategyBlock, Condition
 from repository.dataset_repo import DatasetRepository
 from repository.strategy_repo import StrategyRepository
 
 SAMPLE_CSV = Path(__file__).resolve().parent.parent / "sample_data" / "sample_ohlcv.csv"
+
+
+def _sync_import_start(worker):
+    """Patched ImportWorker.start that runs the worker synchronously."""
+    worker.run()
+    worker.finished.emit()
 
 
 def test_export_persistence_smoke(tmp_path: Path):
@@ -53,7 +60,8 @@ def test_export_persistence_smoke(tmp_path: Path):
     # 2. Import OHLCV dataset (mock UI file selection and dialog)
     with patch("PySide6.QtWidgets.QFileDialog.getOpenFileName", return_value=(str(SAMPLE_CSV), "CSV")), \
          patch("PySide6.QtWidgets.QMessageBox.information"), \
-         patch("PySide6.QtWidgets.QMessageBox.critical"):
+         patch("PySide6.QtWidgets.QMessageBox.critical"), \
+         patch.object(ImportWorker, "start", _sync_import_start):
         window._handle_import_ohlcv_data()
         
     # 3. Verify DatasetMeta persisted to project SQLite

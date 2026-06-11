@@ -28,7 +28,8 @@ from app.services.validation_pipeline_service import (
     PipelineResult,
     run_validation_pipeline,
 )
-from app.services.ga_service import GASearchConfig, run_ga_search
+from app.services.ga_service import GASearchConfig
+from app.workers import ImportWorker
 from core.models.dataset import DatasetMeta
 from data_engine.quality_checker import DataQualityReport
 
@@ -1239,7 +1240,7 @@ class MainWindow(QMainWindow):
         QApplication.processEvents()
 
     def _handle_import_ohlcv_data(self) -> None:
-        from PySide6.QtWidgets import QFileDialog, QMessageBox
+        from PySide6.QtWidgets import QFileDialog
         import os
         
         file_path, _ = QFileDialog.getOpenFileName(
@@ -1252,86 +1253,147 @@ class MainWindow(QMainWindow):
         if not file_path:
             return
 
-        filename = os.path.basename(file_path)
         self.log_panel.add_message("INFO", f"Importing historical research data from: {file_path}...")
         self._set_import_busy()
-        
-        try:
-            # Import file through service layer (uses CsvImporter under the hood).
-            df, meta, quality = self.data_service.import_file(file_path, symbol="TXF", timeframe="1min")
-            
-            # Log quality report results.
-            if not quality.passed:
-                for err in quality.errors:
-                    self.log_panel.add_message("ERROR", f"Quality: {err}")
-                self.log_panel.add_message(
-                    "WARN",
-                    f"Data quality check FAILED — see errors above. "
-                    f"Chart may display suspect data."
-                )
-            elif quality.warnings:
-                for w in quality.warnings:
-                    self.log_panel.add_message("WARN", f"Quality: {w}")
 
-            # Store dataset for validation pipeline use.
-            self._loaded_dataset = df
-            self._active_dataset_meta = meta
-            self._active_dataset_quality = quality
-            self._reset_validation_state()
-
-            # Display normalized data in candlestick chart
-            self.data_chart.set_data(df, is_mock=False)
-            
-            # Update status/labeling
-            status_prefix = "✓" if quality.passed else "⚠"
-            quality_str = "Passed" if quality.passed else f"Failed ({len(quality.errors)} errors)"
-            if quality.warnings:
-                quality_str += f" with {len(quality.warnings)} warnings"
-            
-            start_dt = str(meta.start_datetime)
-            end_dt = str(meta.end_datetime)
-            
-            self.data_status_label.setText(
-                f"{status_prefix} Active Dataset: {meta.name} | "
-                f"Rows: {meta.row_count:,} | "
-                f"Range: {start_dt} to {end_dt} | "
-                f"Quality: {quality_str}"
-            )
-            if quality.passed:
-                self.data_status_label.setStyleSheet("color: #26a69a; font-weight: bold; font-size: 12px;")
-            else:
-                self.data_status_label.setStyleSheet("color: #ef5350; font-weight: bold; font-size: 12px;")
-            self.data_status_label.setToolTip(
-                DataService.format_quality_evidence(quality)
-            )
-            
+        # Resolve active instrument profile for session-aware gap filtering.
+        session_start: str | None = None
+        session_end: str | None = None
+        active_profile = self.instrument_service.get_active_profile()
+        if active_profile and active_profile.session_start and active_profile.session_end:
+            session_start = active_profile.session_start
+            session_end = active_profile.session_end
             self.log_panel.add_message(
                 "INFO",
-                f"Successfully imported {len(df):,} rows of historical research data from {filename}."
+                f"Using session profile {active_profile.symbol}: "
+                f"{session_start} - {session_end} for gap detection."
             )
-            QMessageBox.information(
-                self,
-                "Import Successful",
-                f"Successfully imported {len(df):,} rows of historical research data from:\n{filename}"
+
+        # Run import on a background thread so the UI stays responsive.
+        self._import_worker = ImportWorker(
+            file_path=file_path,
+            data_service=self.data_service,
+            symbol="TXF",
+            timeframe="1min",
+            session_start=session_start,
+            session_end=session_end,
+            parent=self,
+        )
+        self._import_worker.progress_updated.connect(self._on_import_progress)
+        self._import_worker.success.connect(self._on_import_success)
+        self._import_worker.failure.connect(self._on_import_failure)
+        self._import_worker.finished.connect(self._set_import_idle)
+        self._import_worker.start()
+
+    def _on_import_progress(self, stage: str) -> None:
+        """Update button text and log with the current import stage."""
+        self.btn_import_data.setText(stage)
+        self.btn_import_data.setToolTip(stage)
+        self.log_panel.add_message("INFO", f"Import stage: {stage}")
+        QApplication.processEvents()
+
+    def _on_import_success(self, df: pd.DataFrame, meta: DatasetMeta, quality: DataQualityReport) -> None:
+        """Handle successful import from background worker."""
+        from PySide6.QtWidgets import QMessageBox
+        import os
+
+        # Log quality report results.
+        if not quality.passed:
+            for err in quality.errors:
+                self.log_panel.add_message("ERROR", f"Quality: {err}")
+            self.log_panel.add_message(
+                "WARN",
+                f"Data quality check FAILED — see errors above. "
+                f"Chart may display suspect data."
             )
-            
-        except Exception as e:
-            self._loaded_dataset = None
-            self._active_dataset_meta = None
-            self._active_dataset_quality = None
-            self._reset_validation_state()
-            self.data_status_label.setText("Historical Research Data: None loaded (Using default mock data)")
-            self.data_status_label.setStyleSheet("color: #ffb300; font-weight: bold; font-size: 12px;")
-            self.data_status_label.setToolTip("")
-            user_msg = DataService.get_actionable_import_error(e)
-            self.log_panel.add_message("ERROR", f"Failed to import data file: {user_msg}")
-            QMessageBox.critical(
-                self,
-                "Import Failed",
-                user_msg
+        elif quality.warnings:
+            for w in quality.warnings:
+                self.log_panel.add_message("WARN", f"Quality: {w}")
+
+        # Store dataset for validation pipeline use.
+        self._loaded_dataset = df
+        self._active_dataset_meta = meta
+        self._active_dataset_quality = quality
+        self._reset_validation_state()
+        self.data_service.persist_metadata(meta)
+
+        # Render subset of data in candlestick chart (2000-row guard).
+        self.data_chart.set_data(df, is_mock=False)
+
+        # Update status/labeling.
+        status_prefix = "✓" if quality.passed else "⚠"
+        quality_str = "Passed" if quality.passed else f"Failed ({len(quality.errors)} errors)"
+        if quality.warnings:
+            quality_str += f" with {len(quality.warnings)} warnings"
+
+        start_dt = str(meta.start_datetime)
+        end_dt = str(meta.end_datetime)
+
+        self.data_status_label.setText(
+            f"{status_prefix} Active Dataset: {meta.name} | "
+            f"Rows: {meta.row_count:,} | "
+            f"Range: {start_dt} to {end_dt} | "
+            f"Quality: {quality_str}"
+        )
+        if quality.passed:
+            self.data_status_label.setStyleSheet("color: #26a69a; font-weight: bold; font-size: 12px;")
+        else:
+            self.data_status_label.setStyleSheet("color: #ef5350; font-weight: bold; font-size: 12px;")
+        self.data_status_label.setToolTip(
+            DataService.format_quality_evidence(quality)
+        )
+        # Append actionable warning details when warnings exist.
+        if quality.warnings:
+            warning_details = DataService.extract_warning_details(quality, df)
+            if warning_details:
+                existing = self.data_status_label.toolTip()
+                self.data_status_label.setToolTip(
+                    existing + "\n" + "\n".join(warning_details)
+                )
+
+        filename = os.path.basename(meta.source_path) if hasattr(meta, 'source_path') else str(meta.name)
+        self.log_panel.add_message(
+            "INFO",
+            f"Successfully imported {len(df):,} rows of historical research data from {filename}."
+        )
+
+        # Build a detailed success summary.
+        detail_lines = [
+            f"Successfully imported {len(df):,} rows from:",
+            f"  {filename}",
+            f"  Symbol: {meta.symbol}  |  Timeframe: {meta.timeframe}",
+            f"  Date range: {start_dt}  to  {end_dt}",
+            f"  Quality: {quality_str}",
+        ]
+        if quality.warnings:
+            detail_lines.append(f"  Warnings: {len(quality.warnings)} issue(s)")
+        if len(df) > 2000:
+            detail_lines.append(
+                f"  Chart displays the most recent 2,000 of {len(df):,} rows."
             )
-        finally:
-            self._set_import_idle()
+        QMessageBox.information(
+            self,
+            "Import Successful",
+            "\n".join(detail_lines)
+        )
+
+    def _on_import_failure(self, user_msg: str) -> None:
+        """Handle failed import from background worker."""
+        from PySide6.QtWidgets import QMessageBox
+
+        self._loaded_dataset = None
+        self._active_dataset_meta = None
+        self._active_dataset_quality = None
+        self._reset_validation_state()
+        self.data_status_label.setText("Historical Research Data: None loaded (Using default mock data)")
+        self.data_status_label.setStyleSheet("color: #ffb300; font-weight: bold; font-size: 12px;")
+        self.data_status_label.setToolTip("")
+        self.log_panel.add_message("ERROR", f"Failed to import data file: {user_msg}")
+        QMessageBox.critical(
+            self,
+            "Import Failed",
+            user_msg
+        )
 
     def _handle_new_project(self) -> None:
         from PySide6.QtWidgets import QFileDialog, QMessageBox, QInputDialog

@@ -15,6 +15,7 @@ from unittest.mock import patch
 
 from app.ui.main_window import MainWindow
 from app.services.data_service import DataService
+from app.workers import ImportWorker
 from data_engine.quality_checker import DataQualityReport
 from app.widgets.candlestick_chart import CandlestickChart, PYQTGRAPH_AVAILABLE
 
@@ -38,23 +39,34 @@ def _patch_file_dialog(path: str):
         yield
 
 
+def _sync_import_start(worker):
+    """Patched ImportWorker.start that runs the worker synchronously."""
+    worker.run()
+    worker.finished.emit()
+
+
 @contextmanager
 def _patch_import_success(path: str):
-    """Context manager patching file dialog + info/critical message boxes for a successful import."""
+    """Context manager patching file dialog + info/critical + ImportWorker for
+    a successful synchronous import."""
+    # Patch ImportWorker.start to run synchronously instead of on a thread
     with (
         patch("PySide6.QtWidgets.QFileDialog.getOpenFileName", return_value=(str(path), "")),
         patch("PySide6.QtWidgets.QMessageBox.information"),
         patch("PySide6.QtWidgets.QMessageBox.critical"),
+        patch.object(ImportWorker, "start", _sync_import_start),
     ):
         yield
 
 
 @contextmanager
 def _patch_import_failure(path: str):
-    """Context manager patching file dialog + critical message box for a failed import."""
+    """Context manager patching file dialog + critical + ImportWorker for
+    a synchronous failed import."""
     with (
         patch("PySide6.QtWidgets.QFileDialog.getOpenFileName", return_value=(str(path), "")),
         patch("PySide6.QtWidgets.QMessageBox.critical"),
+        patch.object(ImportWorker, "start", _sync_import_start),
     ):
         yield
 
@@ -86,6 +98,7 @@ def _patch_import_failed_quality(path: str):
         patch("PySide6.QtWidgets.QMessageBox.information"),
         patch("PySide6.QtWidgets.QMessageBox.critical"),
         patch("app.ui.main_window.DataService.import_file", return_value=(_df, _meta, _quality)),
+        patch.object(ImportWorker, "start", _sync_import_start),
     ):
         yield
 
@@ -327,6 +340,7 @@ def test_import_handler_failure_dialog_uses_actionable_message(qapp, tmp_dir):
                 return_value=(str(missing), ""),
             ),
             patch("PySide6.QtWidgets.QMessageBox.critical", side_effect=capture_critical),
+            patch.object(ImportWorker, "start", _sync_import_start),
         ):
             window._handle_import_ohlcv_data()
     finally:
@@ -337,6 +351,122 @@ def test_import_handler_failure_dialog_uses_actionable_message(qapp, tmp_dir):
     assert "File not found" in captured["message"]
     assert "check that the file exists" in captured["message"].lower()
     assert "An error occurred while importing" not in captured["message"]
+
+
+def test_import_worker_progress_signals_emitted(qapp, tmp_dir):
+    """ImportWorker must emit progress_updated stages during a real import."""
+    from app.workers import ImportWorker
+    csv_file = tmp_dir / "progress_test.csv"
+    pd.DataFrame({
+        "Date": ["2026/01/01"], "Time": ["09:00"], "Open": [100.0],
+        "High": [101.0], "Low": [99.0], "Close": [100.5], "TotalVolume": [1000],
+    }).to_csv(csv_file, index=False)
+
+    captured_stages = []
+
+    def capture_stage(stage: str):
+        captured_stages.append(stage)
+
+    worker = ImportWorker(
+        file_path=str(csv_file),
+        data_service=DataService(),
+        symbol="TEST",
+        timeframe="1min",
+    )
+    worker.progress_updated.connect(capture_stage)
+
+    # Run synchronously
+    worker.run()
+
+    assert len(captured_stages) > 0, "Expected at least one progress signal"
+    assert any("Reading" in s for s in captured_stages), (
+        f"Expected a 'Reading' stage, got {captured_stages}"
+    )
+    assert any("Importing" in s or "normalizing" in s for s in captured_stages), (
+        f"Expected an import stage, got {captured_stages}"
+    )
+    assert any("Finalizing" in s for s in captured_stages), (
+        f"Expected a 'Finalizing' stage, got {captured_stages}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Quality warning detail extraction tests (Round 3)
+# ---------------------------------------------------------------------------
+
+
+def test_extract_warning_details_no_warnings(tmp_dir):
+    """No warnings should produce an empty detail list."""
+    import pandas as pd
+    from data_engine.quality_checker import DataQualityReport
+
+    quality = DataQualityReport(passed=True, warnings=[], errors=[])
+    details = DataService.extract_warning_details(quality)
+    assert details == []
+
+
+def test_extract_warning_details_large_jumps_with_df():
+    """Large jumps must identify top-3 dates when a DataFrame is provided."""
+    import pandas as pd
+    from data_engine.quality_checker import DataQualityReport
+
+    dates = pd.date_range("2026-01-01", periods=10, freq="1min")
+    df = pd.DataFrame({
+        "datetime": dates,
+        "close": [100.0, 101.0, 105.0, 100.0, 98.0, 110.0, 95.0, 102.0, 101.0, 103.0],
+        "open": 100.0, "high": 110.0, "low": 90.0, "volume": 1000,
+    })
+    quality = DataQualityReport(
+        passed=True,
+        warnings=["Found 2 bar(s) with close change > 5.0% (max=12.24%)."],
+        issue_counts={"large_jumps": 2},
+    )
+    details = DataService.extract_warning_details(quality, df)
+    assert len(details) >= 1
+    assert any("Largest close jumps" in d for d in details), details
+    assert any("2026-01-01 00:05" in d for d in details), details
+    assert not any("2026-01-01 00:02" in d for d in details), details
+
+
+def test_extract_warning_details_gaps_with_df():
+    """Time gaps must identify gap dates when a DataFrame is provided."""
+    import pandas as pd
+    from data_engine.quality_checker import DataQualityReport
+
+    dates = [
+        pd.Timestamp("2026-01-01 09:00"),
+        pd.Timestamp("2026-01-01 09:01"),
+        pd.Timestamp("2026-01-01 09:05"),  # 4-min gap
+        pd.Timestamp("2026-01-01 09:06"),
+        pd.Timestamp("2026-01-02 09:00"),  # overnight gap
+    ]
+    df = pd.DataFrame({
+        "datetime": dates, "close": 100.0, "open": 100.0,
+        "high": 101.0, "low": 99.0, "volume": 1000,
+    })
+    quality = DataQualityReport(
+        passed=True,
+        warnings=["Found 2 time gap(s) > 2 min (expected freq=1 min, max gap=1 day 00:00:00)."],
+        issue_counts={"time_gaps": 2},
+    )
+    details = DataService.extract_warning_details(quality, df)
+    assert len(details) >= 1
+    assert any("gap" in d.lower() for d in details), details
+    assert any("2026-01-01 09:06 -> 2026-01-02 09:00" in d for d in details), details
+
+
+def test_extract_warning_details_without_df_falls_back_to_warnings():
+    """Without a DataFrame, details should fall back to the warning text."""
+    from data_engine.quality_checker import DataQualityReport
+
+    quality = DataQualityReport(
+        passed=True,
+        warnings=["Found 2 bar(s) with close change > 5.0% (max=12.24%)."],
+        issue_counts={"large_jumps": 2},
+    )
+    details = DataService.extract_warning_details(quality, df=None)
+    assert len(details) >= 1
+    assert any("close jump" in d.lower() for d in details), details
 
 
 # ---------------------------------------------------------------------------
@@ -406,6 +536,7 @@ def test_import_button_disabled_during_import(qapp, tmp_dir):
             ),
             patch("PySide6.QtWidgets.QMessageBox.information"),
             patch("PySide6.QtWidgets.QMessageBox.critical") as mock_critical,
+            patch.object(ImportWorker, "start", _sync_import_start),
         ):
             window._handle_import_ohlcv_data()
     finally:
@@ -703,6 +834,7 @@ def test_import_button_tooltip_during_import(qapp, tmp_dir):
         ),
         patch("PySide6.QtWidgets.QMessageBox.information"),
         patch("PySide6.QtWidgets.QMessageBox.critical") as mock_critical,
+        patch.object(ImportWorker, "start", _sync_import_start),
     ):
         window._handle_import_ohlcv_data()
 

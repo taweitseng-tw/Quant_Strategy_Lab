@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-06-11 - Codex Review Fix: Large-File Import UX Hardening
+
+### Added
+- `ImportWorker` now supports background OHLCV imports without sharing the UI thread's project SQLite connection.
+- Focused async import persistence smoke coverage was added for existing UI acceptance paths.
+- Import worker progress stages now surface large-file import progress without blocking the UI thread.
+- Import success messaging now includes row count, symbol, timeframe, date range, quality status, warning count, and chart subset note.
+- `DataService.extract_warning_details()` adds actionable warning details for large close jumps and largest time gaps.
+- `check_quality()` now accepts optional `session_start` / `session_end` parameters for conservative session-break gap classification.
+- `docs/large_file_import_ux_acceptance.md`: Added a compact acceptance summary for the six-round import UX series.
+
+### Changed
+- `DataService.persist_metadata()` centralizes best-effort dataset metadata persistence on the UI/service side after background imports finish.
+- Data page import wiring now persists imported dataset metadata after worker success while keeping chart rendering guarded to the most recent 2,000 rows.
+- Data page quality tooltip now appends actionable warning detail lines when warnings exist.
+- `docs/task_board.md`: Added the large-file import UX hardening review fix to Done.
+
+### Fixed
+- Structural quality-check failures now keep `issue_counts` consistent with structured issues.
+- Blank session strings are treated like missing session bounds instead of raising during gap checks.
+- Warning detail extraction now prefers checker-approved structured samples before falling back to DataFrame recalculation.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_data_page_wiring.py tests/test_candlestick_chart.py tests/test_sample_data_workflow_smoke.py tests/test_quality_checker.py tests/test_dataset_persistence_wiring.py tests/test_txf_import.py tests/test_export_persistence_acceptance.py tests/test_active_dataset.py -q` - 115 passed.
+
 ## 2026-06-11 - Tasks 379-384: v0.3.0-dev Evaluator Share Message
 
 ### Added

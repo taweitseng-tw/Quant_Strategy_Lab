@@ -12,6 +12,7 @@ Post-v0.2 - Reproducibility foundation design
 
 ## Done
 
+- [x] Codex Review Fix - Large-File Import UX Hardening
 - [x] Tasks 379-384 - Optional Evaluator Share Message Draft
 - [x] Tasks 373-378 - External Sharing Decision for v0.3.0-dev Zip
 - [x] Tasks 367-372 - Optional Manual Zip Execution Evidence

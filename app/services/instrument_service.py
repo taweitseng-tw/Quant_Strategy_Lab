@@ -17,7 +17,9 @@ DEFAULT_PROFILES = [
         commission_value=2.0,
         slippage_ticks=1.0,
         currency="USD",
-        session_template="US_Index_Futures"
+        session_template="US_Index_Futures",
+        session_start="08:30",
+        session_end="13:30",
     ),
     InstrumentProfile(
         symbol="NQ",
@@ -28,7 +30,9 @@ DEFAULT_PROFILES = [
         commission_value=2.0,
         slippage_ticks=1.0,
         currency="USD",
-        session_template="US_Index_Futures"
+        session_template="US_Index_Futures",
+        session_start="08:30",
+        session_end="13:30",
     ),
     InstrumentProfile(
         symbol="GC",
@@ -39,7 +43,9 @@ DEFAULT_PROFILES = [
         commission_value=2.0,
         slippage_ticks=1.0,
         currency="USD",
-        session_template="US_Metal_Futures"
+        session_template="US_Metal_Futures",
+        session_start="08:00",
+        session_end="13:00",
     )
 ]
 
@@ -198,6 +204,8 @@ class InstrumentService:
             "slippage_ticks": profile.slippage_ticks,
             "currency": profile.currency,
             "session_template": profile.session_template,
+            "session_start": profile.session_start,
+            "session_end": profile.session_end,
         }
 
     @staticmethod
@@ -212,4 +220,6 @@ class InstrumentService:
             slippage_ticks=float(d.get("slippage_ticks", 0.0)),
             currency=d.get("currency", "USD"),
             session_template=d.get("session_template", ""),
+            session_start=d.get("session_start", ""),
+            session_end=d.get("session_end", ""),
         )

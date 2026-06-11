@@ -10,12 +10,19 @@ import numpy as np
 from PySide6.QtWidgets import QApplication, QLabel
 
 from app.ui.main_window import MainWindow
+from app.workers import ImportWorker
 from app.services.validation_pipeline_service import PipelineResult, run_validation_pipeline, PipelineConfig
 from core.models.dataset import DatasetMeta
 from core.models.strategy import Strategy, StrategyBlock, Condition
 from data_engine.quality_checker import DataQualityReport
 from reports import generate_markdown_report, generate_html_report
 from backtest_engine.runner import run_backtest
+
+
+def _sync_import_start(worker):
+    """Patched ImportWorker.start that runs the worker synchronously."""
+    worker.run()
+    worker.finished.emit()
 
 
 @pytest.fixture(scope="module")
@@ -354,17 +361,12 @@ def test_failed_import_clears_active_dataset(qapp):
     window._active_dataset_quality = DataQualityReport(passed=True)
     window.data_status_label.setText("Active Dataset: stale")
     
-    # Mock data_service to fail on import
-    class FailedDataService:
-        def import_file(self, *args, **kwargs):
-            raise ValueError("Mock import failure")
-    
-    window.data_service = FailedDataService()
-    
     # 2. Trigger import (we mock getOpenFileName to return a file, but service throws)
     from unittest.mock import patch
     with patch("PySide6.QtWidgets.QFileDialog.getOpenFileName", return_value=("dummy.csv", "All Files")):
-        with patch("PySide6.QtWidgets.QMessageBox.critical") as mock_crit:
+        with patch("PySide6.QtWidgets.QMessageBox.critical") as mock_crit, \
+             patch("app.workers.DataService.import_file", side_effect=ValueError("Mock import failure")), \
+             patch.object(ImportWorker, "start", _sync_import_start):
             window._handle_import_ohlcv_data()
             
             # Assert stale state was reset to None

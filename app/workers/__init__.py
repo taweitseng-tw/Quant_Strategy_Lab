@@ -1,14 +1,77 @@
-"""GA background worker — runs GA search off the UI thread.
-
-Emits Qt signals so the main window can update the UI on completion
-or failure without blocking the event loop.
-"""
+"""Background workers for Quant Strategy Lab — runs long operations off the UI thread."""
 
 from __future__ import annotations
+
+from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal
 
 import pandas as pd
+
+from app.services.data_service import DataService
+from core.models.dataset import DatasetMeta
+from data_engine.quality_checker import DataQualityReport
+
+
+class ImportWorker(QThread):
+    """Background thread that executes :func:`DataService.import_file`.
+
+    Signals
+    -------
+    progress_updated(str)
+        Emitted with a human-readable stage name (e.g. "Reading file...",
+        "Importing and normalizing data...", "Checking quality...") as the
+        import progresses.  Connect this to update UI without blocking.
+    success(pd.DataFrame, DatasetMeta, DataQualityReport)
+        Emitted on successful import.
+    failure(str)
+        Emitted with an error message on exception.
+    """
+
+    progress_updated = Signal(str)
+    success = Signal(object, object, object)  # df, meta, quality
+    failure = Signal(str)
+
+    def __init__(
+        self,
+        file_path: str | Path,
+        data_service: DataService,
+        symbol: str = "RESEARCH",
+        timeframe: str = "1min",
+        session_start: str | None = None,
+        session_end: str | None = None,
+        parent=None,
+    ) -> None:
+        super().__init__(parent)
+        self._file_path = file_path
+        self._project_path = getattr(data_service, "project_path", None)
+        self._symbol = symbol
+        self._timeframe = timeframe
+        self._session_start = session_start
+        self._session_end = session_end
+
+    def run(self) -> None:
+        try:
+            self.progress_updated.emit("Reading file...")
+            source_path = Path(self._file_path)
+            if not source_path.is_file():
+                raise FileNotFoundError(f"Source file not found: {source_path}")
+
+            self.progress_updated.emit("Importing, normalizing, and checking quality...")
+            worker_service = DataService(project_path=self._project_path)
+            df, meta, quality = worker_service.import_file(
+                self._file_path,
+                symbol=self._symbol,
+                timeframe=self._timeframe,
+                session_start=self._session_start,
+                session_end=self._session_end,
+            )
+
+            self.progress_updated.emit("Finalizing...")
+            self.success.emit(df, meta, quality)
+        except Exception as exc:
+            self.failure.emit(DataService.get_actionable_import_error(exc))
+
 
 from core.models.instrument import InstrumentProfile
 from app.services.ga_service import GASearchConfig, GASearchResult, run_ga_search
@@ -23,8 +86,6 @@ class GAWorker(QThread):
         Emitted with (result, source_label) on successful completion.
     failure(str)
         Emitted with an error message string on exception.
-    finished()
-        Always emitted when the thread exits (inherited from QThread).
     """
 
     success = Signal(object, str)   # (GASearchResult, source_label)
@@ -47,7 +108,7 @@ class GAWorker(QThread):
         self._instrument = instrument
         self._backtest_kwargs = backtest_kwargs
 
-    def run(self) -> None:  # noqa: D102 — QThread override
+    def run(self) -> None:
         try:
             result = run_ga_search(
                 self._df,
@@ -59,7 +120,9 @@ class GAWorker(QThread):
         except Exception as exc:
             self.failure.emit(str(exc))
 
+
 from app.services.gp_service import GPSearchConfig, GPSearchResult, run_gp_search
+
 
 class GPWorker(QThread):
     """Background thread that executes :func:`run_gp_search`.
@@ -70,8 +133,6 @@ class GPWorker(QThread):
         Emitted with (result, source_label) on successful completion.
     failure(str)
         Emitted with an error message string on exception.
-    finished()
-        Always emitted when the thread exits (inherited from QThread).
     """
 
     success = Signal(object, str)   # (GPSearchResult, source_label)
@@ -94,7 +155,7 @@ class GPWorker(QThread):
         self._instrument = instrument
         self._backtest_kwargs = backtest_kwargs
 
-    def run(self) -> None:  # noqa: D102 — QThread override
+    def run(self) -> None:
         try:
             result = run_gp_search(
                 self._df,
