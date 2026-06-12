@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-12 - Tasks 529-534: Desktop Workflow and Chart/Table Reliability Acceptance Audit
+
+### Added
+- `docs/desktop_workflow_chart_reliability_acceptance_audit_529_534.md`: Added a focused acceptance audit for chart reset, ranking row limit, and validation busy-cursor behavior.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 529-534 to Done, advanced the current milestone to Validation Pipeline Responsiveness, and set Tasks 535-540 as the next design block.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_candlestick_chart.py tests/test_ranking_table.py tests/test_active_dataset.py -q` - 25 passed.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-12 - Tasks 523-528: Desktop Workflow and Chart/Table Reliability Implementation
 
 ### Added
