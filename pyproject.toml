@@ -1,6 +1,6 @@
 [project]
 name = "quant-strategy-lab"
-version = "0.0.1"
+version = "0.4.0.dev0"
 description = "Local-first desktop quant strategy generation, backtesting, validation, filtering, and reporting platform."
 requires-python = ">=3.11"
 

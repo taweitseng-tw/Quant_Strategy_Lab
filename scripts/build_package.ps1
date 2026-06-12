@@ -41,10 +41,19 @@ Write-Host "Total size: $( (Get-ChildItem -Recurse dist/$Name | Measure-Object -
 # Quick smoke: launch with exit timer
 $env:QSL_EXIT_AFTER_MS = "100"
 $env:QT_QPA_PLATFORM = "offscreen"
-$p = Start-Process -FilePath $ExePath -Wait -PassThru -WindowStyle Hidden
-if ($p.ExitCode -eq 0) {
+$ExitCode = $null
+try {
+    $p = Start-Process -FilePath $ExePath -Wait -PassThru -WindowStyle Hidden
+    $ExitCode = $p.ExitCode
+} catch {
+    Write-Host "Start-Process launch smoke failed: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "Retrying launch smoke with direct invocation..." -ForegroundColor Yellow
+    & $ExePath
+    $ExitCode = $LASTEXITCODE
+}
+if ($ExitCode -eq 0) {
     Write-Host "Launch smoke: PASS (exit code 0)" -ForegroundColor Green
 } else {
-    Write-Host "Launch smoke: FAIL (exit code $($p.ExitCode))" -ForegroundColor Red
-    exit $p.ExitCode
+    Write-Host "Launch smoke: FAIL (exit code $ExitCode)" -ForegroundColor Red
+    exit $ExitCode
 }

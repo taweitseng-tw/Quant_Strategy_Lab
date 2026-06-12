@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-06-12 - Tasks 589-594: CI Packaging Job and Version Bump
+
+### Added
+- `.github/workflows/ci.yml`: Added a tag-triggered Windows package job for `v*` tags that installs dev dependencies, runs `scripts/build_package.ps1`, and uploads `dist/QuantStrategyLab/` as an artifact.
+
+### Changed
+- `pyproject.toml`: Bumped the development version from `0.0.1` to PEP 440-compatible `0.4.0.dev0`.
+- `scripts/build_package.ps1`: Added a direct-invocation fallback for launch smoke when `Start-Process` is blocked.
+- `docs/task_board.md`: Moved Tasks 589-594 to Done and set Tasks 595-600 as the next acceptance audit.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py -q` - 12 passed.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build_package.ps1` - passed locally.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-12 - Tasks 583-588: Documentation Staging Cleanup
 
 ### Added
