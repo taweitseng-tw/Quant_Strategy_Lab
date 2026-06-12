@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-12 - Tasks 637-642: GitHub Release Draft Notes
+
+### Added
+- `docs/github_release_draft_notes_637_642.md`: Added draft GitHub Release notes for `v0.4.0-dev`, including CI/artifact evidence, download instructions, smoke path, known risks, and publish boundary.
+
+### Changed
+- `docs/task_board.md`: Marked Tasks 619-624 and 637-642 as Done and set Tasks 643-648 as the GitHub Release draft publish approval gate.
+
+### Verification
+- `v0.4.0-dev` points to `1ef9657`.
+- GitHub Actions run `27400889299` completed successfully with smoke and package jobs passing.
+- Artifact `QuantStrategyLab-windows-onedir` exists and no GitHub Release exists yet.
+
 ## 2026-06-12 - Tasks 613-618: Developer Release Tag Approval Gate
 
 ### Added

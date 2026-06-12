@@ -27,6 +27,8 @@ Desktop Release Readiness
 - [x] Tasks 601-606 - Release Candidate Smoke and Artifact Notes
 - [x] Tasks 607-612 - Developer Release Tag Readiness Decision
 - [x] Tasks 613-618 - Developer Release Tag Approval Gate
+- [x] Tasks 619-624 - User-Approved Developer Tag Execution (Codex-only)
+- [x] Tasks 637-642 - GitHub Release Draft Notes
 - [x] Tasks 523-528 - Desktop Workflow and Chart/Table Reliability Implementation
 - [x] Tasks 517-522 - Desktop Workflow and Chart Reliability Design
 - [x] Tasks 511-516 - Data Resampling and Normalization Hardening Acceptance Audit
@@ -164,7 +166,7 @@ Desktop Release Readiness
 
 ## Next
 
-- [ ] Tasks 619-624 - User-Approved Developer Tag Execution (Codex-only)
+- [ ] Tasks 643-648 - GitHub Release Draft Publish Approval Gate
 
 *(Legacy backlog items pending reprioritization)*
 - Proposed Task 055 - Agent Workflow Automation
