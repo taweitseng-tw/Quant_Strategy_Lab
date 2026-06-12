@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-12 - Tasks 535-540: Validation Pipeline Responsiveness Design
+
+### Added
+- `docs/validation_pipeline_responsiveness_design_535_540.md`: Added a corrected design for a coarse-progress ValidationWorker that moves validation off the Qt main thread without changing engine logic.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 535-540 to Done and set Tasks 541-546 as the next implementation block.
+
+### Verification
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-12 - Tasks 529-534: Desktop Workflow and Chart/Table Reliability Acceptance Audit
 
 ### Added
