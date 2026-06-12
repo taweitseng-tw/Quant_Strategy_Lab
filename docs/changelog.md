@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-12 - Tasks 571-576: Desktop Release Readiness Triage
+
+### Added
+- `docs/desktop_release_readiness_triage_571_576.md`: Added a conservative release readiness triage covering must-fix blockers, should-fix items, deferrable work, verified local evidence, and remaining release-block estimates.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 571-576 to Done, advanced the milestone to Desktop Release Readiness, and set Tasks 577-594 as the next release-readiness blocks.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py -q` - 12 passed.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-12 - Tasks 565-570: Validation Cancellation Acceptance Audit
 
 ### Added
