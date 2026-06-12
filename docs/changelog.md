@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-12 - Tasks 577-582: README English Quickstart
+
+### Added
+- `README.md`: Added an English quickstart covering prerequisites, setup, desktop launch, sample-data happy path, focused test commands, troubleshooting, known limits, and research disclaimer.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 577-582 to Done and kept Tasks 583-588 and 589-594 as the next release-readiness blocks.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py -q` - 12 passed.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-12 - Tasks 571-576: Desktop Release Readiness Triage
 
 ### Added
