@@ -20,5 +20,18 @@ dev = [
     "pyinstaller",
 ]
 
+[tool.setuptools]
+packages = [
+    "app",
+    "archive",
+    "backtest_engine",
+    "core",
+    "data_engine",
+    "reports",
+    "repository",
+    "strategy_engine",
+    "validation_engine",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
