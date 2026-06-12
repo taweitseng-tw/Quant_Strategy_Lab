@@ -21,6 +21,7 @@ Desktop Release Readiness
 - [x] Tasks 565-570 - Validation Cancellation and Progress Feedback Acceptance Audit
 - [x] Tasks 571-576 - Desktop Release Readiness Triage
 - [x] Tasks 577-582 - README English Quickstart
+- [x] Tasks 583-588 - Documentation Staging Cleanup
 - [x] Tasks 523-528 - Desktop Workflow and Chart/Table Reliability Implementation
 - [x] Tasks 517-522 - Desktop Workflow and Chart Reliability Design
 - [x] Tasks 511-516 - Data Resampling and Normalization Hardening Acceptance Audit
@@ -158,8 +159,7 @@ Desktop Release Readiness
 
 ## Next
 
-- [ ] Tasks 583-588 - Documentation Staging Cleanup (Block A-2, remaining from triage)
-- [ ] Tasks 589-594 - CI Packaging Job + Version Bump (Block B)
+- [ ] Tasks 589-594 - CI Packaging Job + Version Bump (Block B, remaining from triage)
 
 *(Legacy backlog items pending reprioritization)*
 - Proposed Task 055 - Agent Workflow Automation

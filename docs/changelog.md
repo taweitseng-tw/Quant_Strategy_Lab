@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-12 - Tasks 583-588: Documentation Staging Cleanup
+
+### Added
+- `docs/doc_staging_cleanup_decision_583_588.md`: Added a corrected cleanup decision report confirming only this report was untracked before staging, existing docs/archive and docs/agent_reports buckets are already tracked, and release_artifacts remains held/gitignored.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 583-588 to Done and set Tasks 589-594 as the next release-readiness block.
+
+### Verification
+- `git ls-files --others --exclude-standard` showed only `docs/doc_staging_cleanup_decision_583_588.md` before staging.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-12 - Tasks 577-582: README English Quickstart
 
 ### Added
