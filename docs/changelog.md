@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-06-12 - Tasks 523-528: Desktop Workflow and Chart/Table Reliability Implementation
+
+### Added
+- `app/widgets/candlestick_chart.py`: Added chart clear behavior for pyqtgraph and fallback modes.
+- `app/widgets/ranking_table.py`: Added a 500-row display guard with status text for truncated ranking results.
+- `tests/test_candlestick_chart.py` and `tests/test_ranking_table.py`: Added focused coverage for chart clearing and ranking row limits.
+
+### Changed
+- `app/ui/main_window.py`: Clears stale dataset charts on import failure, new project, and open project paths, and wraps validation run cursor state in try/finally.
+- `docs/task_board.md`: Moved Tasks 523-528 to Done and set Tasks 529-534 as the next acceptance audit block.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_candlestick_chart.py tests/test_ranking_table.py tests/test_active_dataset.py -q` - 25 passed.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-11 - Tasks 517-522: Desktop Workflow and Chart Reliability Design
 
 ### Added

@@ -219,6 +219,20 @@ class CandlestickChart(QWidget):
         # Auto-range the view to fit the data perfectly
         self.plot_widget.enableAutoRange(axis=pg.ViewBox.XYAxes, enable=True)
 
+    def clear(self) -> None:
+        """Clear the chart and reset to a blank state with a placeholder title."""
+        self.is_mock_data = False
+        if PYQTGRAPH_AVAILABLE and hasattr(self, "plot_widget"):
+            self.candlestick_item.set_data(pd.DataFrame(columns=["datetime", "open", "high", "low", "close", "volume"]))
+            self.plot_widget.setTitle(
+                "No Data Loaded — Chart Cleared",
+                color="#8e8e93",
+                size="11pt"
+            )
+            self.plot_widget.enableAutoRange(axis=pg.ViewBox.XYAxes, enable=True)
+        elif hasattr(self, "fallback_label"):
+            self.fallback_label.setText("No data loaded.")
+
     def load_mock_data(self) -> None:
         """Generate and load a clearly labeled mock dataset for visual feedback."""
         np.random.seed(42)

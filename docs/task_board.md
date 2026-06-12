@@ -13,6 +13,7 @@ Desktop Workflow and Chart Reliability
 ## Done
 
 - [x] Tasks 517-522 - Desktop Workflow and Chart Reliability Design
+- [x] Tasks 523-528 - Desktop Workflow and Chart/Table Reliability Implementation
 - [x] Tasks 511-516 - Data Resampling and Normalization Hardening Acceptance Audit
 - [x] Tasks 505-510 - Data Resampling and Normalization Hardening Implementation
 - [x] Tasks 499-504 - Data Resampling & Normalization Hardening Design
@@ -148,7 +149,7 @@ Desktop Workflow and Chart Reliability
 
 ## Next
 
-- [ ] Tasks 523-528 - Desktop Workflow and Chart/Table Reliability Implementation
+- [ ] Tasks 529-534 - Desktop Workflow and Chart/Table Reliability Acceptance Audit
 
 *(Legacy backlog items pending reprioritization)*
 - Proposed Task 055 - Agent Workflow Automation

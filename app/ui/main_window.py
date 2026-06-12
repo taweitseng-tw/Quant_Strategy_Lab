@@ -1388,6 +1388,7 @@ class MainWindow(QMainWindow):
         self.data_status_label.setText("Historical Research Data: None loaded (Using default mock data)")
         self.data_status_label.setStyleSheet("color: #ffb300; font-weight: bold; font-size: 12px;")
         self.data_status_label.setToolTip("")
+        self.data_chart.clear()
         self.log_panel.add_message("ERROR", f"Failed to import data file: {user_msg}")
         QMessageBox.critical(
             self,
@@ -1441,6 +1442,7 @@ class MainWindow(QMainWindow):
             self.data_status_label.setText("Historical Research Data: None loaded (Using default mock data)")
             self.data_status_label.setStyleSheet("color: #ffb300; font-weight: bold; font-size: 12px;")
             self.data_status_label.setToolTip("")
+            self.data_chart.clear()
             
             # Reset GA / GP / Imported strategy state for the new project
             self._latest_ga_strategy = None
@@ -1498,6 +1500,7 @@ class MainWindow(QMainWindow):
             self.data_status_label.setText("Historical Research Data: None loaded (Using default mock data)")
             self.data_status_label.setStyleSheet("color: #ffb300; font-weight: bold; font-size: 12px;")
             self.data_status_label.setToolTip("")
+            self.data_chart.clear()
             
             # Reset GA / GP / Imported strategy state; load GA best from DB if present
             self._latest_ga_strategy = None
@@ -1690,6 +1693,9 @@ class MainWindow(QMainWindow):
         # Use the current elimination config from StrategyService.
         pipeline_elim_config = self.strategy_service.elimination_config
 
+        from PySide6.QtWidgets import QApplication
+        from PySide6 import QtCore
+        QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
         try:
             result = run_validation_pipeline(
                 df, strategy,
@@ -1781,6 +1787,9 @@ class MainWindow(QMainWindow):
                 export_ok=False,
                 reason="Validation failed. Run validation again to enable report export.",
             )
+        finally:
+            from PySide6.QtWidgets import QApplication
+            QApplication.restoreOverrideCursor()
 
     def _handle_save(self) -> None:
         from PySide6.QtWidgets import QMessageBox

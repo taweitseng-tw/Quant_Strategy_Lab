@@ -223,3 +223,33 @@ def test_ranking_table_elimination_column_rendering(qapp) -> None:
             
     assert found_eliminated
 
+
+def test_ranking_table_500_row_display_guard(qapp) -> None:
+    """RankingTable must only display the top 500 rows and show a status note."""
+    table_widget = RankingTable()
+    from app.services.strategy_service import StrategyService
+
+    # Create more than 500 rows of mock data to force the guard.
+    svc = StrategyService()
+    ranked, is_mock = svc.get_ranked_strategies()
+    # Replicate to exceed 500 (60 replicas of 10 strategies = 600).
+    big_ranked = []
+    for i in range(60):
+        for entry in ranked:
+            copy = dict(entry)
+            copy["rank"] = len(big_ranked) + 1
+            big_ranked.append(copy)
+    assert len(big_ranked) > 500, f"Need > 500 rows, got {len(big_ranked)}"
+
+    table_widget.set_ranking_data(big_ranked, is_mock=False)
+    # Table must only have 500 rows displayed.
+    assert table_widget.table.rowCount() == 500, (
+        f"Expected 500 rows, got {table_widget.table.rowCount()}"
+    )
+    # Status label must show the truncation message.
+    status_text = table_widget.status_label.text()
+    assert "top 500" in status_text.lower(), f"Expected 'top 500' in status, got: {status_text}"
+    assert str(len(big_ranked)) in status_text, (
+        f"Expected total count in status, got: {status_text}"
+    )
+

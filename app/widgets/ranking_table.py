@@ -96,19 +96,28 @@ class RankingTable(QWidget):
                          rank, strategy (Strategy model object), fitness, metrics (dict).
             is_mock: Boolean indicating if this is internal sample/mock data.
         """
+        # 500-row display guard for UI responsiveness
+        total = len(ranked_rows)
+        if total > 500:
+            display_rows = ranked_rows[:500]
+            status_detail = f" (Showing top 500 of {total:,})"
+        else:
+            display_rows = ranked_rows
+            status_detail = ""
+
         # Set status label based on mock flag
         if is_mock:
-            self.status_label.setText("⚠ Sample / Mock Strategy Ranking (No Project Loaded)")
+            self.status_label.setText(f"⚠ Sample / Mock Strategy Ranking (No Project Loaded){status_detail}")
             self.status_label.setStyleSheet("font-size: 13px; font-weight: bold; color: #ffb300; padding: 4px;")
         else:
-            self.status_label.setText("✓ Active Strategy Ranking Results")
+            self.status_label.setText(f"✓ Active Strategy Ranking Results{status_detail}")
             self.status_label.setStyleSheet("font-size: 13px; font-weight: bold; color: #26a69a; padding: 4px;")
 
         self.table.clearSelection()
         self.table.setRowCount(0)
-        self.table.setRowCount(len(ranked_rows))
+        self.table.setRowCount(len(display_rows))
 
-        for row_idx, item in enumerate(ranked_rows):
+        for row_idx, item in enumerate(display_rows):
             rank = item.get("rank", row_idx + 1)
             strategy = item.get("strategy")
             strategy_name = strategy.name if strategy else item.get("name", f"strat_{row_idx:04d}")

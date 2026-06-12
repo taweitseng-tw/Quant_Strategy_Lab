@@ -69,3 +69,28 @@ def test_candlestick_widget_invalid_data_logged(qapp, caplog) -> None:
     chart.set_data(bad_df)
     # The error should be logged, but it shouldn't raise exception
     assert any("missing columns" in record.message for record in caplog.records)
+
+
+def _make_ohlcv_df(n_bars: int) -> pd.DataFrame:
+    """Create a basic OHLCV DataFrame for testing."""
+    from datetime import timedelta
+    start = datetime.now() - timedelta(days=n_bars)
+    return pd.DataFrame({
+        "datetime": [start + timedelta(days=i) for i in range(n_bars)],
+        "open": np.random.uniform(95, 105, n_bars),
+        "high": np.random.uniform(105, 110, n_bars),
+        "low": np.random.uniform(90, 95, n_bars),
+        "close": np.random.uniform(98, 102, n_bars),
+        "volume": np.random.randint(1000, 5000, n_bars),
+    })
+
+
+def test_candlestick_chart_clear_resets_state(qapp) -> None:
+    """CandlestickChart.clear() must reset to blank state."""
+    df = _make_ohlcv_df(50)
+    chart = CandlestickChart()
+    chart.set_data(df, is_mock=False)
+    assert chart.is_mock_data is False
+    chart.clear()
+    # After clear, internal data should be empty.
+    assert chart.candlestick_item._df is None or len(chart.candlestick_item._df) == 0
