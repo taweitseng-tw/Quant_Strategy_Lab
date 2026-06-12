@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-12 - Tasks 565-570: Validation Cancellation Acceptance Audit
+
+### Added
+- `docs/validation_cancellation_acceptance_audit_565_570.md`: Added a cleaned acceptance audit for boundary-only cancellation, Stop action wiring, stale-run guarding, export gating, and focused test coverage.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 565-570 to Done and set Tasks 571-576 as the next release readiness triage block.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_validation_worker.py tests/test_active_dataset.py -q` - 21 passed.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-12 - Tasks 559-564: Validation Cancellation and Progress Feedback Implementation
 
 ### Added
