@@ -210,10 +210,18 @@ class ValidationWorker(QThread):
         self._data_source = data_source
         self._commission = commission
         self._is_mock = is_mock
+        self._stop_requested = False
+
+    def stop(self) -> None:
+        """Request the worker to stop at the next boundary check."""
+        self._stop_requested = True
 
     def run(self) -> None:
         try:
             self.progress_updated.emit("Splitting data and running backtest...")
+            if self._stop_requested:
+                self.failure.emit("Validation cancelled by user.")
+                return
             result = run_validation_pipeline(
                 self._df,
                 self._strategy,
@@ -222,6 +230,9 @@ class ValidationWorker(QThread):
                 data_source=self._data_source,
                 commission=self._commission,
             )
+            if self._stop_requested:
+                self.failure.emit("Validation cancelled by user.")
+                return
             self.progress_updated.emit("Finalizing...")
             self.success.emit(result)
         except Exception as exc:

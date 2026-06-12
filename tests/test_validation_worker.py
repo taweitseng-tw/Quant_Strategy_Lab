@@ -107,3 +107,77 @@ def test_validation_worker_stores_data_source_and_mock_flag(qapp):
     worker.run()
     assert worker._data_source == "custom_source"
     assert worker._is_mock is True
+
+
+def test_validation_worker_stop_before_run_emits_cancelled(qapp):
+    """Calling stop() before run() must emit failure with a cancelled message."""
+    df = pd.DataFrame({
+        "datetime": pd.date_range("2026-01-01", periods=50, freq="1min"),
+        "open": 100.0, "high": 101.0, "low": 99.0, "close": 100.5, "volume": 1000,
+    })
+    config = PipelineConfig(mc_iterations=5)
+    captured = []
+
+    def capture(msg: str):
+        captured.append(msg)
+
+    worker = ValidationWorker(df, _make_test_strategy(), config)
+    worker.failure.connect(capture)
+    worker.stop()  # set flag before run
+    worker.run()
+
+    assert len(captured) == 1, f"Expected 1 failure, got {captured}"
+    assert "cancelled" in captured[0].lower(), f"Expected 'cancelled', got {captured[0]}"
+
+
+def test_validation_worker_stop_not_set_does_not_cancel(qapp):
+    """Without calling stop(), pipeline must complete normally."""
+    df = pd.DataFrame({
+        "datetime": pd.date_range("2026-01-01", periods=50, freq="1min"),
+        "open": 100.0, "high": 101.0, "low": 99.0, "close": 100.5, "volume": 1000,
+    })
+    config = PipelineConfig(mc_iterations=5)
+    success_captured = []
+    failure_captured = []
+
+    def on_success(result):
+        success_captured.append(result)
+
+    def on_failure(msg):
+        failure_captured.append(msg)
+
+    worker = ValidationWorker(df, _make_test_strategy(), config)
+    worker.success.connect(on_success)
+    worker.failure.connect(on_failure)
+    worker.run()
+
+    assert len(success_captured) == 1, f"Expected success, got {len(success_captured)}"
+    assert len(failure_captured) == 0, f"Expected no failure, got {failure_captured}"
+
+
+def test_validation_worker_stop_after_pipeline_suppresses_success(qapp, monkeypatch):
+    """Stop requested after the pipeline returns must emit cancellation failure only."""
+    df = pd.DataFrame({
+        "datetime": pd.date_range("2026-01-01", periods=50, freq="1min"),
+        "open": 100.0, "high": 101.0, "low": 99.0, "close": 100.5, "volume": 1000,
+    })
+    config = PipelineConfig(mc_iterations=5)
+    success_captured = []
+    failure_captured = []
+    worker_holder = {}
+
+    def fake_pipeline(*args, **kwargs):
+        worker_holder["worker"].stop()
+        return object()
+
+    monkeypatch.setattr("app.workers.run_validation_pipeline", fake_pipeline)
+    worker = ValidationWorker(df, _make_test_strategy(), config)
+    worker_holder["worker"] = worker
+    worker.success.connect(success_captured.append)
+    worker.failure.connect(failure_captured.append)
+
+    worker.run()
+
+    assert success_captured == []
+    assert len(failure_captured) == 1
+    assert "cancelled" in failure_captured[0].lower()

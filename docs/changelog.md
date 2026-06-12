@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-06-12 - Tasks 559-564: Validation Cancellation and Progress Feedback Implementation
+
+### Added
+- `ValidationWorker.stop()` with a boundary-only cancellation flag.
+- Stop toolbar action wiring for validation cancellation requests.
+- Focused tests for pre-run cancellation, post-pipeline cancellation, stale-run guarding, and Stop UI state.
+
+### Changed
+- `app/workers/__init__.py`: Added cancellation boundary checks before and after `run_validation_pipeline(...)`.
+- `app/ui/main_window.py`: Added Stop action wiring, `_handle_stop_validation()`, stale-run guard, and running/idle Stop action state.
+- `docs/task_board.md`: Moved Tasks 559-564 to Done and set Tasks 565-570 as the next acceptance audit.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_validation_worker.py tests/test_active_dataset.py -q` - 21 passed.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-12 - Tasks 553-558: Validation Cancellation and Progress Feedback Design
 
 ### Added

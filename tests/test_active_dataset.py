@@ -472,3 +472,55 @@ def test_validation_failure_handler_keeps_export_disabled(qapp):
     assert "Validation failed" in window.export_action.toolTip()
     assert "synthetic failure" in window.inspector_label.text()
     assert "Validation pipeline failed: synthetic failure" in window.log_panel.output.toPlainText()
+
+
+def test_stale_run_guard_logs_warning(qapp):
+    """Starting validation while a worker is running must log a warning."""
+    window = MainWindow()
+    from app.workers import ValidationWorker
+
+    # Patch start so the worker never really runs — it stays "running".
+    original_start = ValidationWorker.start
+
+    def _noop_start(worker):
+        pass  # worker never starts, never finishes
+
+    with patch.object(ValidationWorker, "start", _noop_start):
+        window._handle_run()
+    # Now _validation_worker exists but isRunning() is False since start() was a no-op.
+    # We need to simulate a running worker.  Patch isRunning instead.
+    with patch.object(type(window._validation_worker), "isRunning", return_value=True):
+        window._handle_run()
+    # A warning must be logged.
+    assert "already running" in window.log_panel.output.toPlainText().lower()
+
+
+def test_stop_validation_requests_cancel_and_preserves_safe_ui_state(qapp):
+    """Stop handler must request cancellation and keep export disabled."""
+    window = MainWindow()
+    sentinel_result = object()
+    window.latest_validation_result = sentinel_result
+    window._set_validation_running()
+
+    class FakeWorker:
+        def __init__(self):
+            self.stopped = False
+
+        def isRunning(self):
+            return True
+
+        def stop(self):
+            self.stopped = True
+
+    fake_worker = FakeWorker()
+    window._validation_worker = fake_worker
+
+    window._handle_stop_validation()
+
+    assert fake_worker.stopped is True
+    assert window.run_action.isEnabled() is False
+    assert window.stop_action.isEnabled() is False
+    assert window.export_action.isEnabled() is False
+    assert window.latest_validation_result is sentinel_result
+    assert window.validation_status_label.text() == "Cancelling..."
+    assert "cancellation requested" in window.log_panel.output.toPlainText().lower()

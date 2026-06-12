@@ -115,6 +115,12 @@ class MainWindow(QMainWindow):
                 action.triggered.connect(self._handle_export_report)
                 self.export_action = action
                 self.export_action.setObjectName("actionExportReport")
+            elif label == "Stop":
+                action.setEnabled(False)
+                action.setToolTip("Stop the running validation pipeline.")
+                action.triggered.connect(self._handle_stop_validation)
+                self.stop_action = action
+                self.stop_action.setObjectName("actionStop")
             else:
                 action.setEnabled(False)
             toolbar.addAction(action)
@@ -1588,6 +1594,8 @@ class MainWindow(QMainWindow):
         )
         self.validation_status_label.show()
         self.run_action.setEnabled(False)
+        if hasattr(self, "stop_action"):
+            self.stop_action.setEnabled(True)
         self._disable_export_action("Validating...")
         QApplication.processEvents()
 
@@ -1600,14 +1608,31 @@ class MainWindow(QMainWindow):
             reason: Disabled-export tooltip when *export_ok* is False.
         """
         self.run_action.setEnabled(True)
+        if hasattr(self, "stop_action"):
+            self.stop_action.setEnabled(False)
         if export_ok:
             self._enable_export_action()
         else:
             self._disable_export_action(reason)
         QApplication.processEvents()
 
+    def _handle_stop_validation(self) -> None:
+        """Request the running validation worker to stop."""
+        if hasattr(self, "_validation_worker") and self._validation_worker and self._validation_worker.isRunning():
+            self._validation_worker.stop()
+            self.log_panel.add_message("WARN", "Validation cancellation requested. Finishing current stage...")
+            self.validation_status_label.setText("Cancelling...")
+            if hasattr(self, "stop_action"):
+                self.stop_action.setEnabled(False)
+
     def _handle_run(self) -> None:
         """Execute the validation pipeline on current data/strategy."""
+
+        # Stale-run guard: do not start a new worker while one is running.
+        if hasattr(self, "_validation_worker") and self._validation_worker and self._validation_worker.isRunning():
+            self.log_panel.add_message("WARN", "Validation already running. Stop it first.")
+            return
+
         import pandas as pd
         from core.models.strategy import Condition, Strategy, StrategyBlock
 
