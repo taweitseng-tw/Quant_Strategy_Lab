@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-06-12 - Tasks 541-546: Validation Pipeline Responsiveness Implementation
+
+### Added
+- `app/workers/__init__.py`: Added `ValidationWorker` with coarse progress, success, and failure signals.
+- `tests/test_validation_worker.py`: Added focused worker signal and payload tests.
+
+### Changed
+- `app/ui/main_window.py`: Refactored validation run handling to start `ValidationWorker` and preserve success/failure export gating through UI handlers.
+- `tests/test_active_dataset.py`: Patched worker start for synchronous focused tests and added failure-handler export gating coverage.
+- `docs/task_board.md`: Moved Tasks 541-546 to Done and set Tasks 547-552 as the next acceptance audit block.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_active_dataset.py tests/test_validation_worker.py -q` - 16 passed.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-12 - Tasks 535-540: Validation Pipeline Responsiveness Design
 
 ### Added

@@ -14,6 +14,7 @@ Validation Pipeline Responsiveness
 
 - [x] Tasks 529-534 - Desktop Workflow and Chart/Table Reliability Acceptance Audit
 - [x] Tasks 535-540 - Validation Pipeline Responsiveness Design
+- [x] Tasks 541-546 - Validation Pipeline Responsiveness Implementation
 - [x] Tasks 523-528 - Desktop Workflow and Chart/Table Reliability Implementation
 - [x] Tasks 517-522 - Desktop Workflow and Chart Reliability Design
 - [x] Tasks 511-516 - Data Resampling and Normalization Hardening Acceptance Audit
@@ -151,7 +152,7 @@ Validation Pipeline Responsiveness
 
 ## Next
 
-- [ ] Tasks 541-546 - Validation Pipeline Responsiveness Implementation (ValidationWorker + UI wiring)
+- [ ] Tasks 547-552 - Validation Pipeline Responsiveness Acceptance Audit
 
 *(Legacy backlog items pending reprioritization)*
 - Proposed Task 055 - Agent Workflow Automation

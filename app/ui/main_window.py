@@ -1693,103 +1693,127 @@ class MainWindow(QMainWindow):
         # Use the current elimination config from StrategyService.
         pipeline_elim_config = self.strategy_service.elimination_config
 
-        from PySide6.QtWidgets import QApplication
-        from PySide6 import QtCore
-        QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
-        try:
-            result = run_validation_pipeline(
-                df, strategy,
-                config=PipelineConfig(
-                    mc_iterations=15, calc_wfe=calc_wfe,
-                    run_remove_best_n_trades_stress=run_remove_best_n,
-                    remove_best_n_trades_n=remove_best_n_n,
-                    remove_best_n_trades_degradation_threshold=remove_best_n_threshold,
-                    run_bootstrap_monte_carlo=run_bootstrap,
-                    bootstrap_iterations=bootstrap_iterations,
-                    bootstrap_confidence_level=bootstrap_confidence,
-                    run_price_noise_stress=run_price_noise,
-                    price_noise_pct=price_noise_pct,
-                    price_noise_iterations=price_noise_iterations,
-                    price_noise_seed=price_noise_seed,
-                    run_is_baseline_quality_precheck=run_precheck,
-                    fail_is_baseline_on_nonpositive_pnl=fail_nonpositive,
-                    elimination_config=pipeline_elim_config,
-                ),
-                instrument=active_profile,
-                data_source=source_label,
-                commission=2.0,
-            )
+        from app.workers import ValidationWorker
+        from app.services.validation_pipeline_service import PipelineConfig
 
-            self.latest_validation_result = result
+        config = PipelineConfig(
+            mc_iterations=15, calc_wfe=calc_wfe,
+            run_remove_best_n_trades_stress=run_remove_best_n,
+            remove_best_n_trades_n=remove_best_n_n,
+            remove_best_n_trades_degradation_threshold=remove_best_n_threshold,
+            run_bootstrap_monte_carlo=run_bootstrap,
+            bootstrap_iterations=bootstrap_iterations,
+            bootstrap_confidence_level=bootstrap_confidence,
+            run_price_noise_stress=run_price_noise,
+            price_noise_pct=price_noise_pct,
+            price_noise_iterations=price_noise_iterations,
+            price_noise_seed=price_noise_seed,
+            run_is_baseline_quality_precheck=run_precheck,
+            fail_is_baseline_on_nonpositive_pnl=fail_nonpositive,
+            elimination_config=pipeline_elim_config,
+        )
 
-            # Update the Validate page dashboard.
-            self.validation_summary.update_from_result(result, source_label=source_label)
+        self.log_panel.add_message(
+            "INFO",
+            "Starting validation worker (split / backtest / stress / MC / WF / elimination)...",
+        )
 
-            # Log summary.
-            self.log_panel.add_message("INFO", f"Split: train={result.split_metadata}")
+        self._validation_worker = ValidationWorker(
+            df=df,
+            strategy=strategy,
+            config=config,
+            instrument=active_profile,
+            data_source=source_label,
+            commission=2.0,
+            is_mock=is_mock,
+            parent=self,
+        )
+        self._validation_worker.progress_updated.connect(self._on_validation_progress)
+        self._validation_worker.success.connect(self._on_validation_success)
+        self._validation_worker.failure.connect(self._on_validation_failure)
+        self._validation_worker.finished.connect(self._on_validation_finished)
+        self._validation_worker.start()
+
+        return  # async — handlers below
+
+    def _on_validation_progress(self, stage: str) -> None:
+        """Update validation status label with the current stage."""
+        self.validation_status_label.setText(f"Validating... ({stage})")
+        QApplication.processEvents()
+
+    def _on_validation_success(self, result: object) -> None:
+        """Handle successful validation from background worker."""
+        self.latest_validation_result = result
+        source_label = getattr(self._validation_worker, "_data_source", "pipeline_run") if hasattr(self, "_validation_worker") and self._validation_worker else "pipeline_run"
+        is_mock = getattr(self._validation_worker, "_is_mock", False) if hasattr(self, "_validation_worker") and self._validation_worker else False
+
+        # Update the Validate page dashboard.
+        self.validation_summary.update_from_result(result, source_label=source_label)
+
+        # Log summary.
+        self.log_panel.add_message("INFO", f"Split: train={result.split_metadata}")
+        self.log_panel.add_message("INFO",
+            f"Backtest: PnL={result.baseline_metrics.get('total_pnl', 0):.0f}, "
+            f"PF={result.baseline_metrics.get('profit_factor', 0):.2f}, "
+            f"Trades={result.baseline_metrics.get('total_trades', 0)}")
+        if result.stress_results:
+            comm_deg = result.stress_results[0].get("degradation", {})
             self.log_panel.add_message("INFO",
-                f"Backtest: PnL={result.baseline_metrics.get('total_pnl', 0):.0f}, "
-                f"PF={result.baseline_metrics.get('profit_factor', 0):.2f}, "
-                f"Trades={result.baseline_metrics.get('total_trades', 0)}")
-            if result.stress_results:
-                comm_deg = result.stress_results[0].get("degradation", {})
-                self.log_panel.add_message("INFO",
-                    f"Stress (commission 2x): PnL degradation={comm_deg.get('total_pnl', 0):.1%}")
-            if result.monte_carlo_summary:
-                wc = result.monte_carlo_summary.get("worst_case", {})
-                self.log_panel.add_message("INFO",
-                    f"MC worst-case PnL: {wc.get('total_pnl', 0):.0f}")
-            if result.walk_forward_summary:
-                self.log_panel.add_message("INFO",
-                    f"WF: {result.walk_forward_summary.get('pass_count', 0)}/"
-                    f"{result.walk_forward_summary.get('window_count', 0)} windows passed "
-                    f"({result.walk_forward_summary.get('pass_rate', 0):.1%})")
-            if result.elimination_result:
-                elim = result.elimination_result
-                self.log_panel.add_message("INFO",
-                    f"Elimination: {'PASSED' if elim['passed'] else 'FAILED — ' + ', '.join(elim['failed_rules'])}")
-
-            if result.oos_metrics:
-                oos = result.oos_metrics
-                self.log_panel.add_message("INFO",
-                    f"OOS: PnL={oos.get('total_pnl', 0):,.0f}, PF={oos.get('profit_factor', 0):.2f}, "
-                    f"Trades={oos.get('total_trades', 0)}")
-
+                f"Stress (commission 2x): PnL degradation={comm_deg.get('total_pnl', 0):.1%}")
+        if result.monte_carlo_summary:
+            wc = result.monte_carlo_summary.get("worst_case", {})
             self.log_panel.add_message("INFO",
-                f"Validation pipeline completed successfully"
-                f"{' (mock data)' if is_mock else ' (loaded data)'}.")
-            # Clear progress indicator on success.
-            self.validation_status_label.setText("Validation completed.")
-            self.validation_status_label.setStyleSheet(
-                "color: #4caf50; font-weight: bold; font-size: 12px; padding: 4px 0;"
-            )
-            QApplication.processEvents()
-            self.inspector_label.setText(
-                "Validate Inspector\n\n"
-                f"Last run: {source_label},\n"
-                f"{result.split_metadata.get('train_rows', 0)} train bars.\n"
-                f"Baseline PnL: {result.baseline_metrics.get('total_pnl', 0):.0f}\n"
-                f"Elimination: {'✓ Passed' if result.elimination_result and result.elimination_result['passed'] else '✗ Eliminated'}"
-            )
-            self._set_validation_idle(export_ok=True)
-        except Exception as e:
-            self.log_panel.add_message("ERROR", f"Validation pipeline failed: {e}")
-            self.inspector_label.setText(
-                "Validate Inspector\n\nValidation pipeline encountered an error.\n"
-                f"Details: {e}"
-            )
-            # Show error state on status indicator.
-            self.validation_status_label.setText(f"Validation failed: {e}")
-            self.validation_status_label.setStyleSheet(
-                "color: #ef5350; font-weight: bold; font-size: 12px; padding: 4px 0;"
-            )
-            self._set_validation_idle(
-                export_ok=False,
-                reason="Validation failed. Run validation again to enable report export.",
-            )
-        finally:
-            from PySide6.QtWidgets import QApplication
-            QApplication.restoreOverrideCursor()
+                f"MC worst-case PnL: {wc.get('total_pnl', 0):.0f}")
+        if result.walk_forward_summary:
+            self.log_panel.add_message("INFO",
+                f"WF: {result.walk_forward_summary.get('pass_count', 0)}/"
+                f"{result.walk_forward_summary.get('window_count', 0)} windows passed "
+                f"({result.walk_forward_summary.get('pass_rate', 0):.1%})")
+        if result.elimination_result:
+            elim = result.elimination_result
+            self.log_panel.add_message("INFO",
+                f"Elimination: {'PASSED' if elim['passed'] else 'FAILED — ' + ', '.join(elim['failed_rules'])}")
+        if result.oos_metrics:
+            oos = result.oos_metrics
+            self.log_panel.add_message("INFO",
+                f"OOS: PnL={oos.get('total_pnl', 0):,.0f}, PF={oos.get('profit_factor', 0):.2f}, "
+                f"Trades={oos.get('total_trades', 0)}")
+
+        self.log_panel.add_message("INFO",
+            f"Validation pipeline completed successfully"
+            f"{' (mock data)' if is_mock else ' (loaded data)'}.")
+        self.validation_status_label.setText("Validation completed.")
+        self.validation_status_label.setStyleSheet(
+            "color: #4caf50; font-weight: bold; font-size: 12px; padding: 4px 0;"
+        )
+        self.inspector_label.setText(
+            "Validate Inspector\n\n"
+            f"Last run: {source_label},\n"
+            f"{result.split_metadata.get('train_rows', 0)} train bars.\n"
+            f"Baseline PnL: {result.baseline_metrics.get('total_pnl', 0):.0f}\n"
+            f"Elimination: {'✓ Passed' if result.elimination_result and result.elimination_result['passed'] else '✗ Eliminated'}"
+        )
+        self._set_validation_idle(export_ok=True)
+
+    def _on_validation_failure(self, msg: str) -> None:
+        """Handle failed validation from background worker."""
+        self.log_panel.add_message("ERROR", f"Validation pipeline failed: {msg}")
+        self.inspector_label.setText(
+            "Validate Inspector\n\nValidation pipeline encountered an error.\n"
+            f"Details: {msg}"
+        )
+        self.validation_status_label.setText(f"Validation failed: {msg}")
+        self.validation_status_label.setStyleSheet(
+            "color: #ef5350; font-weight: bold; font-size: 12px; padding: 4px 0;"
+        )
+        self._set_validation_idle(
+            export_ok=False,
+            reason="Validation failed. Run validation again to enable report export.",
+        )
+
+    def _on_validation_finished(self) -> None:
+        """Cleanup after validation worker finishes (success or failure)."""
+        self._validation_worker = None
 
     def _handle_save(self) -> None:
         from PySide6.QtWidgets import QMessageBox

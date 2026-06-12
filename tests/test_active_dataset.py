@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from unittest.mock import patch
 import pytest
 import pandas as pd
 import numpy as np
@@ -21,6 +22,12 @@ from backtest_engine.runner import run_backtest
 
 def _sync_import_start(worker):
     """Patched ImportWorker.start that runs the worker synchronously."""
+    worker.run()
+    worker.finished.emit()
+
+
+def _sync_validation_start(worker):
+    """Patched ValidationWorker.start that runs the worker synchronously."""
     worker.run()
     worker.finished.emit()
 
@@ -152,7 +159,9 @@ def test_main_window_mock_fallback_active_state(qapp):
     assert "None loaded" in window.data_status_label.text()
     
     # Run pipeline with no loaded dataset (should trigger mock fallback)
-    window._handle_run()
+    from app.workers import ValidationWorker
+    with patch.object(ValidationWorker, "start", _sync_validation_start):
+        window._handle_run()
     
     assert window.latest_validation_result is not None
     assert window.latest_validation_result.data_source == "Mock fallback"
@@ -215,7 +224,9 @@ def test_main_window_active_dataset_run(qapp):
     )
     
     # Run pipeline with active dataset
-    window._handle_run()
+    from app.workers import ValidationWorker
+    with patch.object(ValidationWorker, "start", _sync_validation_start):
+        window._handle_run()
     
     assert window.latest_validation_result is not None
     assert window.latest_validation_result.data_source == "real_txf_test"
@@ -449,3 +460,15 @@ def test_quality_failed_active_dataset_aborts_run(qapp):
         mock_warn.assert_called_once()
         # ERROR message logged in panel
         assert "Validation pipeline aborted" in window.log_panel.output.toPlainText()
+
+
+def test_validation_failure_handler_keeps_export_disabled(qapp):
+    """Worker failure handler must preserve disabled export gating and log error."""
+    window = MainWindow()
+
+    window._on_validation_failure("synthetic failure")
+
+    assert window.export_action.isEnabled() is False
+    assert "Validation failed" in window.export_action.toolTip()
+    assert "synthetic failure" in window.inspector_label.text()
+    assert "Validation pipeline failed: synthetic failure" in window.log_panel.output.toPlainText()

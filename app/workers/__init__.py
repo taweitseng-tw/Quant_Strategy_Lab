@@ -166,3 +166,63 @@ class GPWorker(QThread):
             self.success.emit(result, self._source_label)
         except Exception as exc:
             self.failure.emit(str(exc))
+
+
+from core.models.strategy import Strategy
+from core.models.instrument import InstrumentProfile
+from app.services.validation_pipeline_service import PipelineConfig, run_validation_pipeline
+
+
+class ValidationWorker(QThread):
+    """Background thread that executes :func:`run_validation_pipeline`.
+
+    Signals
+    -------
+    progress_updated(str)
+        Coarse stage label such as "Splitting data..." or "Running Monte Carlo...".
+    success(object)
+        Emitted with the ``PipelineResult`` on successful completion.
+    failure(str)
+        Emitted with an error message on exception.
+    """
+
+    progress_updated = Signal(str)
+    success = Signal(object)
+    failure = Signal(str)
+
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        strategy: Strategy,
+        config: PipelineConfig,
+        *,
+        instrument: InstrumentProfile | None = None,
+        data_source: str = "",
+        commission: float = 2.0,
+        is_mock: bool = False,
+        parent=None,
+    ) -> None:
+        super().__init__(parent)
+        self._df = df.copy(deep=True) if isinstance(df, pd.DataFrame) else df
+        self._strategy = strategy
+        self._config = config
+        self._instrument = instrument
+        self._data_source = data_source
+        self._commission = commission
+        self._is_mock = is_mock
+
+    def run(self) -> None:
+        try:
+            self.progress_updated.emit("Splitting data and running backtest...")
+            result = run_validation_pipeline(
+                self._df,
+                self._strategy,
+                config=self._config,
+                instrument=self._instrument,
+                data_source=self._data_source,
+                commission=self._commission,
+            )
+            self.progress_updated.emit("Finalizing...")
+            self.success.emit(result)
+        except Exception as exc:
+            self.failure.emit(str(exc))
