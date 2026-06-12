@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-12 - Tasks 553-558: Validation Cancellation and Progress Feedback Design
+
+### Added
+- `docs/validation_cancellation_progress_design_553_558.md`: Added a corrected design for cooperative validation cancellation, Stop action wiring, stale-run guards, and coarse progress constraints.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 553-558 to Done and set Tasks 559-564 as the next implementation block.
+
+### Verification
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-12 - Tasks 547-552: Validation Pipeline Responsiveness Acceptance Audit
 
 ### Added
