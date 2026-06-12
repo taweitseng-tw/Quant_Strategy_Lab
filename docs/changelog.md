@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-12 - Tasks 607-612: Developer Release Tag Readiness Decision
+
+### Added
+- `docs/developer_release_tag_readiness_decision_607_612.md`: Added a corrected readiness decision for the `v0.4.0-dev` developer pre-release tag, including proposed tag name, tag message, verification evidence, and remaining non-blocking release risks.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 607-612 to Done and set Tasks 613-618 as the next developer release tag approval gate.
+
+### Verification
+- `git tag --list "v0.4.0*"` showed no local matching tag.
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py -q` - 12 passed.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-12 - Tasks 601-606: Release Candidate Smoke and Artifact Notes
 
 ### Added

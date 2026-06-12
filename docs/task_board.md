@@ -25,6 +25,7 @@ Desktop Release Readiness
 - [x] Tasks 589-594 - CI Packaging Job + Version Bump
 - [x] Tasks 595-600 - CI Packaging and Version Acceptance Audit
 - [x] Tasks 601-606 - Release Candidate Smoke and Artifact Notes
+- [x] Tasks 607-612 - Developer Release Tag Readiness Decision
 - [x] Tasks 523-528 - Desktop Workflow and Chart/Table Reliability Implementation
 - [x] Tasks 517-522 - Desktop Workflow and Chart Reliability Design
 - [x] Tasks 511-516 - Data Resampling and Normalization Hardening Acceptance Audit
@@ -162,7 +163,7 @@ Desktop Release Readiness
 
 ## Next
 
-- [ ] Tasks 607-612 - Developer Release Tag Readiness Decision
+- [ ] Tasks 613-618 - Developer Release Tag Approval Gate
 
 *(Legacy backlog items pending reprioritization)*
 - Proposed Task 055 - Agent Workflow Automation
