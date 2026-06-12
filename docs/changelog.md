@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-12 - Tasks 595-600: CI Packaging and Version Acceptance Audit
+
+### Added
+- `docs/ci_packaging_acceptance_audit_595_600.md`: Added a corrected acceptance audit for tag-triggered packaging, PEP 440 versioning, package artifact upload, build-script launch smoke fallback, and remaining release risks.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 595-600 to Done and set Tasks 601-606 as the next release candidate smoke block.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py -q` - 12 passed.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_package.ps1` - passed locally.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-12 - Tasks 589-594: CI Packaging Job and Version Bump
 
 ### Added
