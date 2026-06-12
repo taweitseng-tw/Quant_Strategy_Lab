@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-06-12 - Tasks 547-552: Validation Pipeline Responsiveness Acceptance Audit
+
+### Added
+- `docs/validation_pipeline_responsiveness_acceptance_audit_547_552.md`: Added a focused acceptance audit for ValidationWorker behavior and MainWindow validation worker wiring.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 547-552 to Done, advanced the current milestone to Validation Cancellation and Progress Feedback, and set Tasks 553-558 as the next design block.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_active_dataset.py tests/test_validation_worker.py -q` - 16 passed.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-12 - Tasks 541-546: Validation Pipeline Responsiveness Implementation
 
 ### Added
