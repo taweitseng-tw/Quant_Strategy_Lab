@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-12 - Tasks 613-618: Developer Release Tag Approval Gate
+
+### Added
+- `docs/developer_release_tag_approval_gate_613_618.md`: Added a corrected approval gate for the `v0.4.0-dev` developer pre-release tag, including exact prepared tag/push commands, Codex-only execution guidance, and explicit no-tag-created boundary.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 613-618 to Done and set Tasks 619-624 as the user-approved Codex-only tag execution gate.
+
+### Verification
+- `git tag --list "v0.4.0*"` showed no local matching tag.
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py -q` - 12 passed.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-12 - Tasks 607-612: Developer Release Tag Readiness Decision
 
 ### Added
