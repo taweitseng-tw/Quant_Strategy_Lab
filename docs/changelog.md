@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-12 - Tasks 601-606: Release Candidate Smoke and Artifact Notes
+
+### Added
+- `docs/release_candidate_smoke_notes_601_606.md`: Added corrected release-candidate smoke notes covering focused desktop smoke tests, package-script verification, artifact handling, remaining release risks, and tag-readiness next steps.
+
+### Changed
+- `docs/task_board.md`: Moved Tasks 601-606 to Done and set Tasks 607-612 as the next developer release tag readiness decision.
+
+### Verification
+- `.\.venv\Scripts\python.exe -m pytest tests/test_app_startup_smoke.py tests/test_sample_data_workflow_smoke.py -q` - 12 passed.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_package.ps1` - passed locally.
+- `git diff --check` passed with CRLF warnings only.
+
 ## 2026-06-12 - Tasks 595-600: CI Packaging and Version Acceptance Audit
 
 ### Added
